@@ -68,6 +68,10 @@ ipch/
 *.vsp
 *.vspx
 
+# Gardens Point log files
+*.conflicts
+*.lst
+parser.report.html
 
 # TFS 2012 Local Workspace
 $tf/

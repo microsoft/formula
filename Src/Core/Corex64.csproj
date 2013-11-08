@@ -12,11 +12,8 @@
     <AssemblyName>Core</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <GPToolsPath>..\..\..\Ext\GardensPoint</GPToolsPath>
-    <SccProjectName>SAK</SccProjectName>
-    <SccLocalPath>SAK</SccLocalPath>
-    <SccAuxPath>SAK</SccAuxPath>
-    <SccProvider>SAK</SccProvider>
+    <GPLexPath>..\..\Ext\GPLEX</GPLexPath>    
+    <GPPGPath>..\..\Ext\GPPG</GPPGPath>
     <CodeContractsAssemblyMode>1</CodeContractsAssemblyMode>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -76,14 +73,10 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
-    <StyleCopTreatErrorsAsWarnings>false</StyleCopTreatErrorsAsWarnings>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
   <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-  </PropertyGroup>
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>..\Common\FormulaKey.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DebugSymbols>true</DebugSymbols>
@@ -142,11 +135,11 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Z3">
-      <HintPath>..\..\..\Ext\Z3Codeplex\x64\Microsoft.Z3.dll</HintPath>
+      <HintPath>..\..\Ext\Z3\x64\Microsoft.Z3.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\..\Ext\Z3Codeplex\x64\libz3.dll">
+    <None Include="..\..\Ext\Z3\x64\libz3.dll">
       <Link>libz3.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -343,12 +336,6 @@
     <MPLexCompile Include="API\Parser\lexer.lex" />
     <MPPGCompile Include="API\Parser\parser.y" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="..\Common\FormulaKey.snk">
-      <Link>FormulaKey.snk</Link>
-    </None>
-  </ItemGroup>
-  <Import Project="..\..\..\ext\StyleCop\StyleCop.targets" />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!--
     =======================================================================================================
@@ -361,7 +348,7 @@
   </PropertyGroup>
   <Target Name="GenerateCodeFromLex" Condition="'$(BuildingProject)'!='false'" Inputs="@(MPLexCompile);$(LexFrameFile)" Outputs="@(MPLexCompile->'$(IntermediateOutputPath)%(FileName).g.cs')" DependsOnTargets="$(GenerateCodeFromLexDependsOn)">
     <!--Run the command line tool that generates the cs files.-->
-    <Exec Command="&quot;$(GPToolsPath)\GPLex45.exe&quot; /babel /unicode /out:@(MPLexCompile->'$(IntermediateOutputPath)%(FileName).g.cs') @(MPLexCompile)" />
+    <Exec Command="&quot;$(GPLexPath)\GPLex45.exe&quot; /babel /unicode /out:@(MPLexCompile->'$(IntermediateOutputPath)%(FileName).g.cs') @(MPLexCompile)" />
     <!--Add the generated files to the list of the files to compile.-->
     <CreateItem Include="@(MPLexCompile->'$(IntermediateOutputPath)%(FileName).g.cs')">
       <Output TaskParameter="Include" ItemName="Compile" />
@@ -379,7 +366,7 @@
   </PropertyGroup>
   <Target Name="GenerateParserCodeFromGrammar" Condition="'$(BuildingProject)'!='false'" Inputs="@(MPPGCompile)" Outputs="@(MPPGCompile->'$(IntermediateOutputPath)%(FileName).g.cs')" DependsOnTargets="$(GenerateParserCodeFromGrammarDependsOn)">
     <!--Run the command line tool that generates the cs files.-->
-    <Exec Command="&quot;$(GpToolsPath)\GPPG45.exe&quot; -babel -gplex -report -verbose -conflicts @(MPPGCompile) &gt; @(MPPGCompile->'$(IntermediateOutputPath)%(FileName).g.cs')" />
+    <Exec Command="&quot;$(GPPGPath)\GPPG45.exe&quot; -babel -gplex -report -verbose -conflicts @(MPPGCompile) &gt; @(MPPGCompile->'$(IntermediateOutputPath)%(FileName).g.cs')" />
     <!--Add the generated files to the list of the files to compile.-->
     <CreateItem Include="@(MPPGCompile->'$(IntermediateOutputPath)%(FileName).g.cs')">
       <Output TaskParameter="Include" ItemName="Compile" />

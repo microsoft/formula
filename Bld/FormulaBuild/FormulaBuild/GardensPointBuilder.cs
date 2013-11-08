@@ -31,7 +31,7 @@
 
         private static readonly Tuple<string, string>[] gplexMoveMap = new Tuple<string, string>[]
         {
-            new Tuple<string, string>("bin\\debug\\gplex.exe", "..\\..\\..\\..\\..\\Ext\\GPLEX\\gplex45.exe"),
+            new Tuple<string, string>("bin\\debug\\gplex.exe", "..\\..\\..\\..\\..\\Ext\\GPLEX\\gplex45.exe")
         };
 
         private static readonly Tuple<string, string>[] gppgMoveMap = new Tuple<string, string>[]

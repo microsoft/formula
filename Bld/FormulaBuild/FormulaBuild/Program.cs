@@ -12,7 +12,8 @@
         private const int FailCode = 1;
         static void Main(string[] args)     
         {
-            var result = GardensPointBuilder.Build();
+            var result = GardensPointBuilder.Build() &&
+                         Z3Builder.Build();
 
             if (!result)
             {

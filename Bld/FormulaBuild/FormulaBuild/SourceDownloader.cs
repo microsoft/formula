@@ -10,6 +10,7 @@
     using System.IO;
     using System.IO.Compression;
     using System.Reflection;
+    using Microsoft.Win32;
 
     internal static class SourceDownloader
     {
@@ -25,6 +26,9 @@
         private const string WinDirEnvVar = "WinDir";
         private const string CscName = "csc.exe";
         private const string MSbuildName = "msbuild.exe";
+        private const string RegVS32SubKey = "SOFTWARE\\Microsoft\\VisualStudio\\{0}.0";
+        private const string RegVS64SubKey = "SOFTWARE\\Wow6432Node\\Microsoft\\VisualStudio\\{0}.0";
+        private const string VCVarsAll = "VC\\vcvarsall.bat";
 
         private static readonly string[] FrameworkLocs = new string[]
         {
@@ -38,6 +42,46 @@
             new Tuple<string, string, string, string>("gppg", "84257", "..\\..\\..\\..\\..\\Ext\\GPPG\\gppg_.zip", "..\\..\\..\\..\\..\\Ext\\GPPG\\gppg_\\"),
             new Tuple<string, string, string, string>("gplex", "84980", "..\\..\\..\\..\\..\\Ext\\GPLEX\\gplex_.zip", "..\\..\\..\\..\\..\\Ext\\GPLEX\\gplex_\\")
         };
+
+        public static bool GetBuildRelDir(string dirname, bool shouldCreate, out DirectoryInfo dir)
+        {
+            try
+            {
+                var runningLoc = new FileInfo(Assembly.GetExecutingAssembly().Location);
+                dir = new DirectoryInfo(Path.Combine(runningLoc.Directory.FullName, dirname));
+                if (!dir.Exists && shouldCreate)
+                {
+                    dir.Create();
+                    return true;
+                }
+                else
+                {
+                    return dir.Exists;
+                }
+            }
+            catch (Exception e)
+            {
+                dir = null;
+                Program.WriteError("Could not locate dir {0} - {1}", dirname, e.Message);
+                return false;
+            }
+        }
+
+        public static bool GetBuildRelFile(string filename, out FileInfo file)
+        {
+            try
+            {
+                var runningLoc = new FileInfo(Assembly.GetExecutingAssembly().Location);
+                file = new FileInfo(Path.Combine(runningLoc.Directory.FullName, filename));
+                return file.Exists;
+            }
+            catch (Exception e)
+            {
+                file = null;
+                Program.WriteError("Could not locate file {0} - {1}", filename, e.Message);
+                return false;
+            }
+        }
 
         public static bool GetFrameworkDir(out DirectoryInfo framework)
         {
@@ -60,6 +104,31 @@
             {
                 framework = null;
                 Program.WriteError("Could not locate .NET framework directory - {0}", e.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Gets the location of the latest vcVars on this machine.
+        /// </summary>
+        public static bool GetVCVarsBat(out FileInfo vcVars)
+        {
+            try
+            {
+                DirectoryInfo vsDir;
+                if (!GetVSDir(out vsDir))
+                {
+                    vcVars = null;
+                    return false;
+                }
+
+                vcVars = new FileInfo(Path.Combine(vsDir.FullName, VCVarsAll));
+                return vcVars.Exists;
+            }
+            catch (Exception e)
+            {
+                vcVars = null;
+                Program.WriteError("Could not find a Visual Studio component - {0}", e.Message);
                 return false;
             }
         }
@@ -179,6 +248,56 @@
             }
 
             return true;
+        }
+
+        private static bool GetVSDir(out DirectoryInfo vsDir)
+        {
+            try
+            {
+                var subKey = Environment.Is64BitOperatingSystem ? RegVS64SubKey : RegVS32SubKey;
+
+                string installDir = null;
+                //// Try to get version 12
+                /*
+                if (installDir == null)
+                {
+                    using (var key = Registry.LocalMachine.OpenSubKey(string.Format(subKey, 12)))
+                    {
+                        if (key != null)
+                        {
+                            installDir = key.GetValue("ShellFolder") as string;
+                        }
+                    }
+                }
+                */
+
+                //// Try to get version 11
+                if (installDir == null)
+                {
+                    using (var key = Registry.LocalMachine.OpenSubKey(string.Format(subKey, 11)))
+                    {
+                        if (key != null)
+                        {
+                            installDir = key.GetValue("ShellFolder") as string;
+                        }
+                    }
+                }
+
+                if (installDir == null)
+                {
+                    vsDir = null;
+                    return false;
+                }
+
+                vsDir = new DirectoryInfo(installDir);
+                return vsDir.Exists;
+            }
+            catch (Exception e)
+            {
+                vsDir = null;
+                Program.WriteError("ERROR: Could not find Visual Studio - {0}", e.Message);
+                return false;
+            }
         }
 
         private static bool GetFrameworkFile(string fileName, out FileInfo file)

@@ -26,6 +26,7 @@
         private const string WinDirEnvVar = "WinDir";
         private const string CscName = "csc.exe";
         private const string MSbuildName = "msbuild.exe";
+        private const string VsixInstallerName = "Common7\\IDE\\vsixinstaller.exe";
         private const string RegVS32SubKey = "SOFTWARE\\Microsoft\\VisualStudio\\{0}.0";
         private const string RegVS64SubKey = "SOFTWARE\\Wow6432Node\\Microsoft\\VisualStudio\\{0}.0";
         private const string VCVarsAll = "VC\\vcvarsall.bat";
@@ -135,6 +136,28 @@
             {
                 vcVars = null;
                 Program.WriteError("Could not find a Visual Studio component - {0}", e.Message);
+                return false;
+            }
+        }
+
+        public static bool GetVsixInstaller(out FileInfo vsixInstaller)
+        {
+            try
+            {
+                DirectoryInfo vsDir;
+                if (!GetVSDir(out vsDir))
+                {
+                    vsixInstaller = null;
+                    return false;
+                }
+
+                vsixInstaller = new FileInfo(Path.Combine(vsDir.FullName, VsixInstallerName));
+                return vsixInstaller.Exists;
+            }
+            catch (Exception e)
+            {
+                vsixInstaller = null;
+                Program.WriteError("Cannot get vsix installer - {0}", e.Message);
                 return false;
             }
         }

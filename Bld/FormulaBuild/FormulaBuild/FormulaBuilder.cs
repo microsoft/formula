@@ -18,6 +18,8 @@
         private const string ConfigRelease = "Release";
         private const string PlatformX86 = "x86";
         private const string PlatformX64 = "x64";
+        private const string CodeGeneratorDebug = "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGenerator\\bin\\x86\\Debug\\FormulaCodeGenerator.vsix";
+        private const string CodeGeneratorRelease = "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGenerator\\bin\\x86\\Release\\FormulaCodeGenerator.vsix";
 
         /// <summary>
         /// Project is described by:
@@ -36,105 +38,105 @@
         private static readonly Tuple<string, string>[] DebugMoveMap = new Tuple<string, string>[]
         {
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\CommandLine.exe", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Formula.exe"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\CommandLine.exe", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Formula.exe"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\CommandLine.exe.config", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Formula.exe.config"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\CommandLine.exe.config", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Formula.exe.config"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\CommandLine.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Formula.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\CommandLine.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Formula.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Core.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Core.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Core.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Core.dll"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Core.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Core.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Core.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Core.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Microsoft.Z3.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Microsoft.Z3.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Microsoft.Z3.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Microsoft.Z3.dll"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Microsoft.Z3.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Microsoft.Z3.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Microsoft.Z3.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Microsoft.Z3.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\libz3.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x86\\libz3.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\libz3.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\libz3.dll"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\CommandLine.exe", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Formula.exe"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\CommandLine.exe", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Formula.exe"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\CommandLine.exe.config", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Formula.exe.config"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\CommandLine.exe.config", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Formula.exe.config"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\CommandLine.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Formula.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\CommandLine.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Formula.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Core.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Core.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Core.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Core.dll"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Core.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Core.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Core.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Core.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Microsoft.Z3.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Microsoft.Z3.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Microsoft.Z3.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Microsoft.Z3.dll"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Microsoft.Z3.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Microsoft.Z3.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Microsoft.Z3.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Microsoft.Z3.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\libz3.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Debug_x64\\libz3.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\libz3.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\libz3.dll"),
         };
 
         private static readonly Tuple<string, string>[] ReleaseMoveMap = new Tuple<string, string>[]
         {
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\CommandLine.exe", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x86\\Formula.exe"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\CommandLine.exe", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Formula.exe"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\CommandLine.exe.config", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x86\\Formula.exe.config"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\CommandLine.exe.config", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Formula.exe.config"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\CommandLine.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x86\\Formula.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\CommandLine.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Formula.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Core.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x86\\Core.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Core.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Core.dll"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Core.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x86\\Core.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Core.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Core.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Microsoft.Z3.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x86\\Microsoft.Z3.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Microsoft.Z3.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Microsoft.Z3.dll"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Microsoft.Z3.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x86\\Microsoft.Z3.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Microsoft.Z3.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Microsoft.Z3.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\libz3.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x86\\libz3.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\libz3.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\libz3.dll"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\CommandLine.exe", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x64\\Formula.exe"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\CommandLine.exe", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Formula.exe"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\CommandLine.exe.config", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x64\\Formula.exe.config"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\CommandLine.exe.config", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Formula.exe.config"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\CommandLine.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x64\\Formula.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\CommandLine.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Formula.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Core.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x64\\Core.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Core.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Core.dll"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Core.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x64\\Core.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Core.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Core.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Microsoft.Z3.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x64\\Microsoft.Z3.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Microsoft.Z3.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Microsoft.Z3.dll"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Microsoft.Z3.pdb", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x64\\Microsoft.Z3.pdb"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Microsoft.Z3.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Microsoft.Z3.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\libz3.dll", 
-                "..\\..\\..\\..\\..\\Drops\\Formula_Release_x64\\libz3.dll"),
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\libz3.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\libz3.dll"),
         };
 
         public static bool Build(bool isBldDebug)
@@ -162,7 +164,8 @@
                 return false;
             }
 
-            result = DoMove(isBldDebug ? DebugMoveMap : ReleaseMoveMap) && result;
+            result = DoMove(isBldDebug ? DebugMoveMap : ReleaseMoveMap) &&
+                     InstallVsix(isBldDebug ? CodeGeneratorDebug : CodeGeneratorRelease) && result;
             return result;
         }
 
@@ -174,7 +177,7 @@
                 var runningLoc = new FileInfo(Assembly.GetExecutingAssembly().Location);
                 foreach (var t in moveMap)
                 {
-                    var inFile = new FileInfo(Path.Combine(runningLoc.FullName, t.Item1));
+                    var inFile = new FileInfo(Path.Combine(runningLoc.Directory.FullName, t.Item1));
                     if (!inFile.Exists)
                     {
                         result = false;
@@ -182,7 +185,7 @@
                         continue;
                     }
 
-                    var outFile = new FileInfo(Path.Combine(runningLoc.FullName, t.Item2));
+                    var outFile = new FileInfo(Path.Combine(runningLoc.Directory.FullName, t.Item2));
                     if (!outFile.Directory.Exists)
                     {
                         outFile.Directory.Create();
@@ -197,6 +200,75 @@
             catch (Exception e)
             {
                 Program.WriteError("Unable to move output files - {0}", e.Message);
+                return false;
+            }
+        }
+
+        private static bool InstallVsix(string vsixName)
+        {
+            Program.WriteInfo("Installing vsix {0}", vsixName);
+            try
+            {
+                var runningLoc = new FileInfo(Assembly.GetExecutingAssembly().Location);
+                var vsix = new FileInfo(Path.Combine(runningLoc.Directory.FullName, vsixName));
+                if (!vsix.Exists)
+                {
+                    Program.WriteError("Could not install vsix; file {0} does not exist.", vsix.FullName);
+                    return false;
+                }
+
+                FileInfo installer;
+                if (!SourceDownloader.GetVsixInstaller(out installer))
+                {
+                    Program.WriteError("Could not install vsix; unable to find vsix installer.");
+                    return false;
+                }
+
+                if (!RunInstaller(installer, "/q /u:4f5a7e3b-98cc-4601-a247-51cdbb9eb444"))
+                {
+                    Program.WriteWarning("Attempt to uninstall previous vsix failed.");
+                }
+
+                if (!RunInstaller(installer, string.Format("/q \"{0}\"", vsix.FullName)))
+                {
+                    Program.WriteError("Could not install vsix extension {0}", vsix.FullName);
+                    return false;
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Program.WriteError("Could not install vsix {0} - {1}", vsixName, e.Message);
+                return false;
+            }
+        }
+
+        private static bool RunInstaller(FileInfo vsixInstaller, string args)
+        {
+            try
+            {
+                var psi = new ProcessStartInfo();
+                psi.UseShellExecute = false;
+                psi.RedirectStandardError = true;
+                psi.RedirectStandardOutput = true;
+                psi.FileName = vsixInstaller.FullName;
+                psi.Arguments = args;
+                psi.CreateNoWindow = true;
+
+                var process = new Process();
+                process.StartInfo = psi;
+                process.OutputDataReceived += OutputReceived;
+                process.Start();
+                process.BeginErrorReadLine();
+                process.BeginOutputReadLine();
+                process.WaitForExit();
+
+                return process.ExitCode == 0;
+            }
+            catch (Exception e)
+            {
+                Program.WriteError("Failed to run vsix installer - {0}", e.Message);
                 return false;
             }
         }

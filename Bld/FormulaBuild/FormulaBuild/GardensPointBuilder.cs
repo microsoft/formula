@@ -39,9 +39,9 @@
             new Tuple<string, string>("bin\\debug\\gppg.exe", "..\\..\\..\\..\\..\\Ext\\GPPG\\gppg45.exe"),
         };
 
-        public static bool Build()
+        public static bool Build(bool isRebuildForced)
         {
-            if (Verify(outputs))
+            if (!isRebuildForced && Verify(outputs))
             {
                 Program.WriteInfo("Gardens Point dependencies have already been built; skipping this build step.");
                 return true;

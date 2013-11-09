@@ -73,6 +73,14 @@
             }
         }
 
+        public static void PrintSourceURLs()
+        {
+            foreach (var v in Versions)
+            {
+                Program.WriteInfo("Source code: " + DownloadString, v.Item1, v.Item2);
+            }
+        }
+
         public static bool GetBuildRelFile(string filename, out FileInfo file)
         {
             try

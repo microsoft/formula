@@ -70,9 +70,9 @@
             new Tuple<string, string>("build\\x64\\z3.lib", "..\\..\\..\\..\\..\\Ext\\Z3\\x64\\z3.lib"),
         };
 
-        public static bool Build()
+        public static bool Build(bool isRebuildForced)
         {
-            if (Verify(outputs))
+            if (!isRebuildForced && Verify(outputs))
             {
                 Program.WriteInfo("Z3 dependencies have already been built; skipping this build step.");
                 return true;

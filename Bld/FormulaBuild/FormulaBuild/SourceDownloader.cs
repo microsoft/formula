@@ -36,6 +36,11 @@
             "Microsoft.NET\\Framework\\v4.0.30319"
         };
 
+        private static readonly string[] FrameworkLocs32 = new string[]
+        {
+            "Microsoft.NET\\Framework\\v4.0.30319"
+        };
+
         private static readonly Tuple<string, string, string, string>[] Versions = new Tuple<string, string, string, string>[] 
         {
             new Tuple<string, string, string, string>("z3", "33f941aaec11bf7ef754d5779e581ba4a26b3018", "..\\..\\..\\..\\..\\Ext\\Z3\\z3_.zip", "..\\..\\..\\..\\..\\Ext\\Z3\\z3_\\"),
@@ -83,12 +88,13 @@
             }
         }
 
-        public static bool GetFrameworkDir(out DirectoryInfo framework)
+        public static bool GetFrameworkDir(out DirectoryInfo framework, bool force32Bit = false)
         {
             try
             {
                 var winDir = Environment.GetEnvironmentVariable(WinDirEnvVar);
-                foreach (var dir in FrameworkLocs)
+                var locs = force32Bit ? FrameworkLocs32 : FrameworkLocs;
+                foreach (var dir in locs)
                 {
                     framework = new DirectoryInfo(Path.Combine(winDir, dir));
                     if (framework.Exists)
@@ -138,9 +144,9 @@
             return GetFrameworkFile(CscName, out csc);
         }
 
-        public static bool GetMsbuild(out FileInfo msbuild)
+        public static bool GetMsbuild(out FileInfo msbuild, bool force32Bit = false)
         {
-            return GetFrameworkFile(MSbuildName, out msbuild);
+            return GetFrameworkFile(MSbuildName, out msbuild, force32Bit);
         }
 
         public static bool Download(DependencyKind dep, out DirectoryInfo outputDir)
@@ -300,12 +306,12 @@
             }
         }
 
-        private static bool GetFrameworkFile(string fileName, out FileInfo file)
+        private static bool GetFrameworkFile(string fileName, out FileInfo file, bool force32Bit = false)
         {
             try
             {
                 DirectoryInfo framework;
-                if (!GetFrameworkDir(out framework))
+                if (!GetFrameworkDir(out framework, force32Bit))
                 {
                     Program.WriteError("Could not locate {0} - {1}", fileName, "missing .NET framework");
                 }

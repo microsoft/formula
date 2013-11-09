@@ -121,6 +121,14 @@
             return result;
         }
 
+        public static void PrintOutputs()
+        {
+            foreach (var o in outputs)
+            {
+                Program.WriteInfo("Z3 dependency: {0}", o);
+            }
+        }
+
         /// <summary>
         /// Returns true if all outputs exist on the filesystem.
         /// Returns false if some output is missing or exception.

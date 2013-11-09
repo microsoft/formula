@@ -36,7 +36,7 @@ and rebuild will occur. You can also force all dependencies to be re-acquired an
 cd Somewhere\Formula\Bld
 built.bat -e
 
-If you would like to manually download and compile dependencies open a command prompt:
+To *manually* download and compile dependencies open a command prompt:
 
 cd Somewhere\Formula\Bld
 built.bat -l
@@ -54,7 +54,7 @@ built.bat
 Debug version - open a command prompt:
 
 cd Somewhere\Formula\Bld
-built.bat -b
+built.bat -d
 
 Outputs of the build are placed in Somewhere\Formula\Bld\Drops
 

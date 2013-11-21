@@ -1,0 +1,223 @@
+\documentclass{sig-alternate}
+% Makes the page 8.5 x 11, can change this if needed.
+\pdfpagewidth=8.5in
+\pdfpageheight=11in
+
+\usepackage{hyperref}
+
+% Must import this package and indicate the intended document class.
+\usepackage{../../../Src/Utilities/FormulaToTex/FormulaLangInt}
+
+% Must define the path from this file to FormulaToTex.exe
+\SetFormulaToTexPath{../../../Src/Utilities/FormulaToTex/bin/Debug/FormulaToTex.exe}
+
+\newcommand{\frm}{{\sc formula}}
+\begin{document}
+%\CacheFormulaToTex
+
+
+\title{Writing FORMULA 2.0 Inside LaTeX}
+\numberofauthors{1}
+\author{
+\alignauthor
+Ethan K. Jackson\\
+       \affaddr{Microsoft Research}\\
+       \affaddr{One Microsoft Way}\\
+       \affaddr{Redmond, WA 98052}\\
+       \email{ejackson@microsoft.com}}
+\toappear{}
+\maketitle
+\begin{abstract}
+This paper shows how to write \frm~source code in a LaTeX document, which will then be automatically formatted and syntax highlighted.
+\end{abstract}
+
+\section{General Setup}
+LaTeX is complicated. Our design philosophy was to off-load most of the work to an external tool called \textbf{FormulaToTex} (written in C\#). This allows easy addition of new features without having to implement them inside of LaTeX. 
+
+The \texttt{FormulaLangInt} package described here connects LaTeX to the FormulaToTex engine, and so you must have the FormulaToTex executable on your machine. Visit \url{http://formula.codeplex.com} for instructions on downloading and building \frm. The source code for the FormulaToTex engine can be found in: 
+\begin{verbatim}
+$/Src/Utilities/FormulaToTex
+\end{verbatim}
+For the remainder of this paper we assume this project has been compiled, producing the executable \texttt{FormulaToTex.exe}.
+
+Some LaTeX configurations disallow execution of external programs. You can re-enable this permission by passing the \texttt{-enable-write18} flag to LaTeX. For example, \texttt{PDFLaTeX} would be invoked as follows:
+\begin{verbatim}
+pdflatex -enable-write18 myfile.tex
+\end{verbatim} 
+Most editors can also be configured to pass this flag. Please check the editor's documentation.
+
+\section{Configuring the Package}
+You must import the \texttt{FormulaLangInt} package located at:
+\begin{verbatim}
+$/Src/Utilities/FormulaToTex/FormulaLangInt.sty
+\end{verbatim}
+You may copy this file into other directories and it will still function properly. \texttt{FormulaLangInt} generates LaTeX code for several document classes, but you must indicate the target document class when loading the package:
+\begin{verbatim}
+\usepackage[DocClass]{FormulaLangInt}
+\end{verbatim}
+The possible values for \texttt{DocClass} are:
+\begin{enumerate}
+\item \texttt{sig-alt}: Generates code for the double-column ACM SIG Proceedings document class. See \url{http://www.acm.org/sigs/publications/proceedings-templates}.
+\item \texttt{lncs}: Generates code for Springer's single-column Lecture Notes In Computer Science document class. See \url{http://www.springer.com/computer/lncs}. 
+\end{enumerate}
+After loading the package you must also set the location of \texttt{FormulaToTex.exe} as follows:
+\begin{verbatim}
+\SetFormulaToTexPath{Path/FormulaToTex.exe}
+\end{verbatim}
+
+\subsection{Minimal ACM SIG Configuration}
+Here is the minimal structure of an ACM SIG document with \frm~language integration:
+\begin{verbatim}
+\documentclass{sig-alternate}
+\usepackage[sig-alt]{FormulaLangInt}
+\SetFormulaToTexPath{Path/FormulaToTex.exe}
+\begin{document}
+...
+\end{document}
+\end{verbatim}
+
+\subsection{Minimal LNCS Configuration}
+\begin{verbatim}
+\documentclass{llncs}
+\usepackage[lncs]{FormulaLangInt}
+\SetFormulaToTexPath{Path/FormulaToTex.exe}
+\begin{document}
+...
+\end{document} 
+\end{verbatim}
+
+\section{Code Environments}
+The package provides three environments for writing code: \texttt{FormulaSnippet}, \texttt{FormulaCode} and \texttt{FormulaExample}. Note that the code placed within these environments does not have to be syntactically correct.  
+\subsection{Snippets}
+A snippet is just a boxed section of \frm~code. To create a snippet, place code within a \texttt{FormulaSnippet} environment. The code inside the snippet does not require any escaping. For example:
+\begin{verbatim}
+\begin{FormulaSnippet}
+x > y, "Foo", '"B\a\r"', no F(x)
+\end{FormulaSnippet}
+\end{verbatim}
+Snippets are rendered as a box spanning the entire column and code is centered within the boxed region:
+\begin{FormulaSnippet}
+x > y, "Foo", '"B\a\r"', no F(x)
+\end{FormulaSnippet}
+\subsection{Code Blocks}
+Code blocks are used to write multi-line programs. A code block is created by writing a sequence of \textit{lines} inside a \texttt{FormulaCode} environment. A line can be a \textit{code line}, a \textit{note line}, or a \textit{suffix line}. Code blocks can span multiple pages and rendered programs are automatically formatted and  numbered.
+\subsubsection{Code Lines}
+A code line has the form:
+\begin{verbatim}
+OptionalLabel: This is some code.
+\end{verbatim}
+Everything before the first `:' is treated as a label name, and everything after is treated as code. A code line beginning with whitespace and then  `:' is unlabeled. Below is a block with three code lines, followed by text that refers to the labeled lines:
+\begin{verbatim}
+\begin{FormulaCode}
+Linei  : q :-
+       :      F(x),
+Lineiii:      x > 10.
+\end{FormulaCode}
+\textsf{Lines \Linei~-~\Lineiii are important.}
+\end{verbatim}
+The first and last code lines are labeled and the middle line is unlabeled. Labels can be accessed outside of the code block by the writing \texttt{{\textbackslash}LabelName}, which will appear in the document as a line number linking back to the code block. Note that line labels are global, so all code blocks should have distinct line labels to avoid redefinition of the same label. Also, because labels become LaTeX commands, they can only contain letters. 
+
+The previous example is rendered as:
+\begin{FormulaCode}
+Linei  : q :-
+       :      F(x),
+Lineiii:      x > 10.
+\end{FormulaCode}
+\textsf{Lines \Linei~-~\Lineiii~are important.}\\
+~\\
+Unlike a code snippet, a code block is rendered  as left-justified text with automatic line numbering. Whitespace after the `:' is preserved exactly (as if written in verbatim mode). You should introduce your own whitespace to achieve the desired indentation and readability.
+
+\subsubsection{Note Lines}
+A note line introduces a note or aside in
+a different font from code. A note line starts with `;'.
+\begin{verbatim}
+\begin{FormulaCode}
+; Note: Some code is omitted from this example
+: q :- F(x), x > 10.
+: //// This code comment gets numbered.
+\end{FormulaCode}
+\end{verbatim}
+Note lines are not numbered. They can be used as asides rather than proper code comments. It is up to you to decide on your style preferences. The previous block is rendered as:
+\begin{FormulaCode}
+; Note: Some code is omitted from this example
+: q :- F(x), x > 10.
+: //// This code comment gets numbered.
+\end{FormulaCode}
+
+\subsubsection{Suffix Lines}
+Suffix lines allow you to inject LaTeX code  immediately after the rendered code block. 
+These extra lines appear to LaTeX as if they occurred within the \texttt{FormulaCode} environment. Suffix lines start with `\#', and all suffix lines are collected (in order) and then appended to the end of the rendered block. Suffix lines are need to interface with LaTeX's own environment labeling mechanisms. However, they can be used to accomplish any additional LaTeX work within a code block environment.
+
+Here is a trivial example of using suffix lines.
+\begin{verbatim}
+\begin{FormulaCode}
+Myrule:q :- F(x), x >= 10.
+# \vspace{-\baselineskip}
+# \hrulefill\\
+# Rule \Myrule~requires $x\geq 10$.
+\end{FormulaCode}
+\end{verbatim}
+This block is rendered as:
+\begin{FormulaCode}
+Myrule:q :- F(x), x >= 10.
+# \vspace{-\baselineskip}
+# \hrulefill\\
+# Rule \Myrule~requires $x\geq 10$.
+\end{FormulaCode}
+
+\subsection{Example Blocks}
+Example blocks are used to create named blocks of code.
+An example block is almost identical to a code block, except that is has a title and is rendered with a header. To create an example block place lines inside a \texttt{FormulaExample} environment as follows:
+\begin{verbatim}
+\begin{FormulaExample}{Title}
+... Code lines ...
+\end{FormulaExample}
+\end{verbatim}
+Here is an example and its rendered output.
+\begin{verbatim}
+\begin{FormulaExample}{Crucial Example}
+; Note: Some code is omitted from this example
+: q :- F(x), x > 10.
+: //// This code comment gets numbered.
+# \label{ex:Crucial}
+\end{FormulaExample}
+\end{verbatim}
+
+\begin{FormulaExample}{Crucial Example}
+; Note: Some code is omitted from this example
+: q :- F(x), x > 10.
+: //// This code comment gets numbered.
+# \label{ex:Crucial}
+\end{FormulaExample}
+
+\subsubsection{Labeling Examples}
+Each \texttt{FormulaExample} environment receives its own number, and this can be used to attach labels to each example. Simply add a suffix line:
+\begin{verbatim}
+# \label{myExampleLabel}
+\end{verbatim}
+Putting the  \texttt{{\textbackslash}label} command in a suffix line allows LaTeX to capture the current value of the example counter. Reference this label as usual:
+\begin{verbatim}
+\ref{myExampleLabel}
+\end{verbatim}
+Example \ref{ex:Crucial} uses this mechanism to create a label called \texttt{ex:Crucial}, which is referenced in this sentence.
+
+\section{Cached Compilation}
+Occasionally another person (or machine) must rebuild your LaTeX document without using the FormulaToTex engine. (For instance, some publishers have to recompile your document without installing additional software.) This feature is supported by caching the rendered code environments to auxiliary files, which can then be loaded in place of calling FormulaToTex. Of course, if the contents of a code environment are modified, then the cache must be regenerated using FormulaToTex.
+
+\subsection{Generating a Cache} To enable cache generation add the \texttt{{\textbackslash}CacheFormulaToTex} after the beginning of the document:
+\begin{verbatim}
+\begin{document}
+\CacheFormulaToTex
+\end{verbatim}
+and then rebuild the document to build the cache. You will observe a number of auxiliary TeX files being generated. These are the results of rendering code environments and do not have any dependency on FormulaToTex.
+
+\subsection{Stopping Cache Generation} To disable cache generation remove the \texttt{{\textbackslash}CacheFormulaToTex} command and \textbf{manually delete the file} \texttt{index.4mllay}. The later manual step is important, otherwise FormulaToTex has no way to detect that cache generate has been disabled. Also, removing the \texttt{{\textbackslash}CacheFormulaToTex} without deleting \texttt{index.4mllay} may cause the cache to become polluted with 
+redundant copies of rendered environments.  
+
+\subsection{Compiling from a Cache} Once a cache has been generated, your document can be compiled without FormulaToTex.  This is accomplished by adding the \texttt{cached} option when importing \texttt{FormulaLangInt}:
+\begin{verbatim}
+\usepackage[cached,sig-alt]{FormulaLangInt}
+\end{verbatim}
+When the package is imported with the \texttt{cached} option, then rendering of code environments occurs by loading files from the cache. Send this version of your document along with all generated TeX files, and \texttt{FormulaLangInt.sty} to allow others to compile your document without installing \frm. Remember to remove this option whenever you want to regenerate the cache.
+
+\end{document}

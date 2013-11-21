@@ -1,0 +1,264 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{FormulaLangInt}[2013/11/19 FORMULA Language Integration]
+\RequirePackage{fancyvrb}
+\RequirePackage{hyperref}
+\RequirePackage{xcolor}
+\newcommand{\FormulaToTexTargetSigAlt}{0}
+\newcommand{\FormulaToTexTargetLNCS}{1}
+\newcommand{\FormulaToTexTarget}{\FormulaToTexTargetSigAlt}
+
+\newif\if@UseFormulaToTexCache\@UseFormulaToTexCachefalse
+\DeclareOption{cached}{
+   \@UseFormulaToTexCachetrue
+}
+
+\DeclareOption{sig-alt}{
+	\renewcommand{\FormulaToTexTarget}{\FormulaToTexTargetSigAlt}
+}
+
+\DeclareOption{lncs}{
+	\renewcommand{\FormulaToTexTarget}{\FormulaToTexTargetLNCS}
+}
+
+\ExecuteOptions{sig-alt}
+\ProcessOptions\relax
+
+% ----------------------------------------------------------------------
+% BEGIN Definitions shared by all output modes
+% ----------------------------------------------------------------------
+
+\def\FormulaToTexPath{FormulaToTex.exe}
+\def\FormulaToTexPathPadded{"\FormulaToTexPath" }
+\newcommand{\SetFormulaToTexPath}[1]{\def\FormulaToTexPath{#1}}
+
+\definecolor{formula-background-gray}{gray}{0.95}
+\definecolor{formula-comment}{HTML}{339933}
+\definecolor{formula-keyword}{HTML}{0000FF}
+
+\newcounter{FormulaExample}
+
+% ----------------------------------------------------------------------
+% END Definitions shared by all output modes
+% ----------------------------------------------------------------------
+
+\if \FormulaToTexTarget \FormulaToTexTargetSigAlt
+% ----------------------------------------------------------------------
+% BEGIN settings for ACM-SIG-Alt
+% ----------------------------------------------------------------------
+\renewcommand{\textquotedbl}{\texttt{"}}
+\newcommand{\textquotesingle}{'} 
+\newcommand{\codewidthper}{0.46}
+
+\if@UseFormulaToTexCache
+% ----------------------------------------------------------------------
+% Configuration for ACM-SIG-Alt cached
+% ----------------------------------------------------------------------
+\newcommand{\CacheFormulaToTex}{}
+\newcounter{FormulaCacheCounter}
+\newsavebox\FormulaExampleTitle
+\newcommand{\InputFormulaCodeCache}[1]{\input{formula2tex#1.tex}}
+\newcommand{\InputFormulaSuffixCache}[1]{\input{formula2tex_suffix#1.tex}}
+
+\newenvironment{FormulaSnippet}
+  {\VerbatimOut{formula2tex.4ml}}
+  {\endVerbatimOut 
+  \stepcounter{FormulaCacheCounter}
+  \begin{center}
+  \fcolorbox{black}{formula-background-gray}{\begin{minipage}{\codewidthper\textwidth}
+  \begin{center}\smallskip\InputFormulaCodeCache{\arabic{FormulaCacheCounter}}\end{center}
+  \end{minipage}}
+  \end{center}
+}
+ 
+\newenvironment{FormulaExample}[1]
+{
+  \refstepcounter{FormulaExample}
+  \savebox\FormulaExampleTitle{{\large \color{white}{\textsf{Example \theFormulaExample~(#1).}}}}
+  \VerbatimOut{formula2tex.4ml}}{\endVerbatimOut 
+  \stepcounter{FormulaCacheCounter}  
+  \begin{flushleft}
+  \offinterlineskip
+  \fcolorbox{black}{black}{
+  \begin{minipage}{\codewidthper\textwidth}
+  \usebox\FormulaExampleTitle
+  \end{minipage}}
+  \InputFormulaCodeCache{\arabic{FormulaCacheCounter}}
+  \end{flushleft}    
+  \InputFormulaSuffixCache{\arabic{FormulaCacheCounter}}
+}
+
+\newenvironment{FormulaCode}
+{
+  \VerbatimOut{formula2tex.4ml}}{\endVerbatimOut 
+  \stepcounter{FormulaCacheCounter}  
+  \begin{flushleft}
+  \offinterlineskip
+  \InputFormulaCodeCache{\arabic{FormulaCacheCounter}}
+  \end{flushleft}    
+  \InputFormulaSuffixCache{\arabic{FormulaCacheCounter}}
+}
+
+\else
+% ----------------------------------------------------------------------
+% Configuration for ACM-SIG-Alt
+% ----------------------------------------------------------------------
+\newcommand{\CacheFormulaToTex}{\immediate\write18{\FormulaToTexPathPadded -initindex formula2tex.4ml}}
+
+\newenvironment{FormulaSnippet}
+  {\VerbatimOut{formula2tex.4ml}}
+  {\endVerbatimOut 
+  \immediate\write18{\FormulaToTexPathPadded -snippet formula2tex.4ml}  
+  \begin{center}
+  \fcolorbox{black}{formula-background-gray}{\begin{minipage}{\codewidthper\textwidth}
+  \begin{center}\smallskip\input{formula2tex.tex}\end{center}
+  \end{minipage}}
+  \end{center}
+}
+ 
+\newsavebox\FormulaExampleTitle
+
+\newenvironment{FormulaExample}[1]
+{
+  \refstepcounter{FormulaExample}
+  \savebox\FormulaExampleTitle{{\large \color{white}{\textsf{Example \theFormulaExample~(#1).}}}}
+  \VerbatimOut{formula2tex.4ml}}{\endVerbatimOut 
+  \immediate\write18{\FormulaToTexPathPadded -code formula2tex.4ml}  
+  \begin{flushleft}
+  \offinterlineskip
+  \fcolorbox{black}{black}{
+  \begin{minipage}{\codewidthper\textwidth}
+  \usebox\FormulaExampleTitle
+  \end{minipage}}
+  \input{formula2tex.tex}
+  \end{flushleft}    
+  \input{formula2tex_suffix.tex}
+}
+
+\newenvironment{FormulaCode}
+{
+  \VerbatimOut{formula2tex.4ml}}{\endVerbatimOut 
+  \immediate\write18{\FormulaToTexPathPadded -code formula2tex.4ml}  
+  \begin{flushleft}
+  \offinterlineskip
+  \input{formula2tex.tex}
+  \end{flushleft}    
+  \input{formula2tex_suffix.tex}
+}
+
+\fi
+% ----------------------------------------------------------------------
+% END settings for ACM-SIG-Alt
+% ----------------------------------------------------------------------
+\fi
+
+\if \FormulaToTexTarget \FormulaToTexTargetLNCS
+% ----------------------------------------------------------------------
+% BEGIN settings for LNCS
+% ----------------------------------------------------------------------
+\renewcommand{\textquotedbl}{\texttt{"}}
+\newcommand{\textquotesingle}{\texttt{\char"0D}} 
+\newcommand{\codewidthper}{0.97}
+
+\if@UseFormulaToTexCache
+% ----------------------------------------------------------------------
+% Configuration for LNCS cached
+% ----------------------------------------------------------------------
+\newcommand{\CacheFormulaToTex}{}
+\newcounter{FormulaCacheCounter}
+\newsavebox\FormulaExampleTitle
+\newcommand{\InputFormulaCodeCache}[1]{\input{formula2tex#1.tex}}
+\newcommand{\InputFormulaSuffixCache}[1]{\input{formula2tex_suffix#1.tex}}
+
+\newenvironment{FormulaSnippet}
+  {\VerbatimOut{formula2tex.4ml}}
+  {\endVerbatimOut 
+  \stepcounter{FormulaCacheCounter}
+  \begin{center}
+  \fcolorbox{black}{formula-background-gray}{\begin{minipage}{\codewidthper\textwidth}
+  \begin{center}\smallskip\InputFormulaCodeCache{\arabic{FormulaCacheCounter}}\end{center}
+  \end{minipage}}
+  \end{center}
+}
+ 
+\newenvironment{FormulaExample}[1]
+{
+  \refstepcounter{FormulaExample}
+  \savebox\FormulaExampleTitle{{\Large \color{white}{\textsf{Example \theFormulaExample~(#1).}}}}
+  \VerbatimOut{formula2tex.4ml}}{\endVerbatimOut 
+  \stepcounter{FormulaCacheCounter}  
+  \begin{flushleft}
+  \offinterlineskip
+  \fcolorbox{black}{black}{
+  \begin{minipage}{\codewidthper\textwidth}
+  \usebox\FormulaExampleTitle
+  \end{minipage}}
+  \InputFormulaCodeCache{\arabic{FormulaCacheCounter}}
+  \end{flushleft}    
+  \InputFormulaSuffixCache{\arabic{FormulaCacheCounter}}
+}
+
+\newenvironment{FormulaCode}
+{
+  \VerbatimOut{formula2tex.4ml}}{\endVerbatimOut 
+  \stepcounter{FormulaCacheCounter}  
+  \begin{flushleft}
+  \offinterlineskip
+  \InputFormulaCodeCache{\arabic{FormulaCacheCounter}}
+  \end{flushleft}    
+  \InputFormulaSuffixCache{\arabic{FormulaCacheCounter}}
+}
+
+\else
+% ----------------------------------------------------------------------
+% Configuration for LNCS
+% ----------------------------------------------------------------------
+\newcommand{\CacheFormulaToTex}{\immediate\write18{\FormulaToTexPathPadded -initindex formula2tex.4ml}}
+
+\newenvironment{FormulaSnippet}
+  {\VerbatimOut{formula2tex.4ml}}
+  {\endVerbatimOut 
+  \immediate\write18{\FormulaToTexPathPadded -snippet formula2tex.4ml}  
+  \begin{center}
+  \fcolorbox{black}{formula-background-gray}{\begin{minipage}{\codewidthper\textwidth}
+  \begin{center}\smallskip\input{formula2tex.tex}\end{center}
+  \end{minipage}}
+  \end{center}
+}
+ 
+\newsavebox\FormulaExampleTitle
+
+\newenvironment{FormulaExample}[1]
+{
+  \refstepcounter{FormulaExample}
+  \savebox\FormulaExampleTitle{{\Large \color{white}{\textsf{Example \theFormulaExample~(#1).}}}}
+  \VerbatimOut{formula2tex.4ml}}{\endVerbatimOut 
+  \immediate\write18{\FormulaToTexPathPadded -code formula2tex.4ml}  
+  \begin{flushleft}
+  \offinterlineskip
+  \fcolorbox{black}{black}{
+  \begin{minipage}{\codewidthper\textwidth}
+  \usebox\FormulaExampleTitle
+  \end{minipage}}
+  \input{formula2tex.tex}
+  \end{flushleft}    
+  \input{formula2tex_suffix.tex}
+}
+
+\newenvironment{FormulaCode}
+{
+  \VerbatimOut{formula2tex.4ml}}{\endVerbatimOut 
+  \immediate\write18{\FormulaToTexPathPadded -code formula2tex.4ml}  
+  \begin{flushleft}
+  \offinterlineskip
+  \input{formula2tex.tex}
+  \end{flushleft}    
+  \input{formula2tex_suffix.tex}
+}
+
+\fi
+% ----------------------------------------------------------------------
+% END settings for LNCS
+% ----------------------------------------------------------------------
+\fi
+
+\endinput

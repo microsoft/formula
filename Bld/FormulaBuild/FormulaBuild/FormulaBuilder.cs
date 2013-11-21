@@ -18,6 +18,7 @@
         private const string ConfigRelease = "Release";
         private const string PlatformX86 = "x86";
         private const string PlatformX64 = "x64";
+        private const string PlatformAny = "AnyCPU";
         private const string CodeGeneratorDebug = "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGenerator\\bin\\x86\\Debug\\FormulaCodeGenerator.vsix";
         private const string CodeGeneratorRelease = "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGenerator\\bin\\x86\\Release\\FormulaCodeGenerator.vsix";
 
@@ -32,7 +33,8 @@
             new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\CommandLine\\CommandLine.csproj", PlatformX86),
             new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\CommandLine\\CommandLinex64.csproj", PlatformX64),
             new Tuple<bool, string, string>(true, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGenerator\\FormulaCodeGenerator.csproj", PlatformX86),
-            new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTask.csproj", PlatformX86)        
+            new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTask.csproj", PlatformX86),    
+            new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\FormulaToTex.csproj", PlatformAny)
         };
 
         private static readonly Tuple<string, string>[] DebugMoveMap = new Tuple<string, string>[]
@@ -62,6 +64,9 @@
                 "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\libz3.dll", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\libz3.dll"),
             new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\bin\\Debug\\FormulaToTex.exe", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\FormulaToTex.exe"),
+            new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\CommandLine.exe", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Formula.exe"),
             new Tuple<string, string>(
@@ -85,6 +90,9 @@
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\libz3.dll", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\libz3.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\bin\\Debug\\FormulaToTex.exe", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\FormulaToTex.exe")
         };
 
         private static readonly Tuple<string, string>[] ReleaseMoveMap = new Tuple<string, string>[]
@@ -114,6 +122,9 @@
                 "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\libz3.dll", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x86\\libz3.dll"),
             new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\bin\\Release\\FormulaToTex.exe", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\FormulaToTex.exe"),
+            new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\CommandLine.exe", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Formula.exe"),
             new Tuple<string, string>(
@@ -137,6 +148,9 @@
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\libz3.dll", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x64\\libz3.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\bin\\Release\\FormulaToTex.exe", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\FormulaToTex.exe")
         };
 
         public static bool Build(bool isBldDebug)

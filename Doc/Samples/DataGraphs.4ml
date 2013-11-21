@@ -1,0 +1,88 @@
+domain Digraphs
+{
+   V ::= fun (lbl: Integer -> dat: Integer).
+   E ::= new (src: V, dst: V).
+}
+
+domain DAGs extends Digraphs
+{
+   path ::= (V, V).
+   path(u, w) :- E(u, w); E(u, v), path(v, w).  
+   conforms no path(u, u).
+}
+
+domain Trees extends DAGs
+{
+   conforms no { w | E(u, w), E(v, w), u != v }.
+}
+
+domain AlgTrees
+{
+    Node ::= new (dat: Integer, left: any Node + { NIL }, right: any Node + { NIL }).
+    Tree ::= new (any Node).
+    conforms count({ t | t is Tree}) <= 1.
+}
+
+transform AlgToRelTree (tree:: AlgTrees) returns (graph:: Trees)
+{
+   Path     ::= ({ LEFT, RIGHT }, Path + { NIL }).
+   PathData ::= (path: Path + { NIL }, node: Node, id: Integer).
+   IdMax    ::= (path: Path + { NIL }, id: Integer).
+   
+   PathData(NIL, n, 0) :- Tree(n).   
+   PathData(Path(LEFT, p),  n, i')  :- PathData(p, Node(_, n, _), i), i' = i + 1, n : Node.
+   PathData(Path(RIGHT, p), n, i')  :- PathData(p, Node(_, NIL, n), i), i' = i + 1, n : Node;
+                                       PathData(p, Node(_, m, n), _), IdMax(Path(LEFT, p), i), i' = i + 1, n : Node.
+                                         
+   IdMax(pd.path, pd.id) :- pd is PathData, pd.node = Node(_, NIL, NIL).  
+   IdMax(pd.path, i)     :- pd is PathData, pd.node = Node(_, n, NIL), IdMax(Path(LEFT, pd.path), i);
+                            pd is PathData, pd.node = Node(_, _, n), IdMax(Path(RIGHT, pd.path), i).       
+                            
+   V(id, n.dat) :- PathData(_, n, id).
+   
+   E(V(pid, prnt.dat), V(cid, chld.dat)) :- PathData(p, chld,  cid), PathData(p', prnt, pid), p = Path(_, p').
+}
+
+transform RelToAlgTree (graph:: Trees) returns (tree:: AlgTrees)
+{
+   Root ::= (V).
+   Root(x) :- x is V, no E(_, x).
+
+   OneChild ::= (V, V).                                    
+   OneChild(x, y) :- E(x, y), no { y' | E(x, y'), y != y' }.                                 
+   
+   TwoChild ::= (V, V, V).
+   Pair ::= (Integer, Integer).
+   TwoChild(x, y, y') :- E(x, y), E(x, y'), Pair(y.dat, y.lbl) < Pair(y'.dat, y'.lbl).                                 
+   
+   Subtree ::= (V, Node).
+   Subtree(x, Node(x.dat, NIL, NIL)) :- x is V, no E(x, _).
+   Subtree(x, Node(x.dat, n, NIL)) :- OneChild(x, y), Subtree(y, n).
+   Subtree(x, Node(x.dat, n, n')) :- TwoChild(x, y, y'), Subtree(y, n), Subtree(y', n').
+   
+   Node(lbl, lft, rt) :- Subtree(_, n), n = Node(lbl, lft, rt).
+   Tree(n)            :- Root(x), Subtree(x, n).
+}
+
+model Small of AlgTrees
+{
+    sub1 is Node(3,     Node(1, NIL, NIL), Node(2, NIL, NIL)).  
+    sub2 is Node(7,     sub1, sub1).
+    Tree(sub2).
+}
+
+model Big of AlgTrees
+{
+    sub1 is Node(3,     Node(1, NIL, NIL), Node(2, NIL, NIL)).  
+    sub2 is Node(7,     sub1, sub1).
+    sub3 is Node(15,    sub2, sub2).
+    sub4 is Node(31,    sub3, sub3).
+    sub5 is Node(63,    sub4, sub4).
+    sub6 is Node(127,   sub5, sub5).
+    sub7 is Node(255,   sub6, sub6).
+    sub8 is Node(511,   sub7, sub7).
+    sub9 is Node(1023,  sub8, sub8).
+    sub10 is Node(2047, sub9, sub9).
+            
+    Tree(sub10).
+}

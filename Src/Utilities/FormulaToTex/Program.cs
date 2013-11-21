@@ -64,9 +64,16 @@
 
         static void Main(string[] args)
         {
+            if (args.Length == 0)
+            {
+                PrintUsage();
+                return;
+            }
+
             if (args.Length != 2)
             {
-                Console.WriteLine("FormulaToTex: ERROR - expected an input file");
+                Console.WriteLine("FormulaToTex: ERROR - bad arguments");
+                PrintUsage();
                 Environment.ExitCode = 1;
                 return;
             }
@@ -184,6 +191,30 @@
                 num = 0;
                 return false;
             }
+        }
+
+        private static void PrintUsage()
+        {
+            Console.WriteLine(
+                "USAGE: FormulaToTex.exe [{0} | {1} | {2}] file.tex",
+                OptionSnippet,
+                OptionCode,
+                OptionInitIndex);
+
+            var optlen = Math.Max(OptionSnippet.Length, Math.Max(OptionCode.Length, OptionInitIndex.Length));
+            Console.WriteLine(
+                "{0}{1}: Render contents of a FormulaSnippet environment.",
+                OptionSnippet,
+                new string(' ', optlen - OptionSnippet.Length + 1));
+            Console.WriteLine(
+                "{0}{1}: Render contents of a FormulaCode or FormulaExample environment.",
+                OptionCode,
+                new string(' ', optlen - OptionCode.Length + 1));
+            Console.WriteLine(
+                "{0}{1}: Initialize {2} file for caching of rendered output.",
+                OptionInitIndex,
+                new string(' ', optlen - OptionInitIndex.Length + 1),
+                FrmIndexFile);
         }
 
         private static void MkIndexFile(string inputFile)

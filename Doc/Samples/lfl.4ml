@@ -1,0 +1,128 @@
+﻿domain Lfl
+{
+    Var  ::= new (name: String).
+    Val  ::= new (val: Real).
+    Add  ::= new (arg1: any Expr, arg2: any Expr).
+    Let  ::= new (var: any Var, init: any Expr, in: any Expr).
+    Expr ::= Var + Val + Add + Let.
+    
+    //// Records the occurrences of subexpressions under let experessions. 
+    //// For example SubExpr(e, p, LEFT, l) means e is the left subexpression of p.
+    //// And l is the deepest let Subexpr in which e occurs.
+    
+    Subexpr ::= (expr: Expr, 
+                 parent: Subexpr + { NIL }, 
+                 loc: { LEFT, RIGHT, NIL }, 
+                 let: Subexpr + { NIL }). 
+                 
+    Subexpr(e, p, l, t) :- 
+            e is Expr, p = NIL, l = NIL, t = NIL;
+            p is Subexpr, e = p.expr.arg1, l = LEFT,  t = p.let;
+            p is Subexpr, e = p.expr.arg2, l = RIGHT, t = p.let;
+            p is Subexpr, e = p.expr.init, l = LEFT,  t = p.let;
+            p is Subexpr, e = p.expr.in,   l = RIGHT, t = p.                                                                 
+                        
+    //// Bindings map variables to values in the scope of a let expression.
+    //// Initially every variable is mapped to ERROR.
+    
+    Binding ::= (var: Var, scope: Subexpr + { NIL }, val: Real + { ERROR }).
+    
+    Binding(v, NIL, ERROR) :- 
+                  s is Subexpr, v = s.expr, v : Var.
+    
+    Binding(var, s, v) :- 
+                  s is Subexpr,
+                  s.expr = Let(var, init, _),
+                  Eval(init, s.let, v);
+                  
+                  s is Subexpr,
+                  s.expr = Let(intro, _, _),
+                  Binding(var, s.let, v),
+                  var != intro.
+                                                       
+    //// Evaluate an expression in a scope.
+    
+    Eval ::= (expr: Expr, scope: Subexpr + { NIL }, val: Real + { ERROR }).
+    
+    Eval(s.expr, s.let, v) :- 
+                  s is Subexpr(Val(v), _, _, _).
+                  
+    Eval(s.expr, s.let, v) :- 
+                  s is Subexpr, Binding(s.expr, s.let, v).
+                  
+    Eval(s.expr, s.let, v) :- 
+                  s is Subexpr, s.expr = Let(_, _, in), Eval(in, s, v).
+                                    
+    Eval(s.expr, s.let, v) :- 
+                  s is Subexpr, 
+                  s.expr = Add(e1, _),    
+                  Eval(e1, s.let, ERROR), 
+                  v = ERROR;    
+                  
+                  s is Subexpr, 
+                  s.expr = Add(_, e2),    
+                  Eval(e2, s.let, ERROR), 
+                  v = ERROR;    
+    
+                  s is Subexpr, 
+                  s.expr = Add(e1, e2),    
+                  Eval(e1, s.let, v1), 
+                  Eval(e2, s.let, v2),
+                  v = v1 + v2.                      
+                  
+   conforms no { e | e is Expr, Eval(e, NIL, ERROR) }.
+   conforms no { e, e' | e is Expr, e' is Expr, e != e' }.                  
+}
+
+//// Evaluates to ERROR because var y is not defined
+model Prog1 of Lfl
+{
+   Let(
+      Var("x"), 
+      Val(3), 
+      Add(Var("x"), Var("y"))).
+}
+
+//// Evaluates to 9
+model Prog2 of Lfl
+{
+   Let(Var("x"), 
+       Val(3), 
+       Let(
+          Var("y"), 
+          Add(Var("x"), Var("x")),
+          Add(Var("x"), Var("y")))).
+}
+
+//// Evaluates to 10
+model Prog3 of Lfl
+{
+   Let(
+     Var("x"), 
+     Let(Var("x"),
+         Val(3),
+         Add(Val(2), Var("x"))),
+     Add(Var("x"), Var("x"))).
+}
+
+//// Evaluates to 10
+model Prog4 of Lfl
+{
+   Let(
+     Var("x"), 
+     Let(Var("y"),
+         Val(3),
+         Add(Val(2), Var("y"))),
+     Add(Var("x"), Var("x"))).
+}
+
+//// Evaluates to ERROR because var y is used outside of its scope.
+model Prog5 of Lfl
+{
+   Let(
+     Var("x"), 
+     Let(Var("y"),
+         Val(3),
+         Add(Val(2), Var("y"))),
+     Add(Var("x"), Var("y"))).
+}

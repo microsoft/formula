@@ -1,0 +1,79 @@
+domain Ldp
+{
+    Service  ::= new (name: String).
+    Node     ::= new (id: Natural).
+    Conflict ::= new (s1: Service, s2: Service).
+    Deploy   ::= fun (s: Service => n: Node).
+    
+    problem :- Deploy(s, n), Deploy(s', n), Conflict(s, s').    
+    conforms no problem. 
+}
+
+partial model P of Ldp
+{
+  requires atleast 3 Service.
+  requires atleast 4 Node.
+  requires atleast 3 Conflict.
+}
+
+partial model Serv of Ldp
+{
+   sA is Service("A"),
+   sB is Service("B"),
+   sC is Service("C"),
+
+
+   n1 is Node(1),
+   n2 is Node(2),
+   
+   Conflict(sA, sB),
+   Conflict(sB, sC).
+}
+
+
+partial model P' of Ldp
+{
+   Service(s1),
+   Service(s2),
+
+   Node(n1),
+   Node(n2),
+   
+   Conflict(e1, e1),
+   Deploy(d1, d2),
+   Deploy(d3, d4).
+}
+
+model M1 of Ldp
+{
+   sHBI is Service("HBI Data"),
+   sWeb is Service("Web Server"),
+   sVoice is Service("Voice Recog.").
+
+   Conflict(sHBI, sWeb),
+   Conflict(sWeb, sVoice).
+   
+   n0 is Node(0),
+   n1 is Node(1).
+   
+   Deploy(sHBI, n0).
+   Deploy(sWeb, n0).
+   Deploy(sVoice, n1).
+}
+
+model M2 of Ldp
+{
+   sHBI is Service("HBI Data"),
+   sWeb is Service("Web Server"),
+   sVoice is Service("Voice Recog.").
+
+   Conflict(sHBI, sWeb),
+   Conflict(sWeb, sVoice).
+   
+   n0 is Node(0),
+   n1 is Node(1).
+   
+   Deploy(sHBI, n1).
+   Deploy(sWeb, n0).
+   Deploy(sVoice, n1).
+}

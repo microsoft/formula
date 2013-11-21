@@ -1,0 +1,150 @@
+domain DFA
+{
+   State ::= new (label: Integer).
+   Event ::= new (label: String).
+   Trans ::= fun (src: State, trig: Event -> dst: State).
+   Init  ::= new (st: State).   
+   conforms count({ s | Init(s)}) = 1.
+}
+
+domain ProdDFA includes Left:: DFA, Right:: DFA
+{
+   State ::= new (left: Left.State, right: Right.State).
+   Event ::= new (label: String).
+   Trans ::= fun (src: State, trig: Event -> dst: State).
+   Init  ::= new (st: State).
+   
+   Frame ::= State + Event + Trans + Init.    
+
+   conforms count({ s | Init(s)}) = 1.   
+   
+   reach ::= (State).
+   reach(s) :- Init(s).
+   reach(s') :- reach(s), Trans(s,_,s').
+   
+   notReach ::= (State).
+   notReach(s) :- s is State, no reach(s).
+}
+
+transform MkProd (In1:: DFA, In2:: DFA) returns (Out:: ProdDFA)
+{
+   Out.State(s, t)        :- s is In1.State, t is In2.State.
+   Out.Init(State(s, t))  :- In1.Init(s), In2.Init(t).
+   Out.Event(lbl)  :- In1.Event(lbl); In2.Event(lbl).
+   Out.Trans(State(s, t), e, State(s', t))  :- In1.Trans(s, e, s'), t is In2.State, no { t' | In2.Trans(t, Event(e.label), t') }.
+   Out.Trans(State(s, t), e, State(s, t'))  :- In2.Trans(t, e, t'), s is In1.State, no { s' | In1.Trans(s, Event(e.label), s') }.
+   Out.Trans(State(s, t), e, State(s', t')) :- In1.Trans(s, e, s'), In2.Trans(t, f, t'), e.label = f.label. 
+}
+
+transform MkAsyncProd (In1:: DFA, In2:: DFA) returns (Out:: ProdDFA)
+{
+   requires In1.conforms, In2.conforms.
+   ensures Out.conforms.
+   
+   Out.State(s, t)        :- s is In1.State, t is In2.State.
+   Out.Init(State(s, t))  :- In1.Init(s), In2.Init(t).
+   Out.Event(lbl)  :- In1.Event(lbl); In2.Event(lbl).
+   Out.Trans(State(s, t), e, State(s', t))  :- In1.Trans(s, e, s'), t is In2.State.
+   Out.Trans(State(s, t), e, State(s, t'))  :- In2.Trans(t, e, t'), s is In1.State.
+  
+   //// For testing purposes:
+   Frame1 ::= In1.State + In1.Event + In1.Trans + In1.Init.
+   Frame2 ::= In2.State + In2.Event + In2.Trans + In2.Init.
+   Out.Left._(x) :- x is Frame1.
+   Out.Right._(x) :- x is Frame2.   
+}
+
+domain Run extends ProdDFA
+{
+   History ::= new (crnt: State, prev: any History + { NIL }).
+}
+
+transform Init (In:: ProdDFA) returns (Out:: Run)
+{
+   Eq ::= (In.Frame, Out.Frame).
+   Eq(f, f) :- f is In.Frame.
+   _(f)     :- Eq(_, f).
+      
+   Out.History(s, NIL) :- In.Init(s).
+}
+
+transform Step (In:: Run, ev: In.Event) returns (Out:: Run)
+{
+   Eq ::= (In.Frame, Out.Frame).
+   Eq(f, f) :- f is In.Frame.
+   _(f)     :- Eq(_, f).
+   
+   Out.History(s, h) :- h is In.History, In.Trans(h.crnt, %ev, s).
+   Out._(h) :- h is In.History, no { s | In.Trans(h.crnt, %ev, s) }.
+}
+
+transform system DoubleAndInit (dfa:: DFA)
+returns (run:: Run)
+{
+    p   = MkProd(dfa, dfa).
+    run = Init(p).
+}
+
+transform system DoubleAndInitA1 ()
+returns (run:: Run)
+{
+    a   = A1().
+    p   = MkProd(a, a).
+    run = Init(p).
+}
+
+transform system Trace () returns (final:: Run)
+{
+    a1    = A1().
+    a2    = A2().
+    p     = MkProd(a1, a2).
+    s0    = Init(p).
+    s1    = Step(s0, In.Event("e")).
+    s2    = Step(s1, In.Event("g")).
+    s3    = Step(s2, In.Event("e")).
+    s4    = Step(s3, In.Event("f")).
+    final = Step(s4, In.Event("g")).
+}
+
+transform system ProdAndInit(in1:: DFA, in2:: DFA)
+returns (out:: Run)
+{
+   p = MkProd(in1, in2).
+   out = Init(p).
+}
+
+machine RunDFAs(in1:: DFA, in2:: DFA) of Run
+{
+   initially 
+        state = ProdAndInit(in1, in2).
+        
+   next 
+        state = Step(state, _).
+}
+
+
+model A1 of DFA
+{
+   s1 is State(1). 
+   s2 is State(2).
+   
+   evE is Event("e").    
+   evF is Event("f").
+   Init(s1).
+   
+   Trans(s1, evE, s2).
+   Trans(s2, evF, s1).
+}
+
+model A2 of DFA
+{
+   s1 is State(1). 
+   s2 is State(2).
+   
+   evE is Event("e").    
+   evG is Event("g").
+   Init(s1).
+   
+   Trans(s1, evE, s2).
+   Trans(s2, evG, s1).
+}

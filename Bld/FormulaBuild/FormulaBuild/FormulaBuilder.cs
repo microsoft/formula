@@ -34,6 +34,7 @@
             new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\CommandLine\\CommandLinex64.csproj", PlatformX64),
             new Tuple<bool, string, string>(true, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGenerator\\FormulaCodeGenerator.csproj", PlatformX86),
             new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTask.csproj", PlatformX86),    
+            new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTaskx64.csproj", PlatformX64),    
             new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\FormulaToTex.csproj", PlatformAny)
         };
 

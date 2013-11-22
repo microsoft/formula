@@ -17,7 +17,7 @@
         public enum DependencyKind { Z3, GPPG, GPLEX };
         private const string ReferrerString = "http://{0}.codeplex.com/SourceControl/latest";
         private const string DownloadString = "http://download-codeplex.sec.s-msft.com/Download/SourceControlFileDownload.ashx?ProjectName={0}&changeSetId={1}";
-        private const string GardensPointBootString = "http://download-codeplex.sec.s-msft.com/Download/Release?ProjectName=gplex&DownloadId=721249&FileTime=130217769402930000&Build=20821";
+        private const string GardensPointBootString = "http://download-codeplex.sec.s-msft.com/Download/Release?ProjectName=gplex&DownloadId=721249&FileTime=130217769402930000&Build=20828";
         private const string GardensPointReferrerString = "http://gplex.codeplex.com/releases/view/108701";
         private const string GardensPointBootFile = "..\\..\\..\\..\\..\\Ext\\GPLEX\\boot_.zip";
         private const string GardensPointBootDir = "..\\..\\..\\..\\..\\Ext\\GPLEX\\boot_";

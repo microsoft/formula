@@ -12,7 +12,8 @@ You must acquire and install these yourself.
 1. Microsoft .NET 4.5 (http://www.microsoft.com/en-us/download/details.aspx?id=30653)
 2. Visual Studio 2012 - to build dependencies  (http://www.microsoft.com/en-us/download/details.aspx?id=30682)
 3. Visual Studio 2012 SDK - to build code generators ()
-4. Python 2.7.5 - to build dependencies (http://www.python.org/download/releases/2.7.5/)
+4a. Python 2.7.5 - to build dependencies (http://www.python.org/download/releases/2.7.5/)
+4b. "python" must be in PATH
 
 Codeplex Dependencies
 ----------------------------------------------------------
@@ -24,7 +25,7 @@ Or you may compile the dependencies manually and place them in the required loca
 3. Z3 SMT Solver (http://z3.codeplex.com/)
 
 To *automatically* download and compile any missing Codeplex dependencies open a command
-prompt:
+prompt (cmd.exe):
 
 cd Somewhere\Formula\Bld
 built.bat

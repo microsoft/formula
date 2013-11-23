@@ -11,7 +11,7 @@ You must acquire and install these yourself.
 
 1. Microsoft .NET 4.5 (http://www.microsoft.com/en-us/download/details.aspx?id=30653)
 2. Visual Studio 2012 - to build dependencies  (http://www.microsoft.com/en-us/download/details.aspx?id=30682)
-3. Visual Studio 2012 SDK - to build code generators ()
+3. Visual Studio 2012 SDK - to build code generators (http://www.microsoft.com/en-us/download/details.aspx?id=30668)
 4a. Python 2.7.5 - to build dependencies (http://www.python.org/download/releases/2.7.5/)
 4b. "python" must be in PATH
 

@@ -24,6 +24,7 @@
         private int limitSetting;
         private int solsPerIncSetting;
         private Set<UserSymbol> dofsSetting = new Set<UserSymbol>(Symbol.Compare);
+        private ISolver solver;
 
         /// <summary>
         /// Return a shared instance for internally creating OAT strategies
@@ -57,12 +58,6 @@
             private set;
         }
 
-        public Dictionary<UserSymbol, Tuple<CardRange, uint>> InitialDOFs
-        {
-            get;
-            private set;
-        }
-
         public IEnumerable<Tuple<string, CnstKind>> SuggestedSettings
         {
             get
@@ -85,25 +80,21 @@
             return inst;
         }
 
-        public ISearchStrategy Begin(
-            Configuration config,
-            SymbolTable table,
-            Dictionary<UserSymbol, Tuple<CardRange, uint>> initialDOFs,
-            out List<Flag> flags)
+        public ISearchStrategy Begin(ISolver solver, out List<Flag> flags)
         {
             var inst = new OATStrategy();
+            inst.solver = solver;
             inst.Module = Module;
             inst.CollectionName = CollectionName;
             inst.InstanceName = InstanceName;
-            inst.Table = table;
-            inst.InitialDOFs = initialDOFs;
+            inst.Table = solver.SymbolTable;
 
             flags = new List<Flag>();
             Cnst cnstVal;
             string dofsStringSetting = null;
-            if (!inst.TryGetNaturalSetting(LimitSettingName, config, flags, 8, ref inst.limitSetting, out cnstVal) |
-                !inst.TryGetNaturalSetting(SolsPerIncSettingName, config, flags, 1, ref inst.solsPerIncSetting, out cnstVal) |
-                !inst.TryGetStringSetting(DOFsSettingName, config, flags, null, ref dofsStringSetting, out cnstVal))
+            if (!inst.TryGetNaturalSetting(LimitSettingName, solver.Configuration, flags, 8, ref inst.limitSetting, out cnstVal) |
+                !inst.TryGetNaturalSetting(SolsPerIncSettingName, solver.Configuration, flags, 1, ref inst.solsPerIncSetting, out cnstVal) |
+                !inst.TryGetStringSetting(DOFsSettingName, solver.Configuration, flags, null, ref dofsStringSetting, out cnstVal))
             {
                 return null;
             }
@@ -120,16 +111,13 @@
             else
             {
                 //// Every new-kind constructor can be a degree of freedom
-                AddDOFs(table.Root);
+                AddDOFs(solver.SymbolTable.Root);
             }
 
             return success ? inst : null;
         }
 
-        public IEnumerable<ISearchCommand> GetNextCmds(
-            Dictionary<UserSymbol, Cardinality> lastAddedDOfs, 
-            int nLastSolutions, 
-            Tuple<ISearchCommand[], int, UserSymbol> lastFailedCmd = null)
+        public IEnumerable<KeyValuePair<UserSymbol, int>> GetNextCmd()
         {
             throw new NotImplementedException();
         }

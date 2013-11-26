@@ -28,13 +28,29 @@
     using Z3Model = Microsoft.Z3.Model;
     using Z3RatNum = Microsoft.Z3.RatNum;
 
-    internal class Solver : IDisposable
+    internal class Solver : ISolver, IDisposable
     {
         private CancellationToken cancel;
         private bool disposed = false;
         private List<Flag> solverFlags = new List<Flag>();
 
-        public IEnumerable<Flag> Flags
+        public CardSystem Cardinalities
+        {
+            get;
+            private set;
+        }
+
+        public Configuration Configuration
+        {
+            get { return (Configuration)Source.Config.CompilerData; }
+        }
+
+        public SymbolTable SymbolTable
+        {
+            get { return PartialModel.Index.SymbolTable; }
+        }
+
+        internal IEnumerable<Flag> Flags
         {
             get { return solverFlags; }
         }
@@ -69,12 +85,6 @@
             set;
         }
 
-        private CardSystem CardSystem
-        {
-            get;
-            set;
-        }
-
         /// <summary>
         /// The search strategy. Can be null if goal decided as Unsat prior to
         /// instantiation, or if Strategy.Begin(...) failed.
@@ -85,7 +95,7 @@
             set;
         }
 
-        public Solver(FactSet partialModel, Model source, CancellationToken cancel)
+        internal Solver(FactSet partialModel, Model source, CancellationToken cancel)
         {
             Contract.Requires(partialModel != null);
             Contract.Requires(source != null);
@@ -101,19 +111,24 @@
             TypeEmbedder = new TypeEmbedder(partialModel.Index, Context);
 
             //// Step 3. Create cardinality system.
-            CardSystem = new CardSystem(partialModel);
+            Cardinalities = new CardSystem(partialModel);
 
             //// Step 4. Try to create the search strategy.
-            if (!CardSystem.IsUnsat)
+            if (!Cardinalities.IsUnsat)
             {
                Strategy = CreateStrategy(solverFlags);
             }
         }
 
+        public SearchState GetState(IEnumerable<KeyValuePair<UserSymbol, int>> dofs)
+        {
+            throw new NotImplementedException();
+        }
+
         /// <summary>
         /// Returns false is no more models can be enumerated.
         /// </summary>
-        public bool GetModel()
+        internal bool GetModel()
         {
             if (Strategy == null)
             {
@@ -144,7 +159,7 @@
         /// </summary>
         private ISearchStrategy CreateStrategy(List<Flag> flags)
         {
-            Contract.Requires(!CardSystem.IsUnsat);
+            Contract.Requires(!Cardinalities.IsUnsat);
 
             var conf = (Configuration)Source.Config.CompilerData;
             ISearchStrategy strategy;
@@ -160,7 +175,7 @@
             }
 
             List<Flag> beginFlags;
-            var inst = strategy.Begin(conf, PartialModel.Index.SymbolTable, CardSystem.GetInitialDOFs(), out beginFlags);
+            var inst = strategy.Begin(this, out beginFlags);
             if (beginFlags != null)
             {
                 flags.AddRange(beginFlags);

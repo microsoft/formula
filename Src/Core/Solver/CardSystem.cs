@@ -6,6 +6,7 @@
     using System.Numerics;
 
     using API;
+    using API.Nodes;
     using Compiler;
     using Common;
     using Common.Rules;
@@ -14,7 +15,12 @@
 
     using DependencyNode = Microsoft.Formula.Common.DependencyCollection<Microsoft.Formula.Common.Terms.UserSymbol, Microsoft.Formula.Common.Unit>.IDependencyNode;
 
-    internal class CardSystem
+    /// <summary>
+    /// THIS CLASS IS NOT THREAD SAFE. IT IS PRIVATE TO AN INSTANTIATED SEARCH STRATEGY.
+    /// 
+    /// Gives lower/upper-bounds on the l.f.p. of a partial model subject to additional cardinality constraints.
+    /// </summary>
+    public class CardSystem
     {
         /// <summary>
         /// Maps a con/map symbol to its nonLFP and LFP cardinality variables and a dependency node. 
@@ -22,6 +28,12 @@
         /// </summary>
         private Map<UserSymbol, Tuple<DependencyNode, CardVar, CardVar>> varMap =
             new Map<UserSymbol, Tuple<DependencyNode, CardVar, CardVar>>(Symbol.Compare);
+
+        /// <summary>
+        /// Collects all the "requires some" into a map
+        /// </summary>
+        private Map<UserSymbol, int> forcedDoFs = 
+            new Map<UserSymbol, int>(Symbol.Compare);  
 
         /// <summary>
         /// Maps a cardinality var to all the constraints where the variable occurs.
@@ -34,10 +46,12 @@
 
         private List<CardConstraint> constraints = new List<CardConstraint>();
 
-        public FactSet Facts
+        /// <summary>
+        /// The number of DoFs forced by "requires some"
+        /// </summary>
+        public IEnumerable<KeyValuePair<UserSymbol, int>> ForcedDoFs
         {
-            get;
-            private set;
+            get { return forcedDoFs; }
         }
 
         /// <summary>
@@ -50,13 +64,20 @@
             private set;
         }
 
-        public CardSystem(FactSet facts)
+        internal FactSet Facts
+        {
+            get;
+            private set;
+        }
+
+        internal CardSystem(FactSet facts)
         {
             Contract.Requires(facts != null);
             Facts = facts;
+            
 
             BuildTypeSystemConstraints();
-            BuildCardinalityRequires();
+            BuildCardinalityRequires(facts.Model.Node.Compositions, null);
             BuildPartialModelLowerBounds();
 
             solverState.Push(new Map<CardVar, MutableTuple<CardRange>>(CardVar.Compare));
@@ -70,114 +91,7 @@
             }
         }
 
-        /// <summary>
-        /// Returns the range and initial degrees of freedom in the partial model.
-        /// Initial dofs can be below the range, if the lower-bound was not met by manually
-        /// introduced facts.
-        /// </summary>
-        /// <returns></returns>
-        public Dictionary<UserSymbol, Tuple<CardRange, uint>> GetInitialDOFs()
-        {
-            Contract.Requires(!IsUnsat);
-            //// Should only be called after constructing to CardSystem
-            Contract.Assert(solverState.Count == 1);
-
-            UserSymbol us;            
-            var initDOFs = new Map<UserSymbol, MutableTuple<CardRange, uint>>(Symbol.Compare);
-            MutableTuple<CardRange, uint> t;
-            foreach (var f in Facts.Facts)
-            {
-                us = (UserSymbol)f.Symbol;
-                if (!initDOFs.TryFindValue(us, out t))
-                {
-                    initDOFs.Add(us, new MutableTuple<CardRange, uint>(CardRange.All, 1));
-                }
-                else
-                {
-                    ++t.Item2;
-                }
-            }
-
-            var state = solverState.Peek();
-            foreach (var kv in state)
-            {
-                if (!kv.Key.IsLFPCard)
-                {
-                    continue;
-                }
-
-                us = kv.Key.Symbol;
-                if (!initDOFs.TryFindValue(us, out t))
-                {
-                    initDOFs.Add(us, new MutableTuple<CardRange, uint>(kv.Value.Item1, 0));
-                }
-                else
-                {
-                    t.Item1 = kv.Value.Item1;
-                }
-            }
-
-            //// Copy dofs map to tuple dictionary
-            var tups = new Dictionary<UserSymbol, Tuple<CardRange, uint>>(initDOFs.Count);
-            foreach (var kv in initDOFs)
-            {
-                tups.Add(kv.Key, new Tuple<CardRange, uint>(kv.Value.Item1, kv.Value.Item2));
-            }
-
-            return tups;
-        }
-
-        /// <summary>
-        /// This is just a hack to work with old formula. Should be removed as new model finder is written.
-        /// </summary>
-        public Map<UserSymbol, int> TEMPORARY_GetIntroductions()
-        {
-            var intros = new Map<UserSymbol, int>(Symbol.Compare);
-            int i;
-            UserSymbol us;
-            foreach (var f in Facts.Facts)
-            {
-                us = (UserSymbol)f.Symbol;
-                if (!intros.TryFindValue(us, out i))
-                {
-                    intros.Add(us, 1);
-                }
-                else
-                {
-                    intros[us] = i + 1;
-                }
-            }
-
-            int lower;
-            var state = solverState.Peek();
-            foreach (var kv in state)
-            {               
-                if (!kv.Key.IsLFPCard)
-                {
-                    continue;
-                }
-
-                us = kv.Key.Symbol;
-                if (!intros.TryFindValue(us, out i))
-                {
-                    i = 0;
-                }
-
-                lower = (int)((BigInteger)kv.Value.Item1.Lower);
-                if (i >= lower)
-                {
-                    intros.Remove(us);
-                }
-                else
-                {
-                    intros[us] = lower - i;
-                }
-            }
-
-            return intros;
-        }
-
-        private void DebugPrintSolverState()
+        internal void DebugPrintSolverState()
         {
             foreach (var v in useLists.Keys)
             {
@@ -186,7 +100,7 @@
             }
         }
 
-        private void DebugPrintConstraints()
+        internal void DebugPrintConstraints()
         {
             foreach (var c in constraints)
             {
@@ -658,44 +572,63 @@
             }
         }
 
-        private void BuildCardinalityRequires()
+        private void BuildCardinalityRequires(ImmutableCollection<ModRef> models, Namespace space)
         {
-            bool isAtmost;
-            UserSymbol symb, other;
-            API.Nodes.CardPair cp;
-            CardCnst bound;
-            foreach (var c in Facts.Model.Node.Contracts)
+            foreach (var mr in models)
             {
-                if (c.ContractKind == ContractKind.RequiresAtLeast)
+                var m = (Model)((Location)mr.CompilerData).AST.Node;
+                if (!string.IsNullOrEmpty(mr.Rename))
                 {
-                    isAtmost = false;
-                }
-                else if (c.ContractKind == ContractKind.RequiresAtMost)
-                {
-                    isAtmost = true;
-                }
-                else
-                {
-                    continue;
+                    Namespace otherSpace;
+                    space = Facts.Index.SymbolTable.Resolve(mr.Rename, out otherSpace, space);
+                    Contract.Assert(otherSpace == null && space != null);
                 }
 
-                foreach (var cs in c.Specification)
+                int n;
+                CardCnst bound;
+                API.Nodes.CardPair cp;
+                UserSymbol symb, other;
+                foreach (var c in m.Contracts)
                 {
-                    cp = (API.Nodes.CardPair)cs;
-                    bound = new CardCnst(new Cardinality(new BigInteger(cp.Cardinality)));
-                    symb = Facts.Index.SymbolTable.Resolve(cp.TypeId.Name, out other);
-                    Contract.Assert(symb != null && other == null);                    
-                    foreach (var con in EnumerateNewConstructors(symb))
+                    foreach (var cs in c.Specification)
                     {
-                        if (isAtmost)
+                        cp = (API.Nodes.CardPair)cs;
+                        bound = new CardCnst(new Cardinality(new BigInteger(cp.Cardinality)));
+                        symb = Facts.Index.SymbolTable.Resolve(cp.TypeId.Name, out other, space);
+                        Contract.Assert(symb != null && other == null);
+                        foreach (var con in EnumerateNewConstructors(symb))
                         {
-                            AddConstraint(varMap[con].Item3 <= bound);
-                        }
-                        else 
-                        {
-                            AddConstraint(varMap[con].Item3 >= bound);
+                            switch (c.ContractKind)
+                            {
+                                case ContractKind.RequiresAtMost:
+                                    AddConstraint(varMap[con].Item3 <= bound);
+                                    break;
+                                case ContractKind.RequiresAtLeast:
+                                    AddConstraint(varMap[con].Item3 >= bound);
+                                    break;
+                                case ContractKind.RequiresSome:
+                                    {
+                                        if (forcedDoFs.TryFindValue(con, out n))
+                                        {
+                                            forcedDoFs[con] = Math.Max(n, cp.Cardinality);
+                                        }
+                                        else
+                                        {
+                                            forcedDoFs.Add(con, cp.Cardinality);
+                                        }
+
+                                        break;
+                                    }
+                                default:
+                                    throw new NotImplementedException();
+                            }
                         }
                     }
+                }
+
+                if (m.ComposeKind == ComposeKind.Extends)
+                {
+                    BuildCardinalityRequires(m.Compositions, space);
                 }
             }
         }

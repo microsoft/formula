@@ -67,62 +67,12 @@
         {
             var slvr = new Solver(partialModel, srcPartialModel, cancel);
             StopTime = DateTime.Now;
-            return;
-
-            var cs = new CardSystem((FactSet)((ModuleData)srcPartialModel.CompilerData).FinalOutput);
-            if (cs.IsUnsat)
-            {
-                NumSolutions = 0;
-                goto done;
-            }
-
-            var intros = cs.TEMPORARY_GetIntroductions();
-            string oldModelName;
-            var filename = System.IO.Path.Combine(Environment.CurrentDirectory, partialModel.Model.Node.Name + ".4ml");
-            try
-            {
-                using (var sw = new System.IO.StreamWriter(filename))
-                {
-                    if (!OldPrinter.Print(partialModel, intros, sw, Flags, out oldModelName))
-                    {
-                        NumSolutions = LiftedInt.Unknown;
-                        goto done;
-                    }
-                }
-
-                List<List<string>> results = null;
-                /*
-                List<string> msgs;
-                if (!FormulaAdaptor.FormulaAdaptor.Solve(oldModelName, maxSols, filename, out msgs, out results))
-                {
-                    NumSolutions = LiftedInt.Unknown;
-                }
-                else
-                {
-                    NumSolutions = results.Count;
-                }
-                */
-
-                modelOutputs = results;
-                System.IO.File.Delete(filename);
-            }
-            catch (Exception e)
-            {
-                Flags.Add(new Flag(
-                    SeverityKind.Error,
-                    partialModel.Model.Node,
-                    Constants.BadFile.ToString(e.Message),
-                    Constants.BadFile.Code));
-                NumSolutions = LiftedInt.Unknown;
-                goto done;
-            }
-
-        done:
-            StopTime = DateTime.Now;
             if (cancel.IsCancellationRequested)
             {
                 WasCancelled = true;
             }
+
+            return;
         }
 
         /// <summary>

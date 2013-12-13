@@ -1,6 +1,5 @@
 *
 
 !.gitignore
-!boot/license.txt
-!boot/gppg.exe
-!boot/gplex.exe
+!boot/
+!boot/*

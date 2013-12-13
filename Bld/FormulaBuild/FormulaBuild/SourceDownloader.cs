@@ -17,12 +17,10 @@
         public enum DependencyKind { Z3, GPPG, GPLEX };
         private const string ReferrerString = "http://{0}.codeplex.com/SourceControl/latest";
         private const string DownloadString = "http://download-codeplex.sec.s-msft.com/Download/SourceControlFileDownload.ashx?ProjectName={0}&changeSetId={1}";
-        private const string GardensPointBootString = "http://download-codeplex.sec.s-msft.com/Download/Release?ProjectName=gplex&DownloadId=721249&FileTime=130217769402930000&Build=20828";
         private const string GardensPointReferrerString = "http://gplex.codeplex.com/releases/view/108701";
-        private const string GardensPointBootFile = "..\\..\\..\\..\\..\\Ext\\GPLEX\\boot_.zip";
-        private const string GardensPointBootDir = "..\\..\\..\\..\\..\\Ext\\GPLEX\\boot_";
-        private const string GPPGName = "gplex-distro-1.2.1\\binaries\\Gppg.exe";
-        private const string GPLexName = "gplex-distro-1.2.1\\binaries\\gplex.exe";
+        private const string GardensPointBootDir = "..\\..\\..\\..\\..\\Ext\\GPLEX\\boot";
+        private const string GPPGName = "gppg.exe";
+        private const string GPLexName = "gplex.exe";
         private const string WinDirEnvVar = "WinDir";
         private const string CscName = "csc.exe";
         private const string MSbuildName = "msbuild.exe";
@@ -225,8 +223,7 @@
         }
 
         /// <summary>
-        /// Gardens point lexer / parser must be built using an existing build. 
-        /// Must download a binary drop in order to bootstrap the build.
+        /// Must use a cached binary in order to bootstrap the build.
         /// </summary>
         /// <returns></returns>
         public static bool DownloadGardensPointBoot(out FileInfo gppg, out FileInfo gplex)
@@ -236,34 +233,7 @@
             try
             {
                 var runningLoc = new FileInfo(Assembly.GetExecutingAssembly().Location);
-                var outputFile = new FileInfo(Path.Combine(runningLoc.DirectoryName, GardensPointBootFile));
                 var outputDir = new DirectoryInfo(Path.Combine(runningLoc.DirectoryName, GardensPointBootDir));
-                // Kill existing directories
-                if (outputFile.Exists)
-                {
-                    outputFile.Delete();
-                }
-
-                if (outputDir.Exists)
-                {
-                    outputDir.Delete(true);
-                }
-
-                // Create a New HttpClient object.
-                Program.WriteInfo("Downloading dependency {0} to {1}...", "Gardens Point boot strapper", outputFile.FullName);
-                HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Referrer = new Uri(GardensPointReferrerString);
-                using (var strm = client.GetStreamAsync(GardensPointBootString).Result)
-                {
-                    using (var sw = new System.IO.StreamWriter(outputFile.FullName))
-                    {
-                        strm.CopyTo(sw.BaseStream);
-                    }
-                }
-
-                Program.WriteInfo("Extracting dependency {0} to {1}...", "Gardens Point boot strapper", outputDir.FullName);
-                ZipFile.ExtractToDirectory(outputFile.FullName, outputDir.FullName);
-
                 gppg = new FileInfo(Path.Combine(outputDir.FullName, GPPGName));
                 if (!gppg.Exists)
                 {

@@ -65,4 +65,4 @@ cd Somewhere\Formula\Tst
 test.bat
 
 As a side effect, FORMULA will be rebuilt with build.bat -d and
-regression will be run against the x86 debug version placed in the Bld\Drops folder.
+regressions will be run against the x86 debug version placed in the Bld\Drops folder.

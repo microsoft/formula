@@ -514,6 +514,19 @@
             }
         }
 
+        public static bool IsUnboundPatternVariable(Term t)
+        {
+            if (!t.Symbol.IsVariable)
+            {
+                return false;
+            }
+            else
+            {
+                var name = ((UserSymbol)t.Symbol).Name;
+                return string.IsNullOrEmpty(name) ? false : name[0] == PatternVarUnboundPrefix;
+            }
+        }
+
         private void InitializeExecuter(Func<Term, Term> symbCnstGetter, IEnumerable<Term> otherSymbCnsts = null)
         {
             foreach (var r in Rules.Rules)

@@ -1,0 +1,424 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Compiled) tests.4ml
+OUT: 
+OUT: []> dt Good
+OUT: Reduced form
+OUT: domain Good extends Base
+OUT: {
+OUT:   G ::= (Good.Any).
+OUT: 
+OUT:   q0
+OUT:     :-
+OUT:       G(z), Tree(x, y) = z.
+OUT: 
+OUT:   q1
+OUT:     :-
+OUT:       G(x), x = Cons(a, y), y = Cons(b, z).
+OUT: 
+OUT:   q2
+OUT:     :-
+OUT:       G(x), Tree(x, x) = Tree(y, Tree(z, z)).
+OUT: 
+OUT:   q3
+OUT:     :-
+OUT:       Tree(x, Tree(y, y)), z = Cons(y, x).
+OUT: 
+OUT:   q4
+OUT:     :-
+OUT:       G(x), Tree(x, y) = Tree(y, x), x = Tree(z, z).
+OUT: 
+OUT:   q5
+OUT:     :-
+OUT:       G(x0), x0 = Cons(0, x1), x1 = Cons(1, x2), x2 = Cons(2, x3), x3 = Cons(3, x4), x4 = Cons(4, x5), x5 = Cons(5, x6), x6 = Cons(6, x7), x7 = Cons(7, x8), x8 = Cons(8, x9), x9 = Cons(9, x10), x10 = Cons(10, x11), x11 = Cons(11, x12), x12 = Cons(12, x13), x13 = Cons(13, x14), x14 = Cons(14, x15), x15 = Cons(15, x16), x16 = Cons(16, x17), x17 = Cons(17, x18), x18 = Cons(18, x19), x19 = Cons(19, x20), x20 = Cons(20, x21), x21 = Cons(21, x22).
+OUT: 
+OUT:   q6
+OUT:     :-
+OUT:       G(z), Tree(1, Tree(2, NIL)) = x, Tree(2, Tree(z, NIL)) = y.
+OUT: 
+OUT:   q7
+OUT:     :-
+OUT:       x = Cons(0, Cons(1, Cons(2, Cons(3, Cons(4, Cons(5, Cons(6, Cons(7, Cons(8, Cons(9, Cons(10, Cons(11, Cons(12, Cons(13, Cons(14, Cons(15, Cons(16, Cons(17, Cons(18, Cons(19, Cons(20, Cons(21, NIL)))))))))))))))))))))).
+OUT: 
+OUT:   q8
+OUT:     :-
+OUT:       Tree(x, y), x = Tree(z, z), y = Tree(x, x), z = 3.
+OUT: 
+OUT:   q9
+OUT:     :-
+OUT:       A(FALSE) = A(FALSE).
+OUT: 
+OUT:   q10
+OUT:     :-
+OUT:       x = 1, x = y, y = 1.
+OUT: 
+OUT:   q11
+OUT:     :-
+OUT:       x = F(y), x = F(z), y = F(y'), y = F(z'), z' = y', G(y').
+OUT: 
+OUT:   q12
+OUT:     :-
+OUT:       G(x), x.lft.rt.lft.rt = y.
+OUT: 
+OUT:   q13
+OUT:     :-
+OUT:       G(x), G(y), x.lft.rt = y.rt, y.rt = x.lft.rt.
+OUT: 
+OUT:   q14
+OUT:     :-
+OUT:       x.lft = Tree(z, Tree(z', z')), y.lft = Tree(w, w), x = y, G(x).
+OUT: 
+OUT:   q15
+OUT:     :-
+OUT:       G(x), G(y), x.val = y.val, x != y.
+OUT: 
+OUT:   q16
+OUT:     :-
+OUT:       A(_), A'(_).
+OUT: 
+OUT:   q17
+OUT:     :-
+OUT:       x is R(y).
+OUT: 
+OUT:   q18
+OUT:     :-
+OUT:       Tree(_, _).
+OUT: 
+OUT:   q19
+OUT:     :-
+OUT:       x is Good.Data.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:  Space |     Name      | Arity | Kind  
+OUT: -------|---------------|-------|-------
+OUT:        |       A       |   1   |  con  
+OUT:        |      A'       |   1   |  con  
+OUT:        |       B       |   1   |  con  
+OUT:        |    Boolean    |   0   |  unn  
+OUT:        |     Cons      |   2   |  con  
+OUT:        |       F       |   1   |  con  
+OUT:        |     FALSE     |   0   | ncnst 
+OUT:        |       G       |   1   |  con  
+OUT:        |    Integer    |   0   |  unn  
+OUT:        |      NIL      |   0   | ncnst 
+OUT:        |    Natural    |   0   |  unn  
+OUT:        |  NegInteger   |   0   |  unn  
+OUT:        |  PosInteger   |   0   |  unn  
+OUT:        |       R       |   1   |  con  
+OUT:        |     Real      |   0   |  unn  
+OUT:        |    String     |   0   |  unn  
+OUT:        |     TRUE      |   0   | ncnst 
+OUT:        |     Tree      |   2   |  con  
+OUT:  Base  |      Any      |   0   |  unn  
+OUT:  Base  |   Constant    |   0   |  unn  
+OUT:  Base  |     Data      |   0   |  unn  
+OUT:  Base  |   conforms    |   0   | dcnst 
+OUT:  Base  | notFunctional |   0   | dcnst 
+OUT:  Base  | notInjective  |   0   | dcnst 
+OUT:  Base  |  notInvTotal  |   0   | dcnst 
+OUT:  Base  | notRelational |   0   | dcnst 
+OUT:  Base  |   notTotal    |   0   | dcnst 
+OUT:  Good  |      Any      |   0   |  unn  
+OUT:  Good  |   Constant    |   0   |  unn  
+OUT:  Good  |     Data      |   0   |  unn  
+OUT:  Good  |   conforms    |   0   | dcnst 
+OUT:  Good  | notFunctional |   0   | dcnst 
+OUT:  Good  | notInjective  |   0   | dcnst 
+OUT:  Good  |  notInvTotal  |   0   | dcnst 
+OUT:  Good  | notRelational |   0   | dcnst 
+OUT:  Good  |   notTotal    |   0   | dcnst 
+OUT:  Good  |      q0       |   0   | dcnst 
+OUT:  Good  |      q1       |   0   | dcnst 
+OUT:  Good  |      q10      |   0   | dcnst 
+OUT:  Good  |      q11      |   0   | dcnst 
+OUT:  Good  |      q12      |   0   | dcnst 
+OUT:  Good  |      q13      |   0   | dcnst 
+OUT:  Good  |      q14      |   0   | dcnst 
+OUT:  Good  |      q15      |   0   | dcnst 
+OUT:  Good  |      q16      |   0   | dcnst 
+OUT:  Good  |      q17      |   0   | dcnst 
+OUT:  Good  |      q18      |   0   | dcnst 
+OUT:  Good  |      q19      |   0   | dcnst 
+OUT:  Good  |      q2       |   0   | dcnst 
+OUT:  Good  |      q3       |   0   | dcnst 
+OUT:  Good  |      q4       |   0   | dcnst 
+OUT:  Good  |      q5       |   0   | dcnst 
+OUT:  Good  |      q6       |   0   | dcnst 
+OUT:  Good  |      q7       |   0   | dcnst 
+OUT:  Good  |      q8       |   0   | dcnst 
+OUT:  Good  |      q9       |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #A #A' #A'[0] #A[0] #B #B[0] #Boolean #Cons #Cons[0] #Cons[1] #F #F[0] #G #G[0] #Integer #Natural #NegInteger #PosInteger #R #R[0] #Real #String #Tree #Tree[0] #Tree[1] Base.#Any Base.#Constant Base.#Data Good.#Any Good.#Constant Good.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 
+OUT: Strings: 
+OUT: Variables: a b w x x0 x1 x10 x11 x12 x13 x14 x15 x16 x17 x18 x19 x2 x20 x21 x22 x3 x4 x5 x6 x7 x8 x9 y y' z z' 
+OUT: 
+OUT: []> typ Good
+OUT: + Type environment at (17, 4)
+OUT:   ~dc0: G(Tree)
+OUT:   z: Tree
+OUT:   x: Tree + {NIL} + Natural
+OUT:   y: Tree + {NIL} + Natural
+OUT:    + Type environment at (17, 10)
+OUT:      ~dc0: G(Tree)
+OUT:      z: Tree
+OUT:      x: Tree + {NIL} + Natural
+OUT:      y: Tree + {NIL} + Natural
+OUT: + Type environment at (19, 4)
+OUT:   ~dc0: G(Cons(Natural, Cons))
+OUT:   z: {NIL} + Cons
+OUT:   x: Cons(Natural, Cons)
+OUT:   y: Cons
+OUT:   a: Natural
+OUT:   b: Natural
+OUT:    + Type environment at (19, 10)
+OUT:      ~dc0: G(Cons(Natural, Cons))
+OUT:      z: {NIL} + Cons
+OUT:      x: Cons(Natural, Cons)
+OUT:      y: Cons
+OUT:      a: Natural
+OUT:      b: Natural
+OUT: + Type environment at (21, 4)
+OUT:   ~dc0: G(Tree)
+OUT:   z: Tree + {NIL} + Natural
+OUT:   x: Tree
+OUT:   y: Tree
+OUT:    + Type environment at (21, 10)
+OUT:      ~dc0: G(Tree)
+OUT:      z: Tree + {NIL} + Natural
+OUT:      x: Tree
+OUT:      y: Tree
+OUT: + Type environment at (23, 4)
+OUT:   ~dc0: Tree({NIL}, Tree(Natural, Natural))
+OUT:   z: Cons(Natural, {NIL})
+OUT:   x: {NIL}
+OUT:   y: Natural
+OUT:    + Type environment at (23, 10)
+OUT:      ~dc0: Tree({NIL}, Tree(Natural, Natural))
+OUT:      z: Cons(Natural, {NIL})
+OUT:      x: {NIL}
+OUT:      y: Natural
+OUT: + Type environment at (25, 4)
+OUT:   ~dc0: G(Tree)
+OUT:   z: Tree + {NIL} + Natural
+OUT:   x: Tree
+OUT:   y: Tree
+OUT:    + Type environment at (25, 10)
+OUT:      ~dc0: G(Tree)
+OUT:      z: Tree + {NIL} + Natural
+OUT:      x: Tree
+OUT:      y: Tree
+OUT: + Type environment at (27, 4)
+OUT:   ~dc0: G(Cons({0..0}, Cons({1..1}, Cons({2..2}, Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))))))))))))
+OUT:   x0: Cons({0..0}, Cons({1..1}, Cons({2..2}, Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))))))))))))
+OUT:   x1: Cons({1..1}, Cons({2..2}, Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))))))))))
+OUT:   x2: Cons({2..2}, Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))))))))))
+OUT:   x3: Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))))))))
+OUT:   x4: Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))))))))
+OUT:   x5: Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))))))
+OUT:   x6: Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))))))
+OUT:   x7: Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))))
+OUT:   x8: Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))))
+OUT:   x9: Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))
+OUT:   x10: Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))
+OUT:   x11: Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))
+OUT:   x12: Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))
+OUT:   x13: Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))
+OUT:   x14: Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))
+OUT:   x15: Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))
+OUT:   x16: Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))
+OUT:   x17: Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))
+OUT:   x18: Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))
+OUT:   x19: Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))
+OUT:   x20: Cons({20..20}, Cons({21..21}, {NIL} + Cons))
+OUT:   x21: Cons({21..21}, {NIL} + Cons)
+OUT:   x22: {NIL} + Cons
+OUT:    + Type environment at (27, 10)
+OUT:      ~dc0: G(Cons({0..0}, Cons({1..1}, Cons({2..2}, Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))))))))))))
+OUT:      x0: Cons({0..0}, Cons({1..1}, Cons({2..2}, Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))))))))))))
+OUT:      x1: Cons({1..1}, Cons({2..2}, Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))))))))))
+OUT:      x2: Cons({2..2}, Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))))))))))
+OUT:      x3: Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))))))))
+OUT:      x4: Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))))))))
+OUT:      x5: Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))))))
+OUT:      x6: Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))))))
+OUT:      x7: Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))))
+OUT:      x8: Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))))
+OUT:      x9: Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))))
+OUT:      x10: Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))))
+OUT:      x11: Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))))
+OUT:      x12: Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))))
+OUT:      x13: Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))))
+OUT:      x14: Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))))
+OUT:      x15: Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))))
+OUT:      x16: Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))))
+OUT:      x17: Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))))
+OUT:      x18: Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons))))
+OUT:      x19: Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL} + Cons)))
+OUT:      x20: Cons({20..20}, Cons({21..21}, {NIL} + Cons))
+OUT:      x21: Cons({21..21}, {NIL} + Cons)
+OUT:      x22: {NIL} + Cons
+OUT: + Type environment at (51, 4)
+OUT:   ~dc0: G(Tree + {NIL} + Natural)
+OUT:   z: Tree + {NIL} + Natural
+OUT:   x: Tree({1..1}, Tree({2..2}, {NIL}))
+OUT:   y: Tree({2..2}, Tree(Tree + {NIL} + Natural, {NIL}))
+OUT:    + Type environment at (51, 10)
+OUT:      ~dc0: G(Tree + {NIL} + Natural)
+OUT:      z: Tree + {NIL} + Natural
+OUT:      x: Tree({1..1}, Tree({2..2}, {NIL}))
+OUT:      y: Tree({2..2}, Tree(Tree + {NIL} + Natural, {NIL}))
+OUT: + Type environment at (55, 4)
+OUT:   x: Cons({0..0}, Cons({1..1}, Cons({2..2}, Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL}))))))))))))))))))))))
+OUT:    + Type environment at (55, 12)
+OUT:      x: Cons({0..0}, Cons({1..1}, Cons({2..2}, Cons({3..3}, Cons({4..4}, Cons({5..5}, Cons({6..6}, Cons({7..7}, Cons({8..8}, Cons({9..9}, Cons({10..10}, Cons({11..11}, Cons({12..12}, Cons({13..13}, Cons({14..14}, Cons({15..15}, Cons({16..16}, Cons({17..17}, Cons({18..18}, Cons({19..19}, Cons({20..20}, Cons({21..21}, {NIL}))))))))))))))))))))))
+OUT: + Type environment at (79, 4)
+OUT:   ~dc0: Tree(Tree({3..3}, {3..3}), Tree(Tree({3..3}, {3..3}), Tree({3..3}, {3..3})))
+OUT:   z: {3..3}
+OUT:   x: Tree({3..3}, {3..3})
+OUT:   y: Tree(Tree({3..3}, {3..3}), Tree({3..3}, {3..3}))
+OUT:    + Type environment at (79, 10)
+OUT:      ~dc0: Tree(Tree({3..3}, {3..3}), Tree(Tree({3..3}, {3..3}), Tree({3..3}, {3..3})))
+OUT:      z: {3..3}
+OUT:      x: Tree({3..3}, {3..3})
+OUT:      y: Tree(Tree({3..3}, {3..3}), Tree({3..3}, {3..3}))
+OUT: + Type environment at (83, 4)
+OUT:    + Type environment at (83, 19)
+OUT: + Type environment at (85, 4)
+OUT:   x: {1..1}
+OUT:   y: {1..1}
+OUT:    + Type environment at (85, 13)
+OUT:      x: {1..1}
+OUT:      y: {1..1}
+OUT: + Type environment at (87, 4)
+OUT:   ~dc0: G(F + Integer)
+OUT:   z: F
+OUT:   x: F(F)
+OUT:   y: F
+OUT:   y': F + Integer
+OUT:   z': F + Integer
+OUT:    + Type environment at (87, 13)
+OUT:      ~dc0: G(F + Integer)
+OUT:      z: F
+OUT:      x: F(F)
+OUT:      y: F
+OUT:      y': F + Integer
+OUT:      z': F + Integer
+OUT: + Type environment at (92, 4)
+OUT:   ~dc0: G(Tree(Tree(Tree + {NIL} + Natural, Tree(Tree, Tree + {NIL} + Natural)), Tree + {NIL} + Natural))
+OUT:   x: Tree(Tree(Tree + {NIL} + Natural, Tree(Tree, Tree + {NIL} + Natural)), Tree + {NIL} + Natural)
+OUT:   y: Tree + {NIL} + Natural
+OUT:   ~sv0: Tree(Tree + {NIL} + Natural, Tree(Tree, Tree + {NIL} + Natural))
+OUT:   ~sv1: Tree + {NIL} + Natural
+OUT:   ~sv2: Tree + {NIL} + Natural
+OUT:   ~sv3: Tree(Tree, Tree + {NIL} + Natural)
+OUT:   ~sv4: Tree
+OUT:   ~sv5: Tree + {NIL} + Natural
+OUT:   ~sv6: Tree + {NIL} + Natural
+OUT:   ~sv7: Tree + {NIL} + Natural
+OUT:    + Type environment at (92, 11)
+OUT:      ~dc0: G(Tree(Tree(Tree + {NIL} + Natural, Tree(Tree, Tree + {NIL} + Natural)), Tree + {NIL} + Natural))
+OUT:      x: Tree(Tree(Tree + {NIL} + Natural, Tree(Tree, Tree + {NIL} + Natural)), Tree + {NIL} + Natural)
+OUT:      y: Tree + {NIL} + Natural
+OUT:      ~sv0: Tree(Tree + {NIL} + Natural, Tree(Tree, Tree + {NIL} + Natural))
+OUT:      ~sv1: Tree + {NIL} + Natural
+OUT:      ~sv2: Tree + {NIL} + Natural
+OUT:      ~sv3: Tree(Tree, Tree + {NIL} + Natural)
+OUT:      ~sv4: Tree
+OUT:      ~sv5: Tree + {NIL} + Natural
+OUT:      ~sv6: Tree + {NIL} + Natural
+OUT:      ~sv7: Tree + {NIL} + Natural
+OUT: + Type environment at (94, 4)
+OUT:   ~dc0: G(Tree(Tree, Tree + {NIL} + Natural))
+OUT:   x: Tree(Tree, Tree + {NIL} + Natural)
+OUT:   y: Tree
+OUT:   ~dc1: G(Tree)
+OUT:   ~sv0: Tree
+OUT:   ~sv1: Tree + {NIL} + Natural
+OUT:   ~sv2: Tree + {NIL} + Natural
+OUT:   ~sv3: Tree + {NIL} + Natural
+OUT:   ~sv4: Tree + {NIL} + Natural
+OUT:   ~sv5: Tree + {NIL} + Natural
+OUT:    + Type environment at (94, 11)
+OUT:      ~dc0: G(Tree(Tree, Tree + {NIL} + Natural))
+OUT:      x: Tree(Tree, Tree + {NIL} + Natural)
+OUT:      y: Tree
+OUT:      ~dc1: G(Tree)
+OUT:      ~sv0: Tree
+OUT:      ~sv1: Tree + {NIL} + Natural
+OUT:      ~sv2: Tree + {NIL} + Natural
+OUT:      ~sv3: Tree + {NIL} + Natural
+OUT:      ~sv4: Tree + {NIL} + Natural
+OUT:      ~sv5: Tree + {NIL} + Natural
+OUT: + Type environment at (96, 4)
+OUT:   ~dc0: G(Tree(Tree(Tree, Tree), Tree + {NIL} + Natural))
+OUT:   z: Tree
+OUT:   x: Tree(Tree(Tree, Tree), Tree + {NIL} + Natural)
+OUT:   y: Tree(Tree(Tree, Tree), Tree + {NIL} + Natural)
+OUT:   z': Tree + {NIL} + Natural
+OUT:   ~sv0: Tree(Tree, Tree)
+OUT:   ~sv1: Tree + {NIL} + Natural
+OUT:   ~sv2: Tree(Tree, Tree)
+OUT:   ~sv3: Tree + {NIL} + Natural
+OUT:   w: Tree
+OUT:    + Type environment at (96, 17)
+OUT:      ~dc0: G(Tree(Tree(Tree, Tree), Tree + {NIL} + Natural))
+OUT:      z: Tree
+OUT:      x: Tree(Tree(Tree, Tree), Tree + {NIL} + Natural)
+OUT:      y: Tree(Tree(Tree, Tree), Tree + {NIL} + Natural)
+OUT:      z': Tree + {NIL} + Natural
+OUT:      ~sv0: Tree(Tree, Tree)
+OUT:      ~sv1: Tree + {NIL} + Natural
+OUT:      ~sv2: Tree(Tree, Tree)
+OUT:      ~sv3: Tree + {NIL} + Natural
+OUT:      w: Tree
+OUT: + Type environment at (101, 4)
+OUT:   ~dc0: G(R + Cons + B + A' + A)
+OUT:   x: R + Cons + B + A' + A
+OUT:   y: R + Cons + B + A' + A
+OUT:   ~dc1: G(R + Cons + B + A' + A)
+OUT:    + Type environment at (101, 11)
+OUT:      ~dc0: G(R + Cons + B + A' + A)
+OUT:      x: R + Cons + B + A' + A
+OUT:      y: R + Cons + B + A' + A
+OUT:      ~dc1: G(R + Cons + B + A' + A)
+OUT: + Type environment at (103, 4)
+OUT:   ~dc0: A
+OUT:   ~dc1: {FALSE}
+OUT:   ~dc2: A'
+OUT:   ~dc3: {TRUE}
+OUT:    + Type environment at (103, 11)
+OUT:      ~dc0: A
+OUT:      ~dc1: {FALSE}
+OUT:      ~dc2: A'
+OUT:      ~dc3: {TRUE}
+OUT: + Type environment at (105, 4)
+OUT:   x: R
+OUT:   y: {0..0} + NegInteger
+OUT:    + Type environment at (105, 11)
+OUT:      x: R
+OUT:      y: {0..0} + NegInteger
+OUT: + Type environment at (107, 4)
+OUT:   ~dc0: Tree
+OUT:   ~dc1: Tree + {NIL} + Natural
+OUT:   ~dc2: Tree + {NIL} + Natural
+OUT:    + Type environment at (107, 11)
+OUT:      ~dc0: Tree
+OUT:      ~dc1: Tree + {NIL} + Natural
+OUT:      ~dc2: Tree + {NIL} + Natural
+OUT: + Type environment at (109, 4)
+OUT:   x: Tree + R + F + Cons + B + A' + A
+OUT:    + Type environment at (109, 11)
+OUT:      x: Tree + R + F + Cons + B + A' + A
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 0

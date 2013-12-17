@@ -1,0 +1,407 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Compiled) tests.4ml
+OUT: 
+OUT: []> dt Good
+OUT: Reduced form
+OUT: domain Good extends Base
+OUT: {
+OUT:   P ::= ({ 1..1000000 }, { 1000001..1000001, TRUE }).
+OUT:   P' ::= ({ 1..1000000, FALSE }, { 1000001..1000001, TRUE }).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       TRUE >= FALSE.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       TRUE >= 1.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       TRUE >= "TRUE".
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       TRUE >= TRUE.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       1 >= 0.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       "TRUE" >= "FALSE".
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       x is Tree(2, _), y is Tree(1, Tree(_, _)), x >= y.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       Cons(1, Cons(2, Cons(3, Cons(4, NIL)))) >= Cons(1, Cons(2, Cons(3, NIL))).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       x is Tree(Tree(_, _), _), y is Tree(2, _), x >= y.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       x is Tree, x.lft.lft.lft = Tree(_, _), y is Tree, y.lft.lft = NIL, x >= y.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       x is B, y is A, x >= y.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       A(_) >= 0.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       A(_) >= "0".
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       A(_) >= NIL.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       "abcdefg" >= "abc".
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       FALSE < TRUE.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       1 < TRUE.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       "TRUE" < TRUE.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       TRUE <= TRUE.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       0 < 1.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       "FALSE" < "TRUE".
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       x is Tree(1, Tree(_, _)), y is Tree(2, _), x < y.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       Cons(1, Cons(2, Cons(3, NIL))) < Cons(1, Cons(2, Cons(3, Cons(4, NIL)))).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       x is Tree(Tree(_, _), _), y is Tree(2, _), y < x.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       x is Tree, x.lft.lft.lft = Tree(_, _), y is Tree, y.lft.lft = NIL, y < x.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       x is B, y is A, y < x.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       0 < A(_).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       "0" < A(_).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       NIL < A(_).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       "abc" < "abcdefg".
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       P(x, y), x <= y.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       P'(x, y), or(x, x) < and(y, y).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       R(x), y = -1 * x, x >= y.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:  Space |     Name      | Arity | Kind  
+OUT: -------|---------------|-------|-------
+OUT:        |       A       |   1   |  con  
+OUT:        |      A'       |   1   |  con  
+OUT:        |       B       |   1   |  con  
+OUT:        |    Boolean    |   0   |  unn  
+OUT:        |     Cons      |   2   |  con  
+OUT:        |       F       |   1   |  con  
+OUT:        |     FALSE     |   0   | ncnst 
+OUT:        |    Integer    |   0   |  unn  
+OUT:        |      NIL      |   0   | ncnst 
+OUT:        |    Natural    |   0   |  unn  
+OUT:        |  NegInteger   |   0   |  unn  
+OUT:        |       P       |   2   |  con  
+OUT:        |      P'       |   2   |  con  
+OUT:        |  PosInteger   |   0   |  unn  
+OUT:        |       R       |   1   |  con  
+OUT:        |     Real      |   0   |  unn  
+OUT:        |    String     |   0   |  unn  
+OUT:        |     TRUE      |   0   | ncnst 
+OUT:        |     Tree      |   2   |  con  
+OUT:  Base  |      Any      |   0   |  unn  
+OUT:  Base  |   Constant    |   0   |  unn  
+OUT:  Base  |     Data      |   0   |  unn  
+OUT:  Base  |   conforms    |   0   | dcnst 
+OUT:  Base  | notFunctional |   0   | dcnst 
+OUT:  Base  | notInjective  |   0   | dcnst 
+OUT:  Base  |  notInvTotal  |   0   | dcnst 
+OUT:  Base  | notRelational |   0   | dcnst 
+OUT:  Base  |   notTotal    |   0   | dcnst 
+OUT:  Good  |      Any      |   0   |  unn  
+OUT:  Good  |   Constant    |   0   |  unn  
+OUT:  Good  |     Data      |   0   |  unn  
+OUT:  Good  |   conforms    |   0   | dcnst 
+OUT:  Good  | notFunctional |   0   | dcnst 
+OUT:  Good  | notInjective  |   0   | dcnst 
+OUT:  Good  |  notInvTotal  |   0   | dcnst 
+OUT:  Good  | notRelational |   0   | dcnst 
+OUT:  Good  |   notTotal    |   0   | dcnst 
+OUT:  Good  |       q       |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #A #A' #A'[0] #A[0] #B #B[0] #Boolean #Cons #Cons[0] #Cons[1] #F #F[0] #Integer #Natural #NegInteger #P #P' #P'[0] #P'[1] #P[0] #P[1] #PosInteger #R #R[0] #Real #String #Tree #Tree[0] #Tree[1] Base.#Any Base.#Constant Base.#Data Good.#Any Good.#Constant Good.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: -1 0 1 2 3 4 1000000 1000001 
+OUT: Strings: "0" "FALSE" "TRUE" "abc" "abcdefg" 
+OUT: Variables: x y 
+OUT: 
+OUT: []> typ Good
+OUT: + Type environment at (16, 4)
+OUT:    + Type environment at (16, 14)
+OUT: + Type environment at (17, 4)
+OUT:    + Type environment at (17, 14)
+OUT: + Type environment at (18, 4)
+OUT:    + Type environment at (18, 14)
+OUT: + Type environment at (19, 4)
+OUT:    + Type environment at (19, 14)
+OUT: + Type environment at (20, 4)
+OUT:    + Type environment at (20, 11)
+OUT: + Type environment at (21, 4)
+OUT:    + Type environment at (21, 16)
+OUT: + Type environment at (23, 4)
+OUT:   x: Tree({2..2}, Tree + {NIL} + Natural)
+OUT:   ~dc0: Tree + {NIL} + Natural
+OUT:   y: Tree({1..1}, Tree)
+OUT:   ~dc1: Tree + {NIL} + Natural
+OUT:   ~dc2: Tree + {NIL} + Natural
+OUT:    + Type environment at (23, 9)
+OUT:      x: Tree({2..2}, Tree + {NIL} + Natural)
+OUT:      ~dc0: Tree + {NIL} + Natural
+OUT:      y: Tree({1..1}, Tree)
+OUT:      ~dc1: Tree + {NIL} + Natural
+OUT:      ~dc2: Tree + {NIL} + Natural
+OUT: + Type environment at (24, 4)
+OUT:    + Type environment at (24, 49)
+OUT: + Type environment at (25, 4)
+OUT:   x: Tree(Tree, Tree + {NIL} + Natural)
+OUT:   ~dc0: Tree + {NIL} + Natural
+OUT:   y: Tree({2..2}, Tree + {NIL} + Natural)
+OUT:   ~dc1: Tree + {NIL} + Natural
+OUT:   ~dc2: Tree + {NIL} + Natural
+OUT:   ~dc3: Tree + {NIL} + Natural
+OUT:    + Type environment at (25, 9)
+OUT:      x: Tree(Tree, Tree + {NIL} + Natural)
+OUT:      ~dc0: Tree + {NIL} + Natural
+OUT:      y: Tree({2..2}, Tree + {NIL} + Natural)
+OUT:      ~dc1: Tree + {NIL} + Natural
+OUT:      ~dc2: Tree + {NIL} + Natural
+OUT:      ~dc3: Tree + {NIL} + Natural
+OUT: + Type environment at (26, 4)
+OUT:   x: Tree(Tree(Tree(Tree, Tree + {NIL} + Natural), Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:   ~dc0: Tree + {NIL} + Natural
+OUT:   y: Tree(Tree({NIL}, Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:   ~dc1: Tree + {NIL} + Natural
+OUT:   ~sv0: Tree(Tree(Tree, Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:   ~sv1: Tree + {NIL} + Natural
+OUT:   ~sv2: Tree({NIL}, Tree + {NIL} + Natural)
+OUT:   ~sv3: Tree + {NIL} + Natural
+OUT:   ~sv4: Tree(Tree, Tree + {NIL} + Natural)
+OUT:   ~sv5: Tree + {NIL} + Natural
+OUT:   ~sv6: Tree
+OUT:   ~sv7: Tree + {NIL} + Natural
+OUT:   ~sv8: {NIL}
+OUT:   ~sv9: Tree + {NIL} + Natural
+OUT:    + Type environment at (26, 9)
+OUT:      x: Tree(Tree(Tree(Tree, Tree + {NIL} + Natural), Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:      ~dc0: Tree + {NIL} + Natural
+OUT:      y: Tree(Tree({NIL}, Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:      ~dc1: Tree + {NIL} + Natural
+OUT:      ~sv0: Tree(Tree(Tree, Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:      ~sv1: Tree + {NIL} + Natural
+OUT:      ~sv2: Tree({NIL}, Tree + {NIL} + Natural)
+OUT:      ~sv3: Tree + {NIL} + Natural
+OUT:      ~sv4: Tree(Tree, Tree + {NIL} + Natural)
+OUT:      ~sv5: Tree + {NIL} + Natural
+OUT:      ~sv6: Tree
+OUT:      ~sv7: Tree + {NIL} + Natural
+OUT:      ~sv8: {NIL}
+OUT:      ~sv9: Tree + {NIL} + Natural
+OUT: + Type environment at (29, 4)
+OUT:   x: B
+OUT:   y: A
+OUT:    + Type environment at (29, 9)
+OUT:      x: B
+OUT:      y: A
+OUT: + Type environment at (30, 4)
+OUT:   ~dc0: {FALSE}
+OUT:    + Type environment at (30, 14)
+OUT:      ~dc0: {FALSE}
+OUT: + Type environment at (31, 4)
+OUT:   ~dc0: {FALSE}
+OUT:    + Type environment at (31, 14)
+OUT:      ~dc0: {FALSE}
+OUT: + Type environment at (32, 4)
+OUT:   ~dc0: {FALSE}
+OUT:    + Type environment at (32, 14)
+OUT:      ~dc0: {FALSE}
+OUT: + Type environment at (33, 4)
+OUT:    + Type environment at (33, 19)
+OUT: + Type environment at (35, 4)
+OUT:    + Type environment at (35, 15)
+OUT: + Type environment at (36, 4)
+OUT:    + Type environment at (36, 11)
+OUT: + Type environment at (37, 4)
+OUT:    + Type environment at (37, 16)
+OUT: + Type environment at (38, 4)
+OUT:    + Type environment at (38, 14)
+OUT: + Type environment at (39, 4)
+OUT:    + Type environment at (39, 11)
+OUT: + Type environment at (40, 4)
+OUT:    + Type environment at (40, 17)
+OUT: + Type environment at (42, 4)
+OUT:   x: Tree({1..1}, Tree)
+OUT:   ~dc0: Tree + {NIL} + Natural
+OUT:   y: Tree({2..2}, Tree + {NIL} + Natural)
+OUT:   ~dc1: Tree + {NIL} + Natural
+OUT:   ~dc2: Tree + {NIL} + Natural
+OUT:    + Type environment at (42, 9)
+OUT:      x: Tree({1..1}, Tree)
+OUT:      ~dc0: Tree + {NIL} + Natural
+OUT:      y: Tree({2..2}, Tree + {NIL} + Natural)
+OUT:      ~dc1: Tree + {NIL} + Natural
+OUT:      ~dc2: Tree + {NIL} + Natural
+OUT: + Type environment at (43, 4)
+OUT:    + Type environment at (43, 40)
+OUT: + Type environment at (44, 4)
+OUT:   x: Tree(Tree, Tree + {NIL} + Natural)
+OUT:   ~dc0: Tree + {NIL} + Natural
+OUT:   y: Tree({2..2}, Tree + {NIL} + Natural)
+OUT:   ~dc1: Tree + {NIL} + Natural
+OUT:   ~dc2: Tree + {NIL} + Natural
+OUT:   ~dc3: Tree + {NIL} + Natural
+OUT:    + Type environment at (44, 9)
+OUT:      x: Tree(Tree, Tree + {NIL} + Natural)
+OUT:      ~dc0: Tree + {NIL} + Natural
+OUT:      y: Tree({2..2}, Tree + {NIL} + Natural)
+OUT:      ~dc1: Tree + {NIL} + Natural
+OUT:      ~dc2: Tree + {NIL} + Natural
+OUT:      ~dc3: Tree + {NIL} + Natural
+OUT: + Type environment at (45, 4)
+OUT:   x: Tree(Tree(Tree(Tree, Tree + {NIL} + Natural), Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:   ~dc0: Tree + {NIL} + Natural
+OUT:   y: Tree(Tree({NIL}, Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:   ~dc1: Tree + {NIL} + Natural
+OUT:   ~sv0: Tree(Tree(Tree, Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:   ~sv1: Tree + {NIL} + Natural
+OUT:   ~sv2: Tree({NIL}, Tree + {NIL} + Natural)
+OUT:   ~sv3: Tree + {NIL} + Natural
+OUT:   ~sv4: Tree(Tree, Tree + {NIL} + Natural)
+OUT:   ~sv5: Tree + {NIL} + Natural
+OUT:   ~sv6: Tree
+OUT:   ~sv7: Tree + {NIL} + Natural
+OUT:   ~sv8: {NIL}
+OUT:   ~sv9: Tree + {NIL} + Natural
+OUT:    + Type environment at (45, 9)
+OUT:      x: Tree(Tree(Tree(Tree, Tree + {NIL} + Natural), Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:      ~dc0: Tree + {NIL} + Natural
+OUT:      y: Tree(Tree({NIL}, Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:      ~dc1: Tree + {NIL} + Natural
+OUT:      ~sv0: Tree(Tree(Tree, Tree + {NIL} + Natural), Tree + {NIL} + Natural)
+OUT:      ~sv1: Tree + {NIL} + Natural
+OUT:      ~sv2: Tree({NIL}, Tree + {NIL} + Natural)
+OUT:      ~sv3: Tree + {NIL} + Natural
+OUT:      ~sv4: Tree(Tree, Tree + {NIL} + Natural)
+OUT:      ~sv5: Tree + {NIL} + Natural
+OUT:      ~sv6: Tree
+OUT:      ~sv7: Tree + {NIL} + Natural
+OUT:      ~sv8: {NIL}
+OUT:      ~sv9: Tree + {NIL} + Natural
+OUT: + Type environment at (48, 4)
+OUT:   x: B
+OUT:   y: A
+OUT:    + Type environment at (48, 9)
+OUT:      x: B
+OUT:      y: A
+OUT: + Type environment at (49, 4)
+OUT:   ~dc0: {FALSE}
+OUT:    + Type environment at (49, 11)
+OUT:      ~dc0: {FALSE}
+OUT: + Type environment at (50, 4)
+OUT:   ~dc0: {FALSE}
+OUT:    + Type environment at (50, 13)
+OUT:      ~dc0: {FALSE}
+OUT: + Type environment at (51, 4)
+OUT:   ~dc0: {FALSE}
+OUT:    + Type environment at (51, 13)
+OUT:      ~dc0: {FALSE}
+OUT: + Type environment at (52, 4)
+OUT:    + Type environment at (52, 15)
+OUT: + Type environment at (57, 4)
+OUT:   x: {1..1000000}
+OUT:   ~dc0: P
+OUT:   y: {1000001..1000001} + {TRUE}
+OUT:    + Type environment at (57, 9)
+OUT:      x: {1..1000000}
+OUT:      ~dc0: P
+OUT:      y: {1000001..1000001} + {TRUE}
+OUT: + Type environment at (58, 4)
+OUT:   x: {FALSE}
+OUT:   ~dc0: P'({FALSE}, {TRUE})
+OUT:   y: {TRUE}
+OUT:    + Type environment at (58, 9)
+OUT:      x: {FALSE}
+OUT:      ~dc0: P'({FALSE}, {TRUE})
+OUT:      y: {TRUE}
+OUT: + Type environment at (59, 4)
+OUT:   x: {0..0} + NegInteger
+OUT:   ~dc0: R
+OUT:   y: Natural
+OUT:    + Type environment at (59, 9)
+OUT:      x: {0..0} + NegInteger
+OUT:      ~dc0: R
+OUT:      y: Natural
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 0

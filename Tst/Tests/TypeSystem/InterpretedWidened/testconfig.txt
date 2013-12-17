@@ -1,0 +1,4 @@
+run: ..\..\..\..\Bld\Drops\Formula_Debug_x86\Formula.exe
+arg: -v: off -l: "tests.4ml" -dt: "Widened" -typ: "Widened" -x 
+acc: .\
+dsc: Rules for which constraints unsat this is undetectable (WIDENED)

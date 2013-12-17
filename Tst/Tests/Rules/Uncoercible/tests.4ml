@@ -1,0 +1,86 @@
+domain A1
+{
+    Cons ::= new (val: Integer, tail: any Cons + {NIL}).
+}
+
+domain A1'
+{
+    List ::= Cons + {NIL}.
+    Cons ::= new (val: Real, tail: any List).
+}
+
+transform T1 (in1:: A1, in2:: A1) returns (out:: A1')
+{
+   InCons ::= in1.Cons + in2.Cons.
+   Triple ::= (in1.Cons + {NIL}, 
+               in2.Cons + {NIL}, 
+               out.Cons + {NIL}).
+
+   //// Cannot Coercion because out lists are bigger than in lists
+   in1.Cons(x, y) :- out.Cons(x, y).
+ 
+   //// Cannot coerce, because coercion must be possible for all
+   //// members of type, even though type inference shows coercion is possible.
+   //// Could relax this constraint in the future.
+   in1.Cons(1, y) :- out.Cons(1, y), y = out.Cons(z, NIL), z: Integer.
+   
+   
+   //// No common prefix that can coerce both kinds of lists.
+   Triple(c, c, c) :- c is InCons. 
+   
+   //// Unsafe coercions
+   in2._(x) :- x is T1.Any.
+   
+   //// Unsafe coercions.
+   in2._(x) :- x is out.Cons.
+   
+   //// Cannot coerce in this direction, because of widening
+   in1.Cons(1, out.Cons(1, NIL)).
+   
+   //// Coercion inside of comprehension
+   q :- x is out.Cons, count({ in1.Cons(1, x) }) > 0.
+}
+
+domain B includes X::A1', A1'
+{
+}
+
+domain C includes Y::B, A1'
+{
+   G ::= (Cons + Y.Cons).
+   G' ::= (Y.X.Cons + Y.Cons).
+   G'' ::= (Cons + X.Cons).
+
+   //// Ambiguous coercion.
+   G(x) :- x is X.Cons.
+   
+   //// Ambiguous coercion.
+   G'(x) :- x is Cons.
+   
+   //// Ambiguous coercion.
+   G''(x) :- x is Y.Cons.       
+}
+
+transform T2 (in1:: A1, in2:: A1) returns (out:: B)
+{  
+   //// Ambiguous coercion
+   out._(x) :- x is in1.Cons.
+   
+   //// Unsafe coercion
+   in1._(y) :- out.Cons(x, y).
+}
+
+domain D includes Y::B, X::A1', A1'
+{
+   Type1 ::= Y.X.Cons +  X.Cons.
+   Type2 ::= Cons + Y.Cons.
+   
+   F  ::= (Type2).
+   F' ::= (Type1).
+   
+   //// No coercion satisfying constraints.
+   F(x) :- x is Type1.
+   
+   //// No coercion satisfying constraints.
+   F'(x) :- x is Type2.   
+}

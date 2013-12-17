@@ -1,0 +1,24 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Failed) tests.4ml
+OUT: tests.4ml (17, 23): This constraint is unsatisfiable.
+OUT: tests.4ml (19, 27): This constraint is unsatisfiable.
+OUT: tests.4ml (23, 26): This constraint is unsatisfiable.
+OUT: tests.4ml (25, 26): This constraint is unsatisfiable.
+OUT: tests.4ml (27, 26): This constraint is unsatisfiable.
+OUT: tests.4ml (29, 18): This constraint is unsatisfiable.
+OUT: tests.4ml (31, 41): This constraint is unsatisfiable.
+OUT: tests.4ml (33, 17): Argument 2 of function + is badly typed.
+OUT: tests.4ml (35, 15): Syntax error - or got 3 arguments but needs 2
+OUT: tests.4ml (37, 13): This constraint is unsatisfiable.
+OUT: tests.4ml (0, 0): The install operation failed
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 1

@@ -1,0 +1,191 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Compiled) tests.4ml
+OUT: 
+OUT: []> dt Good
+OUT: Reduced form
+OUT: domain Good
+OUT: {
+OUT:   A ::= new (arg1: B).
+OUT:   B ::= new (arg1: C).
+OUT:   C ::= new (arg1: { 1 }).
+OUT:   G ::= (Any).
+OUT:   F1 ::= new (arg1: { 1..50 }, arg2: { 1..50 }).
+OUT:   F2 ::= new (arg1: { 0..50 }, arg2: { 0..50 }).
+OUT:   F3 ::= new (arg1: { -348978933..0, "hello" }, arg2: { 500000..3245345435, blue }, arg3: PosInteger).
+OUT: 
+OUT:   q0
+OUT:     :-
+OUT:       F1(x, y), x = y + 2.
+OUT: 
+OUT:   q1
+OUT:     :-
+OUT:       F2(x, y), 1 - x = x + 1.
+OUT: 
+OUT:   q2
+OUT:     :-
+OUT:       F3(x, y, z), x <= y, x : Real, y : Real.
+OUT: 
+OUT:   q3
+OUT:     :-
+OUT:       F3(x, y, z), x <= z, x : Real.
+OUT: 
+OUT:   q4
+OUT:     :-
+OUT:       x1 = 5 % 3, x2 = 5 % -3, x3 = -5 % 3, x4 = -5 % -3, x5 = 1/2 % 2.
+OUT: 
+OUT:   q5
+OUT:     :-
+OUT:       F3(x, y, z), x : NegInteger.
+OUT: 
+OUT:   q6
+OUT:     :-
+OUT:       x : A.
+OUT: 
+OUT:   q7
+OUT:     :-
+OUT:       G(x), G(y), x = or(x, y), or(or(x, y), y) = or(or(x, y), y).
+OUT: 
+OUT:   q8
+OUT:     :-
+OUT:       G(x), G(y), y / x > 0, x = 1 * x.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:  Space |     Name      | Arity | Kind  
+OUT: -------|---------------|-------|-------
+OUT:        |       A       |   1   |  con  
+OUT:        |       B       |   1   |  con  
+OUT:        |    Boolean    |   0   |  unn  
+OUT:        |       C       |   1   |  con  
+OUT:        |      F1       |   2   |  con  
+OUT:        |      F2       |   2   |  con  
+OUT:        |      F3       |   3   |  con  
+OUT:        |     FALSE     |   0   | ncnst 
+OUT:        |       G       |   1   |  con  
+OUT:        |    Integer    |   0   |  unn  
+OUT:        |    Natural    |   0   |  unn  
+OUT:        |  NegInteger   |   0   |  unn  
+OUT:        |  PosInteger   |   0   |  unn  
+OUT:        |     Real      |   0   |  unn  
+OUT:        |    String     |   0   |  unn  
+OUT:        |     TRUE      |   0   | ncnst 
+OUT:        |     blue      |   0   | ncnst 
+OUT:  Good  |      Any      |   0   |  unn  
+OUT:  Good  |   Constant    |   0   |  unn  
+OUT:  Good  |     Data      |   0   |  unn  
+OUT:  Good  |   conforms    |   0   | dcnst 
+OUT:  Good  | notFunctional |   0   | dcnst 
+OUT:  Good  | notInjective  |   0   | dcnst 
+OUT:  Good  |  notInvTotal  |   0   | dcnst 
+OUT:  Good  | notRelational |   0   | dcnst 
+OUT:  Good  |   notTotal    |   0   | dcnst 
+OUT:  Good  |      q0       |   0   | dcnst 
+OUT:  Good  |      q1       |   0   | dcnst 
+OUT:  Good  |      q2       |   0   | dcnst 
+OUT:  Good  |      q3       |   0   | dcnst 
+OUT:  Good  |      q4       |   0   | dcnst 
+OUT:  Good  |      q5       |   0   | dcnst 
+OUT:  Good  |      q6       |   0   | dcnst 
+OUT:  Good  |      q7       |   0   | dcnst 
+OUT:  Good  |      q8       |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #A #A[0] #B #B[0] #Boolean #C #C[0] #F1 #F1[0] #F1[1] #F2 #F2[0] #F2[1] #F3 #F3[0] #F3[1] #F3[2] #G #G[0] #Integer #Natural #NegInteger #PosInteger #Real #String Good.#Any Good.#Constant Good.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: -348978933 -5 -3 0 1/2 1 2 3 5 50 500000 3245345435 
+OUT: Strings: "hello" 
+OUT: Variables: x x1 x2 x3 x4 x5 y z 
+OUT: 
+OUT: []> typ Good
+OUT: + Type environment at (10, 5)
+OUT:   ~dc0: F1({3..50}, {1..50})
+OUT:   x: {3..50}
+OUT:   y: {1..50}
+OUT:    + Type environment at (10, 11)
+OUT:      ~dc0: F1({3..50}, {1..50})
+OUT:      x: {3..50}
+OUT:      y: {1..50}
+OUT: + Type environment at (14, 5)
+OUT:   ~dc0: F2
+OUT:   x: {0..50}
+OUT:   y: {0..50}
+OUT:    + Type environment at (14, 11)
+OUT:      ~dc0: F2
+OUT:      x: {0..50}
+OUT:      y: {0..50}
+OUT: + Type environment at (18, 5)
+OUT:   ~dc0: F3({-348978933..0}, {500000..3245345435}, PosInteger)
+OUT:   x: {-348978933..0}
+OUT:   y: {500000..3245345435}
+OUT:   z: PosInteger
+OUT:    + Type environment at (18, 11)
+OUT:      ~dc0: F3({-348978933..0}, {500000..3245345435}, PosInteger)
+OUT:      x: {-348978933..0}
+OUT:      y: {500000..3245345435}
+OUT:      z: PosInteger
+OUT: + Type environment at (20, 5)
+OUT:   ~dc0: F3({-348978933..0}, {500000..3245345435} + {blue}, PosInteger)
+OUT:   x: {-348978933..0}
+OUT:   y: {500000..3245345435} + {blue}
+OUT:   z: PosInteger
+OUT:    + Type environment at (20, 11)
+OUT:      ~dc0: F3({-348978933..0}, {500000..3245345435} + {blue}, PosInteger)
+OUT:      x: {-348978933..0}
+OUT:      y: {500000..3245345435} + {blue}
+OUT:      z: PosInteger
+OUT: + Type environment at (22, 5)
+OUT:   x1: {2..2}
+OUT:   x2: {2..2}
+OUT:   x3: {1..1}
+OUT:   x4: {1..1}
+OUT:   x5: {1/2}
+OUT:    + Type environment at (22, 14)
+OUT:      x1: {2..2}
+OUT:      x2: {2..2}
+OUT:      x3: {1..1}
+OUT:      x4: {1..1}
+OUT:      x5: {1/2}
+OUT: + Type environment at (28, 4)
+OUT:   ~dc0: F3({-348978933..-1}, {500000..3245345435} + {blue}, PosInteger)
+OUT:   x: {-348978933..-1}
+OUT:   y: {500000..3245345435} + {blue}
+OUT:   z: PosInteger
+OUT:    + Type environment at (28, 10)
+OUT:      ~dc0: F3({-348978933..-1}, {500000..3245345435} + {blue}, PosInteger)
+OUT:      x: {-348978933..-1}
+OUT:      y: {500000..3245345435} + {blue}
+OUT:      z: PosInteger
+OUT: + Type environment at (30, 4)
+OUT:   x: A
+OUT:    + Type environment at (30, 12)
+OUT:      x: A
+OUT: + Type environment at (32, 4)
+OUT:   ~dc0: G({FALSE} + {TRUE})
+OUT:   x: {FALSE} + {TRUE}
+OUT:   y: {FALSE} + {TRUE}
+OUT:   ~dc1: G({FALSE} + {TRUE})
+OUT:    + Type environment at (32, 10)
+OUT:      ~dc0: G({FALSE} + {TRUE})
+OUT:      x: {FALSE} + {TRUE}
+OUT:      y: {FALSE} + {TRUE}
+OUT:      ~dc1: G({FALSE} + {TRUE})
+OUT: + Type environment at (34, 4)
+OUT:   ~dc0: G(Real)
+OUT:   x: Real
+OUT:   y: Real
+OUT:   ~dc1: G(Real)
+OUT:    + Type environment at (34, 10)
+OUT:      ~dc0: G(Real)
+OUT:      x: Real
+OUT:      y: Real
+OUT:      ~dc1: G(Real)
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 0

@@ -1,0 +1,234 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Compiled) tests.4ml
+OUT: 
+OUT: []> dt ConvTypes
+OUT: Reduced form
+OUT: domain ConvTypes
+OUT: {
+OUT:   F ::= new (Integer).
+OUT:   G ::= (Integer).
+OUT: 
+OUT:   q0
+OUT:     :-
+OUT:       x is Any.
+OUT: 
+OUT:   q1
+OUT:     :-
+OUT:       x is Data.
+OUT: 
+OUT:   q3
+OUT:     :-
+OUT:       _ is Any;
+OUT:       _ is Data.
+OUT: 
+OUT:   q4
+OUT:     :-
+OUT:       x is Any;
+OUT:       x is Data.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:    Space   |     Name      | Arity | Kind  
+OUT: -----------|---------------|-------|-------
+OUT:            |    Boolean    |   0   |  unn  
+OUT:            |       F       |   1   |  con  
+OUT:            |     FALSE     |   0   | ncnst 
+OUT:            |       G       |   1   |  con  
+OUT:            |    Integer    |   0   |  unn  
+OUT:            |    Natural    |   0   |  unn  
+OUT:            |  NegInteger   |   0   |  unn  
+OUT:            |  PosInteger   |   0   |  unn  
+OUT:            |     Real      |   0   |  unn  
+OUT:            |    String     |   0   |  unn  
+OUT:            |     TRUE      |   0   | ncnst 
+OUT:  ConvTypes |      Any      |   0   |  unn  
+OUT:  ConvTypes |   Constant    |   0   |  unn  
+OUT:  ConvTypes |     Data      |   0   |  unn  
+OUT:  ConvTypes |   conforms    |   0   | dcnst 
+OUT:  ConvTypes | notFunctional |   0   | dcnst 
+OUT:  ConvTypes | notInjective  |   0   | dcnst 
+OUT:  ConvTypes |  notInvTotal  |   0   | dcnst 
+OUT:  ConvTypes | notRelational |   0   | dcnst 
+OUT:  ConvTypes |   notTotal    |   0   | dcnst 
+OUT:  ConvTypes |      q0       |   0   | dcnst 
+OUT:  ConvTypes |      q1       |   0   | dcnst 
+OUT:  ConvTypes |      q3       |   0   | dcnst 
+OUT:  ConvTypes |      q4       |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #F #F[0] #G #G[0] #Integer #Natural #NegInteger #PosInteger #Real #String ConvTypes.#Any ConvTypes.#Constant ConvTypes.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 
+OUT: Strings: 
+OUT: Variables: x 
+OUT: 
+OUT: []> typ ConvTypes
+OUT: + Type environment at (6, 3)
+OUT:   x: {ConvTypes.notInvTotal} + {ConvTypes.notTotal} + {ConvTypes.notInjective} + {ConvTypes.notFunctional} + {ConvTypes.notRelational} + {ConvTypes.conforms} + {ConvTypes.q4} + {ConvTypes.q3} + {ConvTypes.q1} + {ConvTypes.q0} + G + F
+OUT:    + Type environment at (6, 9)
+OUT:      x: {ConvTypes.notInvTotal} + {ConvTypes.notTotal} + {ConvTypes.notInjective} + {ConvTypes.notFunctional} + {ConvTypes.notRelational} + {ConvTypes.conforms} + {ConvTypes.q4} + {ConvTypes.q3} + {ConvTypes.q1} + {ConvTypes.q0} + G + F
+OUT: + Type environment at (7, 3)
+OUT:   x: F
+OUT:    + Type environment at (7, 9)
+OUT:      x: F
+OUT: + Type environment at (9, 3)
+OUT:   ~dc2: {ConvTypes.notInvTotal} + {ConvTypes.notTotal} + {ConvTypes.notInjective} + {ConvTypes.notFunctional} + {ConvTypes.notRelational} + {ConvTypes.conforms} + {ConvTypes.q4} + {ConvTypes.q3} + {ConvTypes.q1} + {ConvTypes.q0} + G + F
+OUT:    + Type environment at (9, 9)
+OUT:      ~dc2: {ConvTypes.notInvTotal} + {ConvTypes.notTotal} + {ConvTypes.notInjective} + {ConvTypes.notFunctional} + {ConvTypes.notRelational} + {ConvTypes.conforms} + {ConvTypes.q4} + {ConvTypes.q3} + {ConvTypes.q1} + {ConvTypes.q0} + G + F
+OUT:    + Type environment at (10, 9)
+OUT:      ~dc2: F
+OUT: + Type environment at (12, 3)
+OUT:   x: {ConvTypes.notInvTotal} + {ConvTypes.notTotal} + {ConvTypes.notInjective} + {ConvTypes.notFunctional} + {ConvTypes.notRelational} + {ConvTypes.conforms} + {ConvTypes.q4} + {ConvTypes.q3} + {ConvTypes.q1} + {ConvTypes.q0} + G + F
+OUT:    + Type environment at (12, 9)
+OUT:      x: {ConvTypes.notInvTotal} + {ConvTypes.notTotal} + {ConvTypes.notInjective} + {ConvTypes.notFunctional} + {ConvTypes.notRelational} + {ConvTypes.conforms} + {ConvTypes.q4} + {ConvTypes.q3} + {ConvTypes.q1} + {ConvTypes.q0} + G + F
+OUT:    + Type environment at (13, 9)
+OUT:      x: F
+OUT: 
+OUT: []> dt Good
+OUT: Reduced form
+OUT: domain Good
+OUT: {
+OUT:   F0 ::= new (x: NegInteger, y: Real).
+OUT:   F1 ::= new (x: NegInteger + { "hello" }, y: String).
+OUT:   F2 ::= new (x: Boolean, y: String + { TRUE }).
+OUT:   F3 ::= new (x: { 1..1000 }, y: { "hello", RED, 1 }).
+OUT: 
+OUT:   q0
+OUT:     :-
+OUT:       F0(x, x).
+OUT: 
+OUT:   q1
+OUT:     :-
+OUT:       F1(x, x).
+OUT: 
+OUT:   q2
+OUT:     :-
+OUT:       F2(x, x).
+OUT: 
+OUT:   q3
+OUT:     :-
+OUT:       F3(x, x).
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:  Space |     Name      | Arity | Kind  
+OUT: -------|---------------|-------|-------
+OUT:        |    Boolean    |   0   |  unn  
+OUT:        |      F0       |   2   |  con  
+OUT:        |      F1       |   2   |  con  
+OUT:        |      F2       |   2   |  con  
+OUT:        |      F3       |   2   |  con  
+OUT:        |     FALSE     |   0   | ncnst 
+OUT:        |    Integer    |   0   |  unn  
+OUT:        |    Natural    |   0   |  unn  
+OUT:        |  NegInteger   |   0   |  unn  
+OUT:        |  PosInteger   |   0   |  unn  
+OUT:        |      RED      |   0   | ncnst 
+OUT:        |     Real      |   0   |  unn  
+OUT:        |    String     |   0   |  unn  
+OUT:        |     TRUE      |   0   | ncnst 
+OUT:  Good  |      Any      |   0   |  unn  
+OUT:  Good  |   Constant    |   0   |  unn  
+OUT:  Good  |     Data      |   0   |  unn  
+OUT:  Good  |   conforms    |   0   | dcnst 
+OUT:  Good  | notFunctional |   0   | dcnst 
+OUT:  Good  | notInjective  |   0   | dcnst 
+OUT:  Good  |  notInvTotal  |   0   | dcnst 
+OUT:  Good  | notRelational |   0   | dcnst 
+OUT:  Good  |   notTotal    |   0   | dcnst 
+OUT:  Good  |      q0       |   0   | dcnst 
+OUT:  Good  |      q1       |   0   | dcnst 
+OUT:  Good  |      q2       |   0   | dcnst 
+OUT:  Good  |      q3       |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #F0 #F0[0] #F0[1] #F1 #F1[0] #F1[1] #F2 #F2[0] #F2[1] #F3 #F3[0] #F3[1] #Integer #Natural #NegInteger #PosInteger #Real #String Good.#Any Good.#Constant Good.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 1 1000 
+OUT: Strings: "hello" 
+OUT: Variables: x 
+OUT: 
+OUT: []> typ Good
+OUT: + Type environment at (19, 4)
+OUT:   ~dc0: F0(NegInteger, NegInteger)
+OUT:   x: NegInteger
+OUT:    + Type environment at (19, 10)
+OUT:      ~dc0: F0(NegInteger, NegInteger)
+OUT:      x: NegInteger
+OUT: + Type environment at (22, 4)
+OUT:   ~dc0: F1({"hello"} + NegInteger, {"hello"})
+OUT:   x: {"hello"}
+OUT:    + Type environment at (22, 10)
+OUT:      ~dc0: F1({"hello"} + NegInteger, {"hello"})
+OUT:      x: {"hello"}
+OUT: + Type environment at (25, 4)
+OUT:   ~dc0: F2({FALSE} + {TRUE}, {TRUE})
+OUT:   x: {TRUE}
+OUT:    + Type environment at (25, 10)
+OUT:      ~dc0: F2({FALSE} + {TRUE}, {TRUE})
+OUT:      x: {TRUE}
+OUT: + Type environment at (28, 4)
+OUT:   ~dc0: F3({1..1}, {1..1})
+OUT:   x: {1..1}
+OUT:    + Type environment at (28, 10)
+OUT:      ~dc0: F3({1..1}, {1..1})
+OUT:      x: {1..1}
+OUT: 
+OUT: []> dt Facts
+OUT: Reduced form
+OUT: domain Facts
+OUT: {
+OUT:   T ::= new (left: any T + Natural, right: any T + Natural).
+OUT: 
+OUT:   T(1, 2).
+OUT: 
+OUT:   T(T(1, 2), T(3, 4)).
+OUT: 
+OUT:   T(T(0, T(0, 0)), 0).
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:  Space |     Name      | Arity | Kind  
+OUT: -------|---------------|-------|-------
+OUT:        |    Boolean    |   0   |  unn  
+OUT:        |     FALSE     |   0   | ncnst 
+OUT:        |    Integer    |   0   |  unn  
+OUT:        |    Natural    |   0   |  unn  
+OUT:        |  NegInteger   |   0   |  unn  
+OUT:        |  PosInteger   |   0   |  unn  
+OUT:        |     Real      |   0   |  unn  
+OUT:        |    String     |   0   |  unn  
+OUT:        |       T       |   2   |  con  
+OUT:        |     TRUE      |   0   | ncnst 
+OUT:  Facts |      Any      |   0   |  unn  
+OUT:  Facts |   Constant    |   0   |  unn  
+OUT:  Facts |     Data      |   0   |  unn  
+OUT:  Facts |   conforms    |   0   | dcnst 
+OUT:  Facts | notFunctional |   0   | dcnst 
+OUT:  Facts | notInjective  |   0   | dcnst 
+OUT:  Facts |  notInvTotal  |   0   | dcnst 
+OUT:  Facts | notRelational |   0   | dcnst 
+OUT:  Facts |   notTotal    |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #Integer #Natural #NegInteger #PosInteger #Real #String #T #T[0] #T[1] Facts.#Any Facts.#Constant Facts.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 0 1 2 3 4 
+OUT: Strings: 
+OUT: Variables: 
+OUT: 
+OUT: []> typ Facts
+OUT: + Type environment at (35, 4)
+OUT:    + Type environment at (35, 4)
+OUT: + Type environment at (36, 4)
+OUT:    + Type environment at (36, 4)
+OUT: + Type environment at (37, 4)
+OUT:    + Type environment at (37, 4)
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 0

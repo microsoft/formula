@@ -1,0 +1,24 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Failed) tests.4ml
+OUT: tests.4ml (14, 4): Could not parse or render. 
+OUT: tests.4ml (14, 31): Could not parse or render. Unexpected character $
+OUT: tests.4ml (21, 4): Could not parse or render. 
+OUT: tests.4ml (25, 5): Could not parse or render. Unexpected character a
+OUT: tests.4ml (33, 24): Could not parse or render. 
+OUT: tests.4ml (33, 26): Could not parse or render. Unexpected character `
+OUT: tests.4ml (40, 13): Could not parse or render. 
+OUT: tests.4ml (41, 24): Could not parse or render. Unexpected character b
+OUT: tests.4ml (47, 5): Could not parse or render. 
+OUT: tests.4ml (52, 15): Could not parse or render. Unexpected character a
+OUT: tests.4ml (0, 0): The install operation failed
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 1

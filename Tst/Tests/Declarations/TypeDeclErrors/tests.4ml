@@ -1,0 +1,120 @@
+domain BadRuleForms
+{
+  q4 :- _ is _.
+}
+
+domain BadData1
+{
+   _   ::= new (i: Integer).
+}
+
+domain BadData2
+{
+   F   ::= new (_: Integer).
+}
+
+domain BadData3
+{
+   G   ::= new (_: _).
+}
+
+domain BadData4
+{   
+   H   ::= new (a: _).
+}
+
+domain BadData5
+{
+   G   ::= new (Integer).
+   I   ::= fun (a: G -> a: G).
+   J   ::= new (H).
+   
+   U1  ::= A + B + Integer.
+   U2  ::= _ + Integer.
+   U3  ::= BadTypeNames._ + Integer.
+   U4  ::= _ + BadTypeNames._.
+}
+
+domain A1
+{
+
+}
+
+domain B1 extends A1
+{
+   Ambiguity ::= Any + Data.
+}
+
+
+domain A2
+{
+   F ::= new (PosInteger + { TRUE }).    
+}
+
+domain B2 extends A2
+{
+   F ::= new (PosInteger + { FALSE }).    
+}
+
+domain A3
+{
+   F ::= new (a: String, Integer).    
+}
+
+domain B3 extends A3
+{
+   F ::= new (String, a: Integer).    
+}
+
+domain A4
+{
+   F ::= fun (a: String -> Integer).    
+}
+
+domain B4 extends A4
+{
+   F ::= inj (a: String -> Integer).    
+}
+
+domain A5
+{
+   F ::= fun (a: String -> Integer).    
+}
+
+domain B5 extends A5
+{
+   F ::= new (a: String, Integer).    
+}
+
+domain A6
+{
+   F ::= (a: String, Integer).    
+}
+
+domain B6 extends A6
+{
+   F ::= new (a: String, Integer).    
+}
+
+domain A7
+{
+   F ::= (String).    
+}
+
+domain B7 extends A7
+{
+   F ::= (String, Integer).    
+}
+
+domain A8
+{
+   F ::= (String).    
+}
+
+domain B8 extends X::A8, Y::A8
+{
+   U ::= F.
+}
+
+
+

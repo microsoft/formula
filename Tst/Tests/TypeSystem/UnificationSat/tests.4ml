@@ -1,0 +1,110 @@
+domain Base
+{
+    Cons ::= new (val: Natural, tail: any Cons + { NIL } ).
+    R    ::= new (val: NegInteger + { 0 }).
+    B    ::= new (val: Boolean).
+    A    ::= new (val: { FALSE } ).
+    A'   ::= new (val: { TRUE } ).
+    Tree ::= new (lft: any Natural + Tree + { NIL }, 
+                  rt:  any Natural + Tree + { NIL } ).
+    F    ::= new (any Integer + F).                                
+}
+
+domain Good extends Base
+{
+   G ::= (Good.Any).
+
+   q0 :- G(z), Tree(x, y) = z.      
+
+   q1 :- G(x), x = Cons(a, y), y = Cons(b, z).
+
+   q2 :- G(x), Tree(x, x) = Tree(y, Tree(z, z)).
+
+   q3 :- Tree(x, Tree(y, y)), z = Cons(y, x).
+
+   q4 :- G(x), Tree(x, y) = Tree(y, x), x = Tree(z, z).
+   
+   q5 :- G(x0),
+         x0 = Cons(0, x1),
+         x1 = Cons(1, x2),
+         x2 = Cons(2, x3),
+         x3 = Cons(3, x4),
+         x4 = Cons(4, x5),
+         x5 = Cons(5, x6),
+         x6 = Cons(6, x7),
+         x7 = Cons(7, x8),
+         x8 = Cons(8, x9),
+         x9 = Cons(9, x10),
+         x10 = Cons(10, x11),
+         x11 = Cons(11, x12),
+         x12 = Cons(12, x13),
+         x13 = Cons(13, x14),
+         x14 = Cons(14, x15),
+         x15 = Cons(15, x16),
+         x16 = Cons(16, x17),
+         x17 = Cons(17, x18),
+         x18 = Cons(18, x19),
+         x19 = Cons(19, x20),
+         x20 = Cons(20, x21),
+         x21 = Cons(21, x22). 
+
+   q6 :- G(z),
+         Tree(1, Tree(2, NIL)) = x,  
+         Tree(2, Tree(z, NIL)) = y.
+
+   q7 :- x = 
+         Cons(0,
+         Cons(1,
+         Cons(2,
+         Cons(3,
+         Cons(4,
+         Cons(5,
+         Cons(6,
+         Cons(7,
+         Cons(8,
+         Cons(9,
+         Cons(10,
+         Cons(11,
+         Cons(12,
+         Cons(13,
+         Cons(14,
+         Cons(15,
+         Cons(16,
+         Cons(17,
+         Cons(18,
+         Cons(19,
+         Cons(20,
+         Cons(21, NIL)))))))))))))))))))))).
+         
+   q8 :- Tree(x, y),
+         x = Tree(z, z), y = Tree(x, x),
+         z = 3.
+         
+   q9 :- A(FALSE) = A(FALSE).
+
+   q10 :- x = 1, x = y, y = 1.
+
+   q11 :- x = F(y), x = F(z),
+          y = F(y'), y = F(z'),
+          z' = y',
+          G(y').    
+
+   q12 :- G(x), x.lft.rt.lft.rt = y.
+   
+   q13 :- G(x), G(y), x.lft.rt = y.rt, y.rt = x.lft.rt. 
+   
+   q14 :- x.lft = Tree( z, Tree(z', z')),
+          y.lft = Tree( w,     w      ),
+          x = y,
+          G(x).   
+          
+   q15 :- G(x), G(y), x.val = y.val, x != y.              
+
+   q16 :- A(_), A'(_).
+
+   q17 :- x is R(y).     
+   
+   q18 :- Tree(_, _).
+   
+   q19 :- x is Good.Data.
+}    

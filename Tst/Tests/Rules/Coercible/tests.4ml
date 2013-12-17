@@ -1,0 +1,100 @@
+domain A1
+{
+    Cons ::= new (val: Integer, tail: any Cons + {NIL}).
+    Things ::= Cons.
+}
+
+domain A1'
+{
+    List ::= Cons + {NIL}.
+    Cons ::= new (val: Real, tail: any List).
+    Things ::= Cons + List.
+}
+
+transform T1 (in1:: A1, in2:: A1) returns (out:: A1')
+{
+   Triple ::= (in1.Cons + {NIL}, 
+               in2.Cons + {NIL}, 
+               out.Cons + {NIL}).
+               
+   Things ::= Triple + in1.Things + in2.Things + out.Things.      
+
+   //// Coercion through constants
+   out.Cons(x, y) :- in1.Cons(x, y).
+   
+   //// Multiple distinct coercions for same head term.
+   Triple(c, c, c) :- c is in1.Cons. 
+   
+   //// Coercion not introduced when type already subtype of expected type
+   _(x) :- x is Things.
+   
+   //// Forced coercion through identity function.
+   out._(x) :- x is in1.Cons.
+   
+   //// Coercions on constructor applications
+   out.Cons(1, in1.Cons(1, NIL)).
+   
+   //// Robustness against explicit qualification
+   out.Cons(1, out.Cons(1, NIL)).   
+}
+
+transform T1' (in1:: A1, in2:: A1) returns (out:: A1')
+{
+   Triple ::= (in1.Cons + {NIL}, 
+               in2.Cons + {NIL}, 
+               out.Cons + {NIL}).
+   
+   //// Coercion inside of comprehension
+   q :- x is in1.Cons, count({ out.Cons(1, x) }) > 0.     
+}
+
+domain B includes X::A1', A1'
+{
+   //// Coercion deletes the renaming prefix X.
+   Cons(1, x) :- x is X.Cons.
+   
+   //// Coercion extends the empty renaming prefix
+   X.Cons(1, x) :- x is Cons.    
+}
+
+domain C includes Y::B, A1'
+{
+   //// Coercion deletes the renaming prefix Y.X.
+   Cons(1, x) :- x is X.Cons.
+   
+   //// Coercion extends the empty renaming prefix to Y.X.
+   X.Cons(1, x) :- x is Cons.
+   
+   //// Coercion deletes the renaming prefix X.
+   Y.Cons(1, x) :- x is X.Cons.
+   
+   //// Coercion extends the empty renaming prefix
+   X.Cons(1, x) :- x is Y.Cons.       
+}
+
+transform T2 (in1:: A1, in2:: A1) returns (out:: B)
+{
+   //// Deeper qualification disambiguates coercion
+   out.X._(x) :- x is in1.Cons.
+   
+   //// Explicit qualification of Cons disambiguates coercion
+   out.Cons(1, x) :- x is in1.Cons.   
+}
+
+domain D includes Y::B, X::A1', A1'
+{
+   Type1 ::= Y.X.Cons + Y.Cons.
+   Type2 ::= Cons + X.Cons.
+   
+   F  ::= (Type2).
+   F' ::= (Type1).
+   
+   //// Coercion deletes the renaming prefix Y.
+   F(x) :- x is Type1.
+   
+   //// Coercion adds the renaming prefix Y.
+   F'(x) :- x is Type2.   
+}
+
+
+

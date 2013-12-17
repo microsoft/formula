@@ -1,0 +1,61 @@
+domain Base
+{
+    Cons ::= new (val: Natural, tail: any Cons + { NIL } ).
+    R    ::= new (val: NegInteger + { 0 }).
+    B    ::= new (val: Boolean).
+    A    ::= new (val: { FALSE } ).
+    A'   ::= new (val: { TRUE } ).
+    Tree ::= new (lft: any Natural + Tree + { NIL }, 
+                  rt:  any Natural + Tree + { NIL } ).
+    F    ::= new (any Integer + F).                                
+}
+
+domain Good extends Base
+{
+
+   q :- TRUE >= FALSE.
+   q :- TRUE >= 1.
+   q :- TRUE >= "TRUE".
+   q :- TRUE >= TRUE.
+   q :- 1 >= 0.
+   q :- "TRUE" >= "FALSE".
+      
+   q :- x is Tree(2, _), y is Tree(1, Tree(_, _)), x >= y.
+   q :- Cons(1, Cons(2, Cons(3, Cons(4, NIL)))) >= Cons(1, Cons(2, Cons(3, NIL))).   
+   q :- x is Tree(Tree(_, _), _), y is Tree(2, _), x >= y.   
+   q :- x is Tree, x.lft.lft.lft = Tree(_,_),
+        y is Tree, y.lft.lft = NIL, 
+        x >= y.
+   q :- x is B, y is A, x >= y.
+   q :- A(_) >= 0.
+   q :- A(_) >= "0".
+   q :- A(_) >= NIL.
+   q :- "abcdefg" >= "abc".    
+
+   q :- FALSE < TRUE.
+   q :- 1 < TRUE.
+   q :- "TRUE" < TRUE.
+   q :- TRUE <= TRUE.
+   q :- 0 < 1.
+   q :- "FALSE" < "TRUE" .
+      
+   q :- x is Tree(1, Tree(_, _)), y is Tree(2, _), x < y.
+   q :- Cons(1, Cons(2, Cons(3, NIL))) < Cons(1, Cons(2, Cons(3, Cons(4, NIL)))).   
+   q :- x is Tree(Tree(_, _), _), y is Tree(2, _), y < x.   
+   q :- x is Tree, x.lft.lft.lft = Tree(_,_),
+        y is Tree, y.lft.lft = NIL, 
+        y < x.
+   q :- x is B, y is A, y < x.
+   q :- 0 < A(_).
+   q :- "0" < A(_).
+   q :- NIL < A(_).
+   q :- "abc" < "abcdefg".    
+   
+   P  ::= ( { 1..1000000 } , { 1000001..1000001, TRUE } ).
+   P' ::= ( { 1..1000000, FALSE } , { 1000001..1000001, TRUE } ).
+         
+   q :- P(x, y), x <= y. 
+   q :- P'(x, y), or(x,x) < and(y, y).      
+   q :- R(x), y = -1*x, x >= y.     
+}    
+

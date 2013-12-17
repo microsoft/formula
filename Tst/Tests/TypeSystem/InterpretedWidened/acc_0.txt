@@ -1,0 +1,64 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Compiled) tests.4ml
+OUT: 
+OUT: []> dt Widened
+OUT: Reduced form
+OUT: domain Widened
+OUT: {
+OUT:   F1 ::= new (arg1: { 1..500000 }, arg2: { 1..50 }).
+OUT: 
+OUT:   q0
+OUT:     :-
+OUT:       F1(x, y), x = x + 2.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:   Space  |     Name      | Arity | Kind  
+OUT: ---------|---------------|-------|-------
+OUT:          |    Boolean    |   0   |  unn  
+OUT:          |      F1       |   2   |  con  
+OUT:          |     FALSE     |   0   | ncnst 
+OUT:          |    Integer    |   0   |  unn  
+OUT:          |    Natural    |   0   |  unn  
+OUT:          |  NegInteger   |   0   |  unn  
+OUT:          |  PosInteger   |   0   |  unn  
+OUT:          |     Real      |   0   |  unn  
+OUT:          |    String     |   0   |  unn  
+OUT:          |     TRUE      |   0   | ncnst 
+OUT:  Widened |      Any      |   0   |  unn  
+OUT:  Widened |   Constant    |   0   |  unn  
+OUT:  Widened |     Data      |   0   |  unn  
+OUT:  Widened |   conforms    |   0   | dcnst 
+OUT:  Widened | notFunctional |   0   | dcnst 
+OUT:  Widened | notInjective  |   0   | dcnst 
+OUT:  Widened |  notInvTotal  |   0   | dcnst 
+OUT:  Widened | notRelational |   0   | dcnst 
+OUT:  Widened |   notTotal    |   0   | dcnst 
+OUT:  Widened |      q0       |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #F1 #F1[0] #F1[1] #Integer #Natural #NegInteger #PosInteger #Real #String Widened.#Any Widened.#Constant Widened.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 1 2 50 500000 
+OUT: Strings: 
+OUT: Variables: x y 
+OUT: 
+OUT: []> typ Widened
+OUT: + Type environment at (5, 5)
+OUT:   ~dc0: F1
+OUT:   x: {1..500000}
+OUT:   y: {1..50}
+OUT:    + Type environment at (5, 11)
+OUT:      ~dc0: F1
+OUT:      x: {1..500000}
+OUT:      y: {1..50}
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 0

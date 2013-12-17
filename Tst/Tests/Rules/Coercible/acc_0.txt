@@ -1,0 +1,774 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Compiled) tests.4ml
+OUT: 
+OUT: []> dt A1
+OUT: Reduced form
+OUT: domain A1
+OUT: {
+OUT:   Cons ::= new (val: Integer, tail: any Cons + { NIL }).
+OUT:   Things ::= Cons.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:  Space |     Name      | Arity | Kind  
+OUT: -------|---------------|-------|-------
+OUT:        |    Boolean    |   0   |  unn  
+OUT:        |     Cons      |   2   |  con  
+OUT:        |     FALSE     |   0   | ncnst 
+OUT:        |    Integer    |   0   |  unn  
+OUT:        |      NIL      |   0   | ncnst 
+OUT:        |    Natural    |   0   |  unn  
+OUT:        |  NegInteger   |   0   |  unn  
+OUT:        |  PosInteger   |   0   |  unn  
+OUT:        |     Real      |   0   |  unn  
+OUT:        |    String     |   0   |  unn  
+OUT:        |     TRUE      |   0   | ncnst 
+OUT:        |    Things     |   0   |  unn  
+OUT:   A1   |      Any      |   0   |  unn  
+OUT:   A1   |   Constant    |   0   |  unn  
+OUT:   A1   |     Data      |   0   |  unn  
+OUT:   A1   |   conforms    |   0   | dcnst 
+OUT:   A1   | notFunctional |   0   | dcnst 
+OUT:   A1   | notInjective  |   0   | dcnst 
+OUT:   A1   |  notInvTotal  |   0   | dcnst 
+OUT:   A1   | notRelational |   0   | dcnst 
+OUT:   A1   |   notTotal    |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #Cons #Cons[0] #Cons[1] #Integer #Natural #NegInteger #PosInteger #Real #String #Things A1.#Any A1.#Constant A1.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 
+OUT: Strings: 
+OUT: Variables: 
+OUT: 
+OUT: []> typ A1
+OUT: 
+OUT: []> dt A1'
+OUT: Reduced form
+OUT: domain A1'
+OUT: {
+OUT:   List ::= Cons + { NIL }.
+OUT:   Cons ::= new (val: Real, tail: any List).
+OUT:   Things ::= Cons + List.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:  Space |     Name      | Arity | Kind  
+OUT: -------|---------------|-------|-------
+OUT:        |    Boolean    |   0   |  unn  
+OUT:        |     Cons      |   2   |  con  
+OUT:        |     FALSE     |   0   | ncnst 
+OUT:        |    Integer    |   0   |  unn  
+OUT:        |     List      |   0   |  unn  
+OUT:        |      NIL      |   0   | ncnst 
+OUT:        |    Natural    |   0   |  unn  
+OUT:        |  NegInteger   |   0   |  unn  
+OUT:        |  PosInteger   |   0   |  unn  
+OUT:        |     Real      |   0   |  unn  
+OUT:        |    String     |   0   |  unn  
+OUT:        |     TRUE      |   0   | ncnst 
+OUT:        |    Things     |   0   |  unn  
+OUT:   A1'  |      Any      |   0   |  unn  
+OUT:   A1'  |   Constant    |   0   |  unn  
+OUT:   A1'  |     Data      |   0   |  unn  
+OUT:   A1'  |   conforms    |   0   | dcnst 
+OUT:   A1'  | notFunctional |   0   | dcnst 
+OUT:   A1'  | notInjective  |   0   | dcnst 
+OUT:   A1'  |  notInvTotal  |   0   | dcnst 
+OUT:   A1'  | notRelational |   0   | dcnst 
+OUT:   A1'  |   notTotal    |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #Cons #Cons[0] #Cons[1] #Integer #List #Natural #NegInteger #PosInteger #Real #String #Things A1'.#Any A1'.#Constant A1'.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 
+OUT: Strings: 
+OUT: Variables: 
+OUT: 
+OUT: []> typ A1'
+OUT: 
+OUT: []> dt T1
+OUT: Reduced form
+OUT: transform T1 (in1:: A1, in2:: A1)
+OUT: returns (out:: A1')
+OUT: {
+OUT:   Triple ::= (in1.Cons + { NIL }, in2.Cons + { NIL }, out.Cons + { NIL }).
+OUT:   Things ::= Triple + in1.Things + in2.Things + out.Things.
+OUT: 
+OUT:   out.Cons(x, y)
+OUT:     :-
+OUT:       in1.Cons(x, y).
+OUT: 
+OUT:   Triple(c, c, c)
+OUT:     :-
+OUT:       c is in1.Cons.
+OUT: 
+OUT:   _(x)
+OUT:     :-
+OUT:       x is Things.
+OUT: 
+OUT:   out._(x)
+OUT:     :-
+OUT:       x is in1.Cons.
+OUT: 
+OUT:   out.Cons(1, in1.Cons(1, NIL)).
+OUT: 
+OUT:   out.Cons(1, out.Cons(1, NIL)).
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:   Space  |     Name      | Arity | Kind  
+OUT: ---------|---------------|-------|-------
+OUT:          |    Boolean    |   0   |  unn  
+OUT:          |     FALSE     |   0   | ncnst 
+OUT:          |    Integer    |   0   |  unn  
+OUT:          |      NIL      |   0   | ncnst 
+OUT:          |    Natural    |   0   |  unn  
+OUT:          |  NegInteger   |   0   |  unn  
+OUT:          |  PosInteger   |   0   |  unn  
+OUT:          |     Real      |   0   |  unn  
+OUT:          |    String     |   0   |  unn  
+OUT:          |     TRUE      |   0   | ncnst 
+OUT:          |    Things     |   0   |  unn  
+OUT:          |    Triple     |   3   |  con  
+OUT:          |   ~scValue    |   2   |  con  
+OUT:    T1    |      Any      |   0   |  unn  
+OUT:    T1    |   Constant    |   0   |  unn  
+OUT:    T1    |     Data      |   0   |  unn  
+OUT:    T1    |    ensures    |   0   | dcnst 
+OUT:    T1    |   requires    |   0   | dcnst 
+OUT:    in1   |      Any      |   0   |  unn  
+OUT:    in1   |    Boolean    |   0   |  unn  
+OUT:    in1   |     Cons      |   2   |  con  
+OUT:    in1   |   Constant    |   0   |  unn  
+OUT:    in1   |     Data      |   0   |  unn  
+OUT:    in1   |    Integer    |   0   |  unn  
+OUT:    in1   |    Natural    |   0   |  unn  
+OUT:    in1   |  NegInteger   |   0   |  unn  
+OUT:    in1   |  PosInteger   |   0   |  unn  
+OUT:    in1   |     Real      |   0   |  unn  
+OUT:    in1   |    String     |   0   |  unn  
+OUT:    in1   |    Things     |   0   |  unn  
+OUT:  in1.A1  |      Any      |   0   |  unn  
+OUT:  in1.A1  |   Constant    |   0   |  unn  
+OUT:  in1.A1  |     Data      |   0   |  unn  
+OUT:  in1.A1  |   conforms    |   0   | dcnst 
+OUT:  in1.A1  | notFunctional |   0   | dcnst 
+OUT:  in1.A1  | notInjective  |   0   | dcnst 
+OUT:  in1.A1  |  notInvTotal  |   0   | dcnst 
+OUT:  in1.A1  | notRelational |   0   | dcnst 
+OUT:  in1.A1  |   notTotal    |   0   | dcnst 
+OUT:    in2   |      Any      |   0   |  unn  
+OUT:    in2   |    Boolean    |   0   |  unn  
+OUT:    in2   |     Cons      |   2   |  con  
+OUT:    in2   |   Constant    |   0   |  unn  
+OUT:    in2   |     Data      |   0   |  unn  
+OUT:    in2   |    Integer    |   0   |  unn  
+OUT:    in2   |    Natural    |   0   |  unn  
+OUT:    in2   |  NegInteger   |   0   |  unn  
+OUT:    in2   |  PosInteger   |   0   |  unn  
+OUT:    in2   |     Real      |   0   |  unn  
+OUT:    in2   |    String     |   0   |  unn  
+OUT:    in2   |    Things     |   0   |  unn  
+OUT:  in2.A1  |      Any      |   0   |  unn  
+OUT:  in2.A1  |   Constant    |   0   |  unn  
+OUT:  in2.A1  |     Data      |   0   |  unn  
+OUT:  in2.A1  |   conforms    |   0   | dcnst 
+OUT:  in2.A1  | notFunctional |   0   | dcnst 
+OUT:  in2.A1  | notInjective  |   0   | dcnst 
+OUT:  in2.A1  |  notInvTotal  |   0   | dcnst 
+OUT:  in2.A1  | notRelational |   0   | dcnst 
+OUT:  in2.A1  |   notTotal    |   0   | dcnst 
+OUT:    out   |      Any      |   0   |  unn  
+OUT:    out   |    Boolean    |   0   |  unn  
+OUT:    out   |     Cons      |   2   |  con  
+OUT:    out   |   Constant    |   0   |  unn  
+OUT:    out   |     Data      |   0   |  unn  
+OUT:    out   |    Integer    |   0   |  unn  
+OUT:    out   |     List      |   0   |  unn  
+OUT:    out   |    Natural    |   0   |  unn  
+OUT:    out   |  NegInteger   |   0   |  unn  
+OUT:    out   |  PosInteger   |   0   |  unn  
+OUT:    out   |     Real      |   0   |  unn  
+OUT:    out   |    String     |   0   |  unn  
+OUT:    out   |    Things     |   0   |  unn  
+OUT:  out.A1' |      Any      |   0   |  unn  
+OUT:  out.A1' |   Constant    |   0   |  unn  
+OUT:  out.A1' |     Data      |   0   |  unn  
+OUT:  out.A1' |   conforms    |   0   | dcnst 
+OUT:  out.A1' | notFunctional |   0   | dcnst 
+OUT:  out.A1' | notInjective  |   0   | dcnst 
+OUT:  out.A1' |  notInvTotal  |   0   | dcnst 
+OUT:  out.A1' | notRelational |   0   | dcnst 
+OUT:  out.A1' |   notTotal    |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #Integer #Natural #NegInteger #PosInteger #Real #String #Things #Triple #Triple[0] #Triple[1] #Triple[2] T1.#Any T1.#Constant T1.#Data in1.#Any in1.#Boolean in1.#Cons in1.#Cons[0] in1.#Cons[1] in1.#Constant in1.#Data in1.#Integer in1.#Natural in1.#NegInteger in1.#PosInteger in1.#Real in1.#String in1.#Things in1.A1.#Any in1.A1.#Constant in1.A1.#Data in2.#Any in2.#Boolean in2.#Cons in2.#Cons[0] in2.#Cons[1] in2.#Constant in2.#Data in2.#Integer in2.#Natural in2.#NegInteger in2.#PosInteger in2.#Real in2.#String in2.#Things in2.A1.#Any in2.A1.#Constant in2.A1.#Data out.#Any out.#Boolean out.#Cons out.#Cons[0] out.#Cons[1] out.#Constant out.#Data out.#Integer out.#List out.#Natural out.#NegInteger out.#PosInteger out.#Real out.#String out.#Things out.A1'.#Any out.A1'.#Constant out.A1'.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 1 
+OUT: Strings: 
+OUT: Variables: c x y 
+OUT: 
+OUT: []> typ T1
+OUT: + Type environment at (23, 4)
+OUT:   x: Integer
+OUT:   y: {NIL} + in1.Cons
+OUT:   ~dc0: in1.Cons
+OUT:   Coerced arg 2 of (23, 4): in1 --> out
+OUT:    + Type environment at (23, 22)
+OUT:      x: Integer
+OUT:      y: {NIL} + in1.Cons
+OUT:      ~dc0: in1.Cons
+OUT: + Type environment at (26, 4)
+OUT:   c: in1.Cons
+OUT:   Coerced arg 2 of (26, 4): in1 --> in2
+OUT:   Coerced arg 3 of (26, 4): in1 --> out
+OUT:    + Type environment at (26, 23)
+OUT:      c: in1.Cons
+OUT: + Type environment at (29, 4)
+OUT:   x: Triple + out.Cons + in2.Cons + in1.Cons
+OUT:    + Type environment at (29, 12)
+OUT:      x: Triple + out.Cons + in2.Cons + in1.Cons
+OUT: + Type environment at (32, 4)
+OUT:   x: in1.Cons
+OUT:   Coerced arg 1 of (32, 4): in1 --> out
+OUT:    + Type environment at (32, 16)
+OUT:      x: in1.Cons
+OUT: + Type environment at (35, 4)
+OUT:   Coerced arg 2 of (35, 4): in1 --> out
+OUT:    + Type environment at (35, 4)
+OUT: + Type environment at (38, 4)
+OUT:    + Type environment at (38, 4)
+OUT: 
+OUT: []> dt B
+OUT: Reduced form
+OUT: domain B includes X:: A1', A1'
+OUT: {
+OUT: 
+OUT:   Cons(1, x)
+OUT:     :-
+OUT:       x is X.Cons.
+OUT: 
+OUT:   X.Cons(1, x)
+OUT:     :-
+OUT:       x is Cons.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:  Space |     Name      | Arity | Kind  
+OUT: -------|---------------|-------|-------
+OUT:        |    Boolean    |   0   |  unn  
+OUT:        |     Cons      |   2   |  con  
+OUT:        |     FALSE     |   0   | ncnst 
+OUT:        |    Integer    |   0   |  unn  
+OUT:        |     List      |   0   |  unn  
+OUT:        |      NIL      |   0   | ncnst 
+OUT:        |    Natural    |   0   |  unn  
+OUT:        |  NegInteger   |   0   |  unn  
+OUT:        |  PosInteger   |   0   |  unn  
+OUT:        |     Real      |   0   |  unn  
+OUT:        |    String     |   0   |  unn  
+OUT:        |     TRUE      |   0   | ncnst 
+OUT:        |    Things     |   0   |  unn  
+OUT:   A1'  |      Any      |   0   |  unn  
+OUT:   A1'  |   Constant    |   0   |  unn  
+OUT:   A1'  |     Data      |   0   |  unn  
+OUT:   A1'  |   conforms    |   0   | dcnst 
+OUT:   A1'  | notFunctional |   0   | dcnst 
+OUT:   A1'  | notInjective  |   0   | dcnst 
+OUT:   A1'  |  notInvTotal  |   0   | dcnst 
+OUT:   A1'  | notRelational |   0   | dcnst 
+OUT:   A1'  |   notTotal    |   0   | dcnst 
+OUT:    B   |      Any      |   0   |  unn  
+OUT:    B   |   Constant    |   0   |  unn  
+OUT:    B   |     Data      |   0   |  unn  
+OUT:    B   |   conforms    |   0   | dcnst 
+OUT:    B   | notFunctional |   0   | dcnst 
+OUT:    B   | notInjective  |   0   | dcnst 
+OUT:    B   |  notInvTotal  |   0   | dcnst 
+OUT:    B   | notRelational |   0   | dcnst 
+OUT:    B   |   notTotal    |   0   | dcnst 
+OUT:    X   |      Any      |   0   |  unn  
+OUT:    X   |    Boolean    |   0   |  unn  
+OUT:    X   |     Cons      |   2   |  con  
+OUT:    X   |   Constant    |   0   |  unn  
+OUT:    X   |     Data      |   0   |  unn  
+OUT:    X   |    Integer    |   0   |  unn  
+OUT:    X   |     List      |   0   |  unn  
+OUT:    X   |    Natural    |   0   |  unn  
+OUT:    X   |  NegInteger   |   0   |  unn  
+OUT:    X   |  PosInteger   |   0   |  unn  
+OUT:    X   |     Real      |   0   |  unn  
+OUT:    X   |    String     |   0   |  unn  
+OUT:    X   |    Things     |   0   |  unn  
+OUT:  X.A1' |      Any      |   0   |  unn  
+OUT:  X.A1' |   Constant    |   0   |  unn  
+OUT:  X.A1' |     Data      |   0   |  unn  
+OUT:  X.A1' |   conforms    |   0   | dcnst 
+OUT:  X.A1' | notFunctional |   0   | dcnst 
+OUT:  X.A1' | notInjective  |   0   | dcnst 
+OUT:  X.A1' |  notInvTotal  |   0   | dcnst 
+OUT:  X.A1' | notRelational |   0   | dcnst 
+OUT:  X.A1' |   notTotal    |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #Cons #Cons[0] #Cons[1] #Integer #List #Natural #NegInteger #PosInteger #Real #String #Things A1'.#Any A1'.#Constant A1'.#Data B.#Any B.#Constant B.#Data X.#Any X.#Boolean X.#Cons X.#Cons[0] X.#Cons[1] X.#Constant X.#Data X.#Integer X.#List X.#Natural X.#NegInteger X.#PosInteger X.#Real X.#String X.#Things X.A1'.#Any X.A1'.#Constant X.A1'.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 1 
+OUT: Strings: 
+OUT: Variables: x 
+OUT: 
+OUT: []> typ B
+OUT: + Type environment at (54, 4)
+OUT:   x: X.Cons
+OUT:   Coerced arg 2 of (54, 4): X --> 
+OUT:    + Type environment at (54, 18)
+OUT:      x: X.Cons
+OUT: + Type environment at (57, 4)
+OUT:   x: Cons
+OUT:   Coerced arg 2 of (57, 4):  --> X
+OUT:    + Type environment at (57, 20)
+OUT:      x: Cons
+OUT: 
+OUT: []> dt C
+OUT: Reduced form
+OUT: domain C includes Y:: B, A1'
+OUT: {
+OUT: 
+OUT:   Cons(1, x)
+OUT:     :-
+OUT:       x is X.Cons.
+OUT: 
+OUT:   X.Cons(1, x)
+OUT:     :-
+OUT:       x is Cons.
+OUT: 
+OUT:   Y.Cons(1, x)
+OUT:     :-
+OUT:       x is X.Cons.
+OUT: 
+OUT:   X.Cons(1, x)
+OUT:     :-
+OUT:       x is Y.Cons.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:   Space  |     Name      | Arity | Kind  
+OUT: ---------|---------------|-------|-------
+OUT:          |    Boolean    |   0   |  unn  
+OUT:          |     Cons      |   2   |  con  
+OUT:          |     FALSE     |   0   | ncnst 
+OUT:          |    Integer    |   0   |  unn  
+OUT:          |     List      |   0   |  unn  
+OUT:          |      NIL      |   0   | ncnst 
+OUT:          |    Natural    |   0   |  unn  
+OUT:          |  NegInteger   |   0   |  unn  
+OUT:          |  PosInteger   |   0   |  unn  
+OUT:          |     Real      |   0   |  unn  
+OUT:          |    String     |   0   |  unn  
+OUT:          |     TRUE      |   0   | ncnst 
+OUT:          |    Things     |   0   |  unn  
+OUT:    A1'   |      Any      |   0   |  unn  
+OUT:    A1'   |   Constant    |   0   |  unn  
+OUT:    A1'   |     Data      |   0   |  unn  
+OUT:    A1'   |   conforms    |   0   | dcnst 
+OUT:    A1'   | notFunctional |   0   | dcnst 
+OUT:    A1'   | notInjective  |   0   | dcnst 
+OUT:    A1'   |  notInvTotal  |   0   | dcnst 
+OUT:    A1'   | notRelational |   0   | dcnst 
+OUT:    A1'   |   notTotal    |   0   | dcnst 
+OUT:     C    |      Any      |   0   |  unn  
+OUT:     C    |   Constant    |   0   |  unn  
+OUT:     C    |     Data      |   0   |  unn  
+OUT:     C    |   conforms    |   0   | dcnst 
+OUT:     C    | notFunctional |   0   | dcnst 
+OUT:     C    | notInjective  |   0   | dcnst 
+OUT:     C    |  notInvTotal  |   0   | dcnst 
+OUT:     C    | notRelational |   0   | dcnst 
+OUT:     C    |   notTotal    |   0   | dcnst 
+OUT:     Y    |      Any      |   0   |  unn  
+OUT:     Y    |    Boolean    |   0   |  unn  
+OUT:     Y    |     Cons      |   2   |  con  
+OUT:     Y    |   Constant    |   0   |  unn  
+OUT:     Y    |     Data      |   0   |  unn  
+OUT:     Y    |    Integer    |   0   |  unn  
+OUT:     Y    |     List      |   0   |  unn  
+OUT:     Y    |    Natural    |   0   |  unn  
+OUT:     Y    |  NegInteger   |   0   |  unn  
+OUT:     Y    |  PosInteger   |   0   |  unn  
+OUT:     Y    |     Real      |   0   |  unn  
+OUT:     Y    |    String     |   0   |  unn  
+OUT:     Y    |    Things     |   0   |  unn  
+OUT:   Y.A1'  |      Any      |   0   |  unn  
+OUT:   Y.A1'  |   Constant    |   0   |  unn  
+OUT:   Y.A1'  |     Data      |   0   |  unn  
+OUT:   Y.A1'  |   conforms    |   0   | dcnst 
+OUT:   Y.A1'  | notFunctional |   0   | dcnst 
+OUT:   Y.A1'  | notInjective  |   0   | dcnst 
+OUT:   Y.A1'  |  notInvTotal  |   0   | dcnst 
+OUT:   Y.A1'  | notRelational |   0   | dcnst 
+OUT:   Y.A1'  |   notTotal    |   0   | dcnst 
+OUT:    Y.B   |      Any      |   0   |  unn  
+OUT:    Y.B   |   Constant    |   0   |  unn  
+OUT:    Y.B   |     Data      |   0   |  unn  
+OUT:    Y.B   |   conforms    |   0   | dcnst 
+OUT:    Y.B   | notFunctional |   0   | dcnst 
+OUT:    Y.B   | notInjective  |   0   | dcnst 
+OUT:    Y.B   |  notInvTotal  |   0   | dcnst 
+OUT:    Y.B   | notRelational |   0   | dcnst 
+OUT:    Y.B   |   notTotal    |   0   | dcnst 
+OUT:    Y.X   |      Any      |   0   |  unn  
+OUT:    Y.X   |    Boolean    |   0   |  unn  
+OUT:    Y.X   |     Cons      |   2   |  con  
+OUT:    Y.X   |   Constant    |   0   |  unn  
+OUT:    Y.X   |     Data      |   0   |  unn  
+OUT:    Y.X   |    Integer    |   0   |  unn  
+OUT:    Y.X   |     List      |   0   |  unn  
+OUT:    Y.X   |    Natural    |   0   |  unn  
+OUT:    Y.X   |  NegInteger   |   0   |  unn  
+OUT:    Y.X   |  PosInteger   |   0   |  unn  
+OUT:    Y.X   |     Real      |   0   |  unn  
+OUT:    Y.X   |    String     |   0   |  unn  
+OUT:    Y.X   |    Things     |   0   |  unn  
+OUT:  Y.X.A1' |      Any      |   0   |  unn  
+OUT:  Y.X.A1' |   Constant    |   0   |  unn  
+OUT:  Y.X.A1' |     Data      |   0   |  unn  
+OUT:  Y.X.A1' |   conforms    |   0   | dcnst 
+OUT:  Y.X.A1' | notFunctional |   0   | dcnst 
+OUT:  Y.X.A1' | notInjective  |   0   | dcnst 
+OUT:  Y.X.A1' |  notInvTotal  |   0   | dcnst 
+OUT:  Y.X.A1' | notRelational |   0   | dcnst 
+OUT:  Y.X.A1' |   notTotal    |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #Cons #Cons[0] #Cons[1] #Integer #List #Natural #NegInteger #PosInteger #Real #String #Things A1'.#Any A1'.#Constant A1'.#Data C.#Any C.#Constant C.#Data Y.#Any Y.#Boolean Y.#Cons Y.#Cons[0] Y.#Cons[1] Y.#Constant Y.#Data Y.#Integer Y.#List Y.#Natural Y.#NegInteger Y.#PosInteger Y.#Real Y.#String Y.#Things Y.A1'.#Any Y.A1'.#Constant Y.A1'.#Data Y.B.#Any Y.B.#Constant Y.B.#Data Y.X.#Any Y.X.#Boolean Y.X.#Cons Y.X.#Cons[0] Y.X.#Cons[1] Y.X.#Constant Y.X.#Data Y.X.#Integer Y.X.#List Y.X.#Natural Y.X.#NegInteger Y.X.#PosInteger Y.X.#Real Y.X.#String Y.X.#Things Y.X.A1'.#Any Y.X.A1'.#Constant Y.X.A1'.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 1 
+OUT: Strings: 
+OUT: Variables: x 
+OUT: 
+OUT: []> typ C
+OUT: + Type environment at (63, 4)
+OUT:   x: Y.X.Cons
+OUT:   Coerced arg 2 of (63, 4): Y.X --> 
+OUT:    + Type environment at (63, 18)
+OUT:      x: Y.X.Cons
+OUT: + Type environment at (66, 4)
+OUT:   x: Cons
+OUT:   Coerced arg 2 of (66, 4):  --> Y.X
+OUT:    + Type environment at (66, 20)
+OUT:      x: Cons
+OUT: + Type environment at (69, 4)
+OUT:   x: Y.X.Cons
+OUT:   Coerced arg 2 of (69, 4): Y.X --> Y
+OUT:    + Type environment at (69, 20)
+OUT:      x: Y.X.Cons
+OUT: + Type environment at (72, 4)
+OUT:   x: Y.Cons
+OUT:   Coerced arg 2 of (72, 4): Y --> Y.X
+OUT:    + Type environment at (72, 20)
+OUT:      x: Y.Cons
+OUT: 
+OUT: []> dt T2
+OUT: Reduced form
+OUT: transform T2 (in1:: A1, in2:: A1)
+OUT: returns (out:: B)
+OUT: {
+OUT: 
+OUT:   out.X._(x)
+OUT:     :-
+OUT:       x is in1.Cons.
+OUT: 
+OUT:   out.Cons(1, x)
+OUT:     :-
+OUT:       x is in1.Cons.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:    Space   |     Name      | Arity | Kind  
+OUT: -----------|---------------|-------|-------
+OUT:            |    Boolean    |   0   |  unn  
+OUT:            |     FALSE     |   0   | ncnst 
+OUT:            |    Integer    |   0   |  unn  
+OUT:            |      NIL      |   0   | ncnst 
+OUT:            |    Natural    |   0   |  unn  
+OUT:            |  NegInteger   |   0   |  unn  
+OUT:            |  PosInteger   |   0   |  unn  
+OUT:            |     Real      |   0   |  unn  
+OUT:            |    String     |   0   |  unn  
+OUT:            |     TRUE      |   0   | ncnst 
+OUT:            |   ~scValue    |   2   |  con  
+OUT:     T2     |      Any      |   0   |  unn  
+OUT:     T2     |   Constant    |   0   |  unn  
+OUT:     T2     |     Data      |   0   |  unn  
+OUT:     T2     |    ensures    |   0   | dcnst 
+OUT:     T2     |   requires    |   0   | dcnst 
+OUT:     in1    |      Any      |   0   |  unn  
+OUT:     in1    |    Boolean    |   0   |  unn  
+OUT:     in1    |     Cons      |   2   |  con  
+OUT:     in1    |   Constant    |   0   |  unn  
+OUT:     in1    |     Data      |   0   |  unn  
+OUT:     in1    |    Integer    |   0   |  unn  
+OUT:     in1    |    Natural    |   0   |  unn  
+OUT:     in1    |  NegInteger   |   0   |  unn  
+OUT:     in1    |  PosInteger   |   0   |  unn  
+OUT:     in1    |     Real      |   0   |  unn  
+OUT:     in1    |    String     |   0   |  unn  
+OUT:     in1    |    Things     |   0   |  unn  
+OUT:   in1.A1   |      Any      |   0   |  unn  
+OUT:   in1.A1   |   Constant    |   0   |  unn  
+OUT:   in1.A1   |     Data      |   0   |  unn  
+OUT:   in1.A1   |   conforms    |   0   | dcnst 
+OUT:   in1.A1   | notFunctional |   0   | dcnst 
+OUT:   in1.A1   | notInjective  |   0   | dcnst 
+OUT:   in1.A1   |  notInvTotal  |   0   | dcnst 
+OUT:   in1.A1   | notRelational |   0   | dcnst 
+OUT:   in1.A1   |   notTotal    |   0   | dcnst 
+OUT:     in2    |      Any      |   0   |  unn  
+OUT:     in2    |    Boolean    |   0   |  unn  
+OUT:     in2    |     Cons      |   2   |  con  
+OUT:     in2    |   Constant    |   0   |  unn  
+OUT:     in2    |     Data      |   0   |  unn  
+OUT:     in2    |    Integer    |   0   |  unn  
+OUT:     in2    |    Natural    |   0   |  unn  
+OUT:     in2    |  NegInteger   |   0   |  unn  
+OUT:     in2    |  PosInteger   |   0   |  unn  
+OUT:     in2    |     Real      |   0   |  unn  
+OUT:     in2    |    String     |   0   |  unn  
+OUT:     in2    |    Things     |   0   |  unn  
+OUT:   in2.A1   |      Any      |   0   |  unn  
+OUT:   in2.A1   |   Constant    |   0   |  unn  
+OUT:   in2.A1   |     Data      |   0   |  unn  
+OUT:   in2.A1   |   conforms    |   0   | dcnst 
+OUT:   in2.A1   | notFunctional |   0   | dcnst 
+OUT:   in2.A1   | notInjective  |   0   | dcnst 
+OUT:   in2.A1   |  notInvTotal  |   0   | dcnst 
+OUT:   in2.A1   | notRelational |   0   | dcnst 
+OUT:   in2.A1   |   notTotal    |   0   | dcnst 
+OUT:     out    |      Any      |   0   |  unn  
+OUT:     out    |    Boolean    |   0   |  unn  
+OUT:     out    |     Cons      |   2   |  con  
+OUT:     out    |   Constant    |   0   |  unn  
+OUT:     out    |     Data      |   0   |  unn  
+OUT:     out    |    Integer    |   0   |  unn  
+OUT:     out    |     List      |   0   |  unn  
+OUT:     out    |    Natural    |   0   |  unn  
+OUT:     out    |  NegInteger   |   0   |  unn  
+OUT:     out    |  PosInteger   |   0   |  unn  
+OUT:     out    |     Real      |   0   |  unn  
+OUT:     out    |    String     |   0   |  unn  
+OUT:     out    |    Things     |   0   |  unn  
+OUT:   out.A1'  |      Any      |   0   |  unn  
+OUT:   out.A1'  |   Constant    |   0   |  unn  
+OUT:   out.A1'  |     Data      |   0   |  unn  
+OUT:   out.A1'  |   conforms    |   0   | dcnst 
+OUT:   out.A1'  | notFunctional |   0   | dcnst 
+OUT:   out.A1'  | notInjective  |   0   | dcnst 
+OUT:   out.A1'  |  notInvTotal  |   0   | dcnst 
+OUT:   out.A1'  | notRelational |   0   | dcnst 
+OUT:   out.A1'  |   notTotal    |   0   | dcnst 
+OUT:    out.B   |      Any      |   0   |  unn  
+OUT:    out.B   |   Constant    |   0   |  unn  
+OUT:    out.B   |     Data      |   0   |  unn  
+OUT:    out.B   |   conforms    |   0   | dcnst 
+OUT:    out.B   | notFunctional |   0   | dcnst 
+OUT:    out.B   | notInjective  |   0   | dcnst 
+OUT:    out.B   |  notInvTotal  |   0   | dcnst 
+OUT:    out.B   | notRelational |   0   | dcnst 
+OUT:    out.B   |   notTotal    |   0   | dcnst 
+OUT:    out.X   |      Any      |   0   |  unn  
+OUT:    out.X   |    Boolean    |   0   |  unn  
+OUT:    out.X   |     Cons      |   2   |  con  
+OUT:    out.X   |   Constant    |   0   |  unn  
+OUT:    out.X   |     Data      |   0   |  unn  
+OUT:    out.X   |    Integer    |   0   |  unn  
+OUT:    out.X   |     List      |   0   |  unn  
+OUT:    out.X   |    Natural    |   0   |  unn  
+OUT:    out.X   |  NegInteger   |   0   |  unn  
+OUT:    out.X   |  PosInteger   |   0   |  unn  
+OUT:    out.X   |     Real      |   0   |  unn  
+OUT:    out.X   |    String     |   0   |  unn  
+OUT:    out.X   |    Things     |   0   |  unn  
+OUT:  out.X.A1' |      Any      |   0   |  unn  
+OUT:  out.X.A1' |   Constant    |   0   |  unn  
+OUT:  out.X.A1' |     Data      |   0   |  unn  
+OUT:  out.X.A1' |   conforms    |   0   | dcnst 
+OUT:  out.X.A1' | notFunctional |   0   | dcnst 
+OUT:  out.X.A1' | notInjective  |   0   | dcnst 
+OUT:  out.X.A1' |  notInvTotal  |   0   | dcnst 
+OUT:  out.X.A1' | notRelational |   0   | dcnst 
+OUT:  out.X.A1' |   notTotal    |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #Integer #Natural #NegInteger #PosInteger #Real #String T2.#Any T2.#Constant T2.#Data in1.#Any in1.#Boolean in1.#Cons in1.#Cons[0] in1.#Cons[1] in1.#Constant in1.#Data in1.#Integer in1.#Natural in1.#NegInteger in1.#PosInteger in1.#Real in1.#String in1.#Things in1.A1.#Any in1.A1.#Constant in1.A1.#Data in2.#Any in2.#Boolean in2.#Cons in2.#Cons[0] in2.#Cons[1] in2.#Constant in2.#Data in2.#Integer in2.#Natural in2.#NegInteger in2.#PosInteger in2.#Real in2.#String in2.#Things in2.A1.#Any in2.A1.#Constant in2.A1.#Data out.#Any out.#Boolean out.#Cons out.#Cons[0] out.#Cons[1] out.#Constant out.#Data out.#Integer out.#List out.#Natural out.#NegInteger out.#PosInteger out.#Real out.#String out.#Things out.A1'.#Any out.A1'.#Constant out.A1'.#Data out.B.#Any out.B.#Constant out.B.#Data out.X.#Any out.X.#Boolean out.X.#Cons out.X.#Cons[0] out.X.#Cons[1] out.X.#Constant out.X.#Data out.X.#Integer out.X.#List out.X.#Natural out.X.#NegInteger out.X.#PosInteger out.X.#Real out.X.#String out.X.#Things out.X.A1'.#Any out.X.A1'.#Constant out.X.A1'.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 1 
+OUT: Strings: 
+OUT: Variables: x 
+OUT: 
+OUT: []> typ T2
+OUT: + Type environment at (78, 4)
+OUT:   x: in1.Cons
+OUT:   Coerced arg 1 of (78, 4): in1 --> out.X
+OUT:    + Type environment at (78, 18)
+OUT:      x: in1.Cons
+OUT: + Type environment at (81, 4)
+OUT:   x: in1.Cons
+OUT:   Coerced arg 2 of (81, 4): in1 --> out
+OUT:    + Type environment at (81, 22)
+OUT:      x: in1.Cons
+OUT: 
+OUT: []> dt D
+OUT: Reduced form
+OUT: domain D includes Y:: B, X:: A1', A1'
+OUT: {
+OUT:   Type1 ::= Y.X.Cons + Y.Cons.
+OUT:   Type2 ::= Cons + X.Cons.
+OUT:   F ::= (Type2).
+OUT:   F' ::= (Type1).
+OUT: 
+OUT:   F(x)
+OUT:     :-
+OUT:       x is Type1.
+OUT: 
+OUT:   F'(x)
+OUT:     :-
+OUT:       x is Type2.
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:   Space  |     Name      | Arity | Kind  
+OUT: ---------|---------------|-------|-------
+OUT:          |    Boolean    |   0   |  unn  
+OUT:          |     Cons      |   2   |  con  
+OUT:          |       F       |   1   |  con  
+OUT:          |      F'       |   1   |  con  
+OUT:          |     FALSE     |   0   | ncnst 
+OUT:          |    Integer    |   0   |  unn  
+OUT:          |     List      |   0   |  unn  
+OUT:          |      NIL      |   0   | ncnst 
+OUT:          |    Natural    |   0   |  unn  
+OUT:          |  NegInteger   |   0   |  unn  
+OUT:          |  PosInteger   |   0   |  unn  
+OUT:          |     Real      |   0   |  unn  
+OUT:          |    String     |   0   |  unn  
+OUT:          |     TRUE      |   0   | ncnst 
+OUT:          |    Things     |   0   |  unn  
+OUT:          |     Type1     |   0   |  unn  
+OUT:          |     Type2     |   0   |  unn  
+OUT:    A1'   |      Any      |   0   |  unn  
+OUT:    A1'   |   Constant    |   0   |  unn  
+OUT:    A1'   |     Data      |   0   |  unn  
+OUT:    A1'   |   conforms    |   0   | dcnst 
+OUT:    A1'   | notFunctional |   0   | dcnst 
+OUT:    A1'   | notInjective  |   0   | dcnst 
+OUT:    A1'   |  notInvTotal  |   0   | dcnst 
+OUT:    A1'   | notRelational |   0   | dcnst 
+OUT:    A1'   |   notTotal    |   0   | dcnst 
+OUT:     D    |      Any      |   0   |  unn  
+OUT:     D    |   Constant    |   0   |  unn  
+OUT:     D    |     Data      |   0   |  unn  
+OUT:     D    |   conforms    |   0   | dcnst 
+OUT:     D    | notFunctional |   0   | dcnst 
+OUT:     D    | notInjective  |   0   | dcnst 
+OUT:     D    |  notInvTotal  |   0   | dcnst 
+OUT:     D    | notRelational |   0   | dcnst 
+OUT:     D    |   notTotal    |   0   | dcnst 
+OUT:     X    |      Any      |   0   |  unn  
+OUT:     X    |    Boolean    |   0   |  unn  
+OUT:     X    |     Cons      |   2   |  con  
+OUT:     X    |   Constant    |   0   |  unn  
+OUT:     X    |     Data      |   0   |  unn  
+OUT:     X    |    Integer    |   0   |  unn  
+OUT:     X    |     List      |   0   |  unn  
+OUT:     X    |    Natural    |   0   |  unn  
+OUT:     X    |  NegInteger   |   0   |  unn  
+OUT:     X    |  PosInteger   |   0   |  unn  
+OUT:     X    |     Real      |   0   |  unn  
+OUT:     X    |    String     |   0   |  unn  
+OUT:     X    |    Things     |   0   |  unn  
+OUT:   X.A1'  |      Any      |   0   |  unn  
+OUT:   X.A1'  |   Constant    |   0   |  unn  
+OUT:   X.A1'  |     Data      |   0   |  unn  
+OUT:   X.A1'  |   conforms    |   0   | dcnst 
+OUT:   X.A1'  | notFunctional |   0   | dcnst 
+OUT:   X.A1'  | notInjective  |   0   | dcnst 
+OUT:   X.A1'  |  notInvTotal  |   0   | dcnst 
+OUT:   X.A1'  | notRelational |   0   | dcnst 
+OUT:   X.A1'  |   notTotal    |   0   | dcnst 
+OUT:     Y    |      Any      |   0   |  unn  
+OUT:     Y    |    Boolean    |   0   |  unn  
+OUT:     Y    |     Cons      |   2   |  con  
+OUT:     Y    |   Constant    |   0   |  unn  
+OUT:     Y    |     Data      |   0   |  unn  
+OUT:     Y    |    Integer    |   0   |  unn  
+OUT:     Y    |     List      |   0   |  unn  
+OUT:     Y    |    Natural    |   0   |  unn  
+OUT:     Y    |  NegInteger   |   0   |  unn  
+OUT:     Y    |  PosInteger   |   0   |  unn  
+OUT:     Y    |     Real      |   0   |  unn  
+OUT:     Y    |    String     |   0   |  unn  
+OUT:     Y    |    Things     |   0   |  unn  
+OUT:   Y.A1'  |      Any      |   0   |  unn  
+OUT:   Y.A1'  |   Constant    |   0   |  unn  
+OUT:   Y.A1'  |     Data      |   0   |  unn  
+OUT:   Y.A1'  |   conforms    |   0   | dcnst 
+OUT:   Y.A1'  | notFunctional |   0   | dcnst 
+OUT:   Y.A1'  | notInjective  |   0   | dcnst 
+OUT:   Y.A1'  |  notInvTotal  |   0   | dcnst 
+OUT:   Y.A1'  | notRelational |   0   | dcnst 
+OUT:   Y.A1'  |   notTotal    |   0   | dcnst 
+OUT:    Y.B   |      Any      |   0   |  unn  
+OUT:    Y.B   |   Constant    |   0   |  unn  
+OUT:    Y.B   |     Data      |   0   |  unn  
+OUT:    Y.B   |   conforms    |   0   | dcnst 
+OUT:    Y.B   | notFunctional |   0   | dcnst 
+OUT:    Y.B   | notInjective  |   0   | dcnst 
+OUT:    Y.B   |  notInvTotal  |   0   | dcnst 
+OUT:    Y.B   | notRelational |   0   | dcnst 
+OUT:    Y.B   |   notTotal    |   0   | dcnst 
+OUT:    Y.X   |      Any      |   0   |  unn  
+OUT:    Y.X   |    Boolean    |   0   |  unn  
+OUT:    Y.X   |     Cons      |   2   |  con  
+OUT:    Y.X   |   Constant    |   0   |  unn  
+OUT:    Y.X   |     Data      |   0   |  unn  
+OUT:    Y.X   |    Integer    |   0   |  unn  
+OUT:    Y.X   |     List      |   0   |  unn  
+OUT:    Y.X   |    Natural    |   0   |  unn  
+OUT:    Y.X   |  NegInteger   |   0   |  unn  
+OUT:    Y.X   |  PosInteger   |   0   |  unn  
+OUT:    Y.X   |     Real      |   0   |  unn  
+OUT:    Y.X   |    String     |   0   |  unn  
+OUT:    Y.X   |    Things     |   0   |  unn  
+OUT:  Y.X.A1' |      Any      |   0   |  unn  
+OUT:  Y.X.A1' |   Constant    |   0   |  unn  
+OUT:  Y.X.A1' |     Data      |   0   |  unn  
+OUT:  Y.X.A1' |   conforms    |   0   | dcnst 
+OUT:  Y.X.A1' | notFunctional |   0   | dcnst 
+OUT:  Y.X.A1' | notInjective  |   0   | dcnst 
+OUT:  Y.X.A1' |  notInvTotal  |   0   | dcnst 
+OUT:  Y.X.A1' | notRelational |   0   | dcnst 
+OUT:  Y.X.A1' |   notTotal    |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #Cons #Cons[0] #Cons[1] #F #F' #F'[0] #F[0] #Integer #List #Natural #NegInteger #PosInteger #Real #String #Things #Type1 #Type2 A1'.#Any A1'.#Constant A1'.#Data D.#Any D.#Constant D.#Data X.#Any X.#Boolean X.#Cons X.#Cons[0] X.#Cons[1] X.#Constant X.#Data X.#Integer X.#List X.#Natural X.#NegInteger X.#PosInteger X.#Real X.#String X.#Things X.A1'.#Any X.A1'.#Constant X.A1'.#Data Y.#Any Y.#Boolean Y.#Cons Y.#Cons[0] Y.#Cons[1] Y.#Constant Y.#Data Y.#Integer Y.#List Y.#Natural Y.#NegInteger Y.#PosInteger Y.#Real Y.#String Y.#Things Y.A1'.#Any Y.A1'.#Constant Y.A1'.#Data Y.B.#Any Y.B.#Constant Y.B.#Data Y.X.#Any Y.X.#Boolean Y.X.#Cons Y.X.#Cons[0] Y.X.#Cons[1] Y.X.#Constant Y.X.#Data Y.X.#Integer Y.X.#List Y.X.#Natural Y.X.#NegInteger Y.X.#PosInteger Y.X.#Real Y.X.#String Y.X.#Things Y.X.A1'.#Any Y.X.A1'.#Constant Y.X.A1'.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 1 
+OUT: Strings: 
+OUT: Variables: x 
+OUT: 
+OUT: []> typ D
+OUT: + Type environment at (93, 4)
+OUT:   x: Y.X.Cons + Y.Cons
+OUT:   Coerced arg 1 of (93, 4): Y --> 
+OUT:    + Type environment at (93, 12)
+OUT:      x: Y.X.Cons + Y.Cons
+OUT: + Type environment at (96, 4)
+OUT:   x: Cons + X.Cons
+OUT:   Coerced arg 1 of (96, 4):  --> Y
+OUT:    + Type environment at (96, 13)
+OUT:      x: Cons + X.Cons
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 0

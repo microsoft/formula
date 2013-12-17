@@ -1,0 +1,6 @@
+domain Widened
+{
+    F1 ::= new (arg1: { 1..500000 }, arg2: { 1..50 } ).
+
+    q0 :- F1(x, y), x = x + 2. //// Misses the error because of widening. 
+}

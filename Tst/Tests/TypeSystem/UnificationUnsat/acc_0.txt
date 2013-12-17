@@ -1,0 +1,32 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Failed) tests.4ml
+OUT: tests.4ml (15, 21): This constraint is unsatisfiable.
+OUT: tests.4ml (17, 28): This constraint is unsatisfiable.
+OUT: tests.4ml (19, 21): This constraint is unsatisfiable.
+OUT: tests.4ml (21, 30): This constraint is unsatisfiable.
+OUT: tests.4ml (23, 37): This constraint is unsatisfiable.
+OUT: tests.4ml (46, 14): This constraint is unsatisfiable.
+OUT: tests.4ml (50, 12): This constraint is unsatisfiable.
+OUT: tests.4ml (52, 12): This constraint is unsatisfiable.
+OUT: tests.4ml (78, 12): This constraint is unsatisfiable.
+OUT: tests.4ml (80, 19): This constraint is unsatisfiable.
+OUT: tests.4ml (82, 27): This constraint is unsatisfiable.
+OUT: tests.4ml (86, 13): This constraint is unsatisfiable.
+OUT: tests.4ml (88, 11): Argument 1 of function .tail is badly typed.
+OUT: tests.4ml (90, 28): This constraint is unsatisfiable.
+OUT: tests.4ml (92, 33): This constraint is unsatisfiable.
+OUT: tests.4ml (96, 13): This constraint is unsatisfiable.
+OUT: tests.4ml (100, 13): This constraint is unsatisfiable.
+OUT: tests.4ml (102, 41): This constraint is unsatisfiable.
+OUT: tests.4ml (0, 0): The install operation failed
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 1

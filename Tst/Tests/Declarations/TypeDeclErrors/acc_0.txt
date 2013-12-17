@@ -1,0 +1,37 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Failed) tests.4ml
+OUT: tests.4ml (3, 14): The type id _ is undefined.
+OUT: tests.4ml (8, 4): _ is not a legal symbol identifier
+OUT: tests.4ml (13, 17): _ is not a legal label identifier
+OUT: tests.4ml (18, 17): _ is not a legal label identifier
+OUT: tests.4ml (18, 20): The type id _ is undefined.
+OUT: tests.4ml (23, 20): The type id _ is undefined.
+OUT: tests.4ml (29, 25): The label a has multiple definitions. See index 1 and index 0
+OUT: tests.4ml (30, 17): The type id H is undefined.
+OUT: tests.4ml (32, 12): The type id A is undefined.
+OUT: tests.4ml (32, 16): The type id B is undefined.
+OUT: tests.4ml (33, 12): The type id _ is undefined.
+OUT: tests.4ml (34, 12): The type id BadTypeNames._ is undefined.
+OUT: tests.4ml (35, 12): The type id _ is undefined.
+OUT: tests.4ml (35, 16): The type id BadTypeNames._ is undefined.
+OUT: tests.4ml (45, 18): The type id Any is ambiguous. See (43, 19): A1.Any and (43, 1): B1.Any
+OUT: tests.4ml (45, 24): The type id Data is ambiguous. See (43, 19): A1.Data and (43, 1): B1.Data
+OUT: tests.4ml (56, 15): The type F has multiple definitions. See (56, 15) and (54, 19)
+OUT: tests.4ml (66, 4): The symbol F has multiple definitions. See (66, 4) and (64, 19)
+OUT: tests.4ml (76, 4): The symbol F has multiple definitions. See (76, 4) and (74, 19)
+OUT: tests.4ml (86, 4): The symbol F has multiple definitions. See (86, 4) and (84, 19)
+OUT: tests.4ml (96, 4): The symbol F has multiple definitions. See (96, 4) and (94, 19)
+OUT: tests.4ml (106, 4): The symbol F has multiple definitions. See (106, 4) and (104, 19)
+OUT: tests.4ml (116, 10): The type id F is ambiguous. See (114, 19): X.F and (114, 26): Y.F
+OUT: tests.4ml (0, 0): The install operation failed
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 1

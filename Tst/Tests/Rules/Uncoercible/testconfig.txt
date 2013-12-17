@@ -1,0 +1,12 @@
+run: ..\..\..\..\Bld\Drops\Formula_Debug_x86\Formula.exe
+arg: -v: off -l: "tests.4ml" 
+arg: -dt: "A1" -typ: "A1"
+arg: -dt: "A1'" -typ: "A1'"
+arg: -dt: "T1" -typ: "T1"
+arg: -dt: "B" -typ: "B"
+arg: -dt: "C" -typ: "C"
+arg: -dt: "T2" -typ: "T2"
+arg: -dt: "D" -typ: "D"
+arg: -x
+acc: .\
+dsc: Rules testing various uncoercible heads

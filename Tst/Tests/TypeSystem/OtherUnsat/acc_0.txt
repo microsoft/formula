@@ -1,0 +1,23 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Failed) tests.4ml
+OUT: tests.4ml (4, 21): This constraint is unsatisfiable.
+OUT: tests.4ml (5, 9): This constraint is unsatisfiable.
+OUT: tests.4ml (6, 9): This constraint is unsatisfiable.
+OUT: tests.4ml (9, 9): This constraint is unsatisfiable.
+OUT: tests.4ml (10, 9): This constraint is unsatisfiable.
+OUT: tests.4ml (16, 10): Argument 2 of function F0 is badly typed.
+OUT: tests.4ml (19, 10): Argument 2 of function F1 is badly typed.
+OUT: tests.4ml (22, 10): Argument 2 of function F2 is badly typed.
+OUT: tests.4ml (25, 10): Argument 2 of function F3 is badly typed.
+OUT: tests.4ml (0, 0): The install operation failed
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 1

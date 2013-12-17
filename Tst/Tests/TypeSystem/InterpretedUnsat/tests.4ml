@@ -1,0 +1,38 @@
+domain Base
+{
+    Cons ::= new (val: Natural, tail: any Cons + { NIL } ).
+    R    ::= new (val: NegInteger + { 0 }).
+    B    ::= new (val: Boolean).
+    A    ::= new (val: { FALSE } ).
+    A'   ::= new (val: { TRUE } ).
+    Tree ::= new (lft: any Natural + Tree + { NIL }, 
+                  rt:  any Natural + Tree + { NIL } ).
+    F    ::= new (any Integer + F).                                
+}
+
+domain Bad extends Base
+{
+    F2 ::= new (arg1: { 1..50 }, arg2: { 1..50 } ).
+    
+    q0 :- F2(x, y), x = x + 2. 
+    
+    q1 :- F2(x, y), 1 - x = x + 1. 
+    
+    F3 ::= new (arg1: { -348978933..0 }, arg2: { 500000..3245345435 }, arg3: PosInteger).
+
+    q2 :- F3(x, y, z), x >= y.
+
+    q3 :- F3(x, y, z), x >= z.
+
+    q4 :- F3(x, y, z), x : PosInteger.
+    
+    q5 :- x.arg1 = x.arg2 + 1, x : F3.
+
+    q6 :- x = or(x, y), or(or(x, y), y) != x.         
+
+    q7 :- x = y + "hello".
+
+    q8 :- x = or(a,b,c).
+     
+    q9 :- y / x > 0, x = 0*x.     
+}

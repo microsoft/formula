@@ -1,0 +1,53 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Failed) tests.4ml
+OUT: tests.4ml (15, 14): This constraint is unsatisfiable.
+OUT: tests.4ml (16, 14): This constraint is unsatisfiable.
+OUT: tests.4ml (17, 14): This constraint is unsatisfiable.
+OUT: tests.4ml (18, 14): This constraint is unsatisfiable.
+OUT: tests.4ml (19, 11): This constraint is unsatisfiable.
+OUT: tests.4ml (20, 16): This constraint is unsatisfiable.
+OUT: tests.4ml (22, 20): This constraint is unsatisfiable.
+OUT: tests.4ml (23, 49): This constraint is unsatisfiable.
+OUT: tests.4ml (24, 54): This constraint is unsatisfiable.
+OUT: tests.4ml (27, 11): This constraint is unsatisfiable.
+OUT: tests.4ml (28, 27): This constraint is unsatisfiable.
+OUT: tests.4ml (29, 14): This constraint is unsatisfiable.
+OUT: tests.4ml (30, 14): This constraint is unsatisfiable.
+OUT: tests.4ml (31, 14): This constraint is unsatisfiable.
+OUT: tests.4ml (32, 19): This constraint is unsatisfiable.
+OUT: tests.4ml (34, 15): This constraint is unsatisfiable.
+OUT: tests.4ml (35, 11): This constraint is unsatisfiable.
+OUT: tests.4ml (36, 16): This constraint is unsatisfiable.
+OUT: tests.4ml (37, 14): This constraint is unsatisfiable.
+OUT: tests.4ml (38, 11): This constraint is unsatisfiable.
+OUT: tests.4ml (39, 17): This constraint is unsatisfiable.
+OUT: tests.4ml (41, 29): This constraint is unsatisfiable.
+OUT: tests.4ml (42, 40): This constraint is unsatisfiable.
+OUT: tests.4ml (43, 54): This constraint is unsatisfiable.
+OUT: tests.4ml (46, 11): This constraint is unsatisfiable.
+OUT: tests.4ml (47, 27): This constraint is unsatisfiable.
+OUT: tests.4ml (48, 11): This constraint is unsatisfiable.
+OUT: tests.4ml (49, 13): This constraint is unsatisfiable.
+OUT: tests.4ml (50, 13): This constraint is unsatisfiable.
+OUT: tests.4ml (51, 15): This constraint is unsatisfiable.
+OUT: tests.4ml (56, 20): This constraint is unsatisfiable.
+OUT: tests.4ml (57, 27): This constraint is unsatisfiable.
+OUT: tests.4ml (58, 17): This constraint is unsatisfiable.
+OUT: tests.4ml (0, 0): The install operation failed
+OUT: 
+OUT: []> dt Bad
+OUT: No module with that name
+OUT: 
+OUT: []> typ Bad
+OUT: No module with that name
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 1

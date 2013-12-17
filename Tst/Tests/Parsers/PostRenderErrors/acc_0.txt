@@ -1,0 +1,17 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Failed) tests.4ml
+OUT: tests.4ml (14, 16): Syntax error - Only data constructors can appear here.
+OUT: tests.4ml (20, 5): Argument 1 of function R is badly typed.
+OUT: tests.4ml (25, 12): Argument 2 of function Cons is badly typed.
+OUT: tests.4ml (0, 0): The install operation failed
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 1

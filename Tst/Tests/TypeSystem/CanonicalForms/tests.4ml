@@ -1,0 +1,59 @@
+domain CanForms
+{
+   F ::= new (Integer).
+   Zero ::= { 0 }.
+   
+   G ::= new (nxt: any G + {NIL}).
+   Nil ::= {NIL}.
+   
+   H  ::= new (H').
+   H' ::= new ({0}).
+   
+   I  ::= new (I').
+   I' ::= new ({RED}).
+   
+   R  ::= new ({0, 1}, {0, 1}).
+
+   R' ::= new (Boolean , Boolean).
+   
+   Thing ::= F + G + Nil + H + H' + I + I' + R + R' + Real + String + Boolean.                   
+      
+   F(x) :- F(x), x : PosInteger;
+           F(x), x : NegInteger;
+           F(x), x : Zero.      
+                       
+   _(y) :- y is G(x), x : G;
+           y is G(x), x : Nil.
+           
+   _(x) :- x = H(H'(0)).
+   
+   _(x) :- x = I(I'(RED)).
+   
+   _(x) :- x is Thing.
+   
+   G(x.nxt.nxt.nxt.nxt.nxt.nxt.nxt) :- x is Thing.
+      
+   G(x.nxt.nxt.nxt.nxt.nxt.nxt.nxt) :- x is Thing;
+                                       x is Thing, x = G(G(G(_))).
+                                       
+   G(x) :- x is Thing, x.nxt.nxt.nxt = G(_);
+           x is Thing, x.nxt.nxt.nxt.nxt.nxt.nxt.nxt = G(_).
+           
+   _(x) :- x is R(0, 0).        
+
+   _(x) :- x is R(0, 1); x is R(1, 0); x is R(1, 1).           
+   
+   _(x) :- x is R(0, 1); x is R(1, 0); x is R(1, 1); x is R(0, 0).           
+   
+   _(x) :- x is R'(TRUE, FALSE); x is R'(FALSE, TRUE); x is R'(TRUE, TRUE).           
+   
+   _(x) :- x is R'(TRUE, FALSE); x is R'(FALSE, TRUE); 
+           x is R'(TRUE, TRUE);  x is R'(FALSE, FALSE).                                     
+           
+   _(x) :- x is R'(TRUE, y), y : Boolean; 
+           x is R'(y, TRUE), y : Boolean.
+
+   _(x) :- x is R'(TRUE, y), y : Boolean; 
+           x is R'(y, TRUE), y : Boolean;
+           x is R'(FALSE, FALSE).                       
+}

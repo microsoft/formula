@@ -1,0 +1,15 @@
+=================================
+         Console output          
+=================================
+OUT: model Prog4 of LittleFuncLang at "LittleFuncLang.4ml"
+OUT: {
+OUT:   Let(Var("x"), Let(Var("y"), Val(3), Add(Val(2), Var("y"))), Add(Var("x"), Var("x"))).
+OUT: }
+OUT: 
+OUT: model Prog4' of LittleFuncLang at "LittleFuncLang.4ml"
+OUT: {
+OUT:   Let(Var("x"), Let(Var("y"), Val(3), Add(Val(2), Var("y"))), Let(Var("y"), Val(3), Add(Val(2), Var("y")))).
+OUT: }
+OUT: 
+OUT: 
+EXIT: 0

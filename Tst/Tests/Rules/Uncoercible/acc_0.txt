@@ -1,0 +1,78 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Failed) tests.4ml
+OUT: tests.4ml (20, 4): Argument 1 of function in1.Cons is unsafe. Some values of type Real are not allowed here.
+OUT: tests.4ml (20, 4): Argument 2 of function in1.Cons is badly typed. Cannot coerce values of type out.Cons.
+OUT: tests.4ml (25, 4): Argument 2 of function in1.Cons is badly typed. Cannot coerce values of type out.Cons.
+OUT: tests.4ml (29, 4): Argument 1 of function Triple is badly typed. Cannot coerce values of type in2.Cons.
+OUT: tests.4ml (29, 4): Argument 2 of function Triple is badly typed. Cannot coerce values of type in1.Cons.
+OUT: tests.4ml (29, 4): Argument 3 of function Triple is badly typed. Cannot coerce values of type in1.Cons.
+OUT: tests.4ml (32, 4): Argument 1 of function in2._ is unsafe. Some values of type T1.q are not allowed here.
+OUT: tests.4ml (32, 4): Argument 1 of function in2._ is unsafe. Some values of type Triple are not allowed here.
+OUT: tests.4ml (35, 4): Argument 1 of function in2._ is badly typed. Cannot coerce values of type out.Cons.
+OUT: tests.4ml (38, 4): Argument 2 of function in1.Cons is badly typed. Cannot coerce values of type out.Cons.
+OUT: tests.4ml (41, 32): Argument 2 of function in1.Cons is badly typed. Cannot coerce values of type out.Cons.
+OUT: tests.4ml (55, 4): Argument 1 of function G has an ambiguous coercion; possibly "Y.X" -> "".
+OUT: tests.4ml (55, 4): Argument 1 of function G has an ambiguous coercion; possibly "Y.X" -> "Y".
+OUT: tests.4ml (58, 4): Argument 1 of function G' has an ambiguous coercion; possibly "" -> "Y".
+OUT: tests.4ml (58, 4): Argument 1 of function G' has an ambiguous coercion; possibly "" -> "Y.X".
+OUT: tests.4ml (61, 4): Argument 1 of function G'' has an ambiguous coercion; possibly "Y" -> "".
+OUT: tests.4ml (61, 4): Argument 1 of function G'' has an ambiguous coercion; possibly "Y" -> "Y.X".
+OUT: tests.4ml (67, 4): Argument 1 of function out._ has an ambiguous coercion; possibly "in1" -> "out".
+OUT: tests.4ml (67, 4): Argument 1 of function out._ has an ambiguous coercion; possibly "in1" -> "out.X".
+OUT: tests.4ml (70, 4): Argument 1 of function in1._ is badly typed. Cannot coerce values of type out.Cons.
+OUT: tests.4ml (82, 4): Argument 1 of function F is badly typed. Cannot coerce values of type Y.X.Cons.
+OUT: tests.4ml (85, 4): Argument 1 of function F' is badly typed. Cannot coerce values of type Y.Cons.
+OUT: tests.4ml (0, 0): The install operation failed
+OUT: 
+OUT: []> dt A1
+OUT: No module with that name
+OUT: 
+OUT: []> typ A1
+OUT: No module with that name
+OUT: 
+OUT: []> dt A1'
+OUT: No module with that name
+OUT: 
+OUT: []> typ A1'
+OUT: No module with that name
+OUT: 
+OUT: []> dt T1
+OUT: No module with that name
+OUT: 
+OUT: []> typ T1
+OUT: No module with that name
+OUT: 
+OUT: []> dt B
+OUT: No module with that name
+OUT: 
+OUT: []> typ B
+OUT: No module with that name
+OUT: 
+OUT: []> dt C
+OUT: No module with that name
+OUT: 
+OUT: []> typ C
+OUT: No module with that name
+OUT: 
+OUT: []> dt T2
+OUT: No module with that name
+OUT: 
+OUT: []> typ T2
+OUT: No module with that name
+OUT: 
+OUT: []> dt D
+OUT: No module with that name
+OUT: 
+OUT: []> typ D
+OUT: No module with that name
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 1

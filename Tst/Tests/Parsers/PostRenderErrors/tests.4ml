@@ -1,0 +1,27 @@
+[
+parsers.ListParser = '"ListParser at ..\ListParser\bin\Debug\ListParser.dll"',
+parse_ActiveParser = "ListParser"
+]
+
+domain Lists
+{
+   Cons ::= new (right: any Cons + Natural + { NIL }, left: any Cons + Natural + { NIL } ).     
+   R ::= new (Integer).
+}
+
+model M1 of Lists
+{
+    `1 $`2 $ 3 + 4 $`$`.   
+}
+
+
+model M2 of Lists
+{
+    R(`1 $`2 $ 3 $`$`).   
+}
+
+model M3 of Lists
+{
+    R(`1 $`2 $ "3" $`$`).   
+}
+

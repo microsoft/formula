@@ -1,0 +1,38 @@
+domain ConvTypes
+{
+  F ::= new (Integer).
+  G ::= (Integer).
+
+  q0 :- x is Any.
+  q1 :- x is Data.
+  
+  q3 :- _ is Any;
+        _ is Data.
+        
+  q4 :- x is Any;
+        x is Data.        
+}       
+
+domain Good
+{
+   F0 ::= new (x: NegInteger, y: Real).
+   q0 :- F0(x, x). 
+
+   F1 ::= new (x: NegInteger + { "hello" }, y: String).
+   q1 :- F1(x, x). 
+
+   F2 ::= new (x: Boolean, y: String + { TRUE }).
+   q2 :- F2(x, x). 
+
+   F3 ::= new (x: { 1..1000 }, y: { "hello", RED, 1 }).
+   q3 :- F3(x, x). 
+}
+
+domain Facts
+{
+   T ::= new (left: any T + Natural, right: any T + Natural).
+   
+   T(1, 2).
+   T(T(1, 2), T(3, 4)).
+   T(T(0, T(0, 0)), 0).   
+}

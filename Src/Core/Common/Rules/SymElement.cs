@@ -30,6 +30,12 @@
             private set;
         }
 
+        public Z3Expr Z3Term
+        {
+            get;
+            private set;
+        }
+
         public Z3BoolExpr SideConstraint
         {
             get;

@@ -247,7 +247,15 @@
         /// </summary>
         public Term GetSymbCnstType(Term symbCnst)
         {
-            var data = aliasDataMap[(UserSymbol)symbCnst.Symbol];
+            return GetSymbCnstType((UserSymbol)symbCnst.Symbol);
+        }
+
+        /// <summary>
+        /// Should only be called if the set compiled without errors.
+        /// </summary>
+        public Term GetSymbCnstType(UserSymbol symbCnst)
+        {
+            var data = aliasDataMap[(UserSymbol)symbCnst];
             Contract.Assert(data.ExpDefinition != null);
 
             int i;
@@ -289,6 +297,32 @@
 
                     return Index.MkApply(x.Symbol, args, out changed);
                 });
+        }
+
+        /// <summary>
+        /// Rewrites all the facts by replacing symbolic constants with variables.
+        /// Returns a map from symbolic constants to their expansions under this rewrite.
+        /// Variables are mapped back to symbolic constants using methods in TermIndex
+        /// </summary>
+        /// <param name="facts"></param>
+        /// <param name="aliasMap"></param>
+        public void ConvertSymbCnstsToVars(
+            out Set<Term> rewrittenFacts, 
+            out Map<UserCnstSymb, Term> rewrittenAliasMap)
+        {
+            rewrittenFacts = new Set<Term>(Term.Compare);
+            foreach (var f in facts)
+            {
+                rewrittenFacts.Add(RewriteSymbCnstsToVars(f));
+            }
+
+            rewrittenAliasMap = new Map<UserCnstSymb, Term>(Symbol.Compare);
+            foreach (var kv in aliasDataMap)
+            {
+                rewrittenAliasMap.Add(
+                    (UserCnstSymb)kv.Key, 
+                    RewriteSymbCnstsToVars(kv.Value.ExpDefinition));
+            }
         }
         
         /// <summary>
@@ -434,6 +468,55 @@
                 new SuccessToken());
         }
 
+        private Term RewriteSymbCnstsToVars(Term t)
+        {
+            int i;
+            bool wasAdded, changed;
+            UserCnstSymb ucs;
+            return t.Compute<Term>(
+                (x, s) => x.Args,
+                (x, ch, s) =>
+                {
+                    if (x.Symbol.Arity == 0)
+                    {
+                        if (x.Symbol.Kind == SymbolKind.UserCnstSymb)
+                        {
+                            ucs = (UserCnstSymb)x.Symbol;
+                            return ucs.IsSymbolicConstant ? Index.SymbCnstToVar(ucs, out wasAdded) : x;
+                        }
+                        else
+                        {
+                            return x;
+                        }
+                    }
+
+                    changed = false;
+                    i = 0;
+                    foreach (var tp in ch)
+                    {
+                        if (tp != x.Args[i++])
+                        {
+                            changed = true;
+                            break;
+                        }
+                    }
+
+                    if (!changed)
+                    {
+                        return x;
+                    }
+
+                    i = 0;
+                    var args = new Term[x.Symbol.Arity];
+                    foreach (var tp in ch)
+                    {
+                        args[i++] = tp;
+                    }
+
+                    return Index.MkApply(x.Symbol, args, out wasAdded);
+                });
+        }
+
         private void ImportFactSet(FactSet fs, string renaming)
         {
             UserSymbol imported;
@@ -448,7 +531,9 @@
                 }
 
                 aliasData = new AliasData(imported, kv.Value.DefNode);
-                aliasData.ImportDefinition(Index.MkClone(kv.Value.ExpDefinition, renaming));
+                aliasData.ImportDefinition(
+                    Index.MkClone(kv.Value.ExpDefinition, renaming),
+                    kv.Value.Type != null ? Index.MkClone(kv.Value.Type, renaming) : null);
                 aliasDataMap.Add(imported, aliasData);
             }
 
@@ -1314,6 +1399,9 @@
         {
             private static readonly Set<AliasData> NoAliases = new Set<AliasData>(AliasData.Compare);
 
+            /// <summary>
+            /// The name of this alias
+            /// </summary>
             public UserSymbol SmbCnst
             {
                 get;
@@ -1476,7 +1564,7 @@
             /// <summary>
             /// Sets the imported definition
             /// </summary>
-            public void ImportDefinition(Term t)
+            public void ImportDefinition(Term t, Term type)
             {
                 Contract.Requires(t != null);
                 if (ExpDefinition != null)
@@ -1487,6 +1575,7 @@
                 ExpDefinition = t;
                 IsOriented = true;
                 DefAliases = NoAliases;
+                Type = type;
             }
 
             /// <summary>

@@ -352,6 +352,32 @@
             }
         }
 
+        /// <summary>
+        /// Converts a symbolic constant to a variable.
+        /// </summary>
+        public Term SymbCnstToVar(UserCnstSymb s, out bool wasAdded)
+        {
+            Contract.Requires(s != null && s.IsSymbolicConstant);
+            return MkVar(
+                s.FullName.Replace(".", "@").Replace("%", "~SC2VAR~"),
+                true,
+                out wasAdded);
+        }
+
+        /// <summary>
+        /// Converts a variable back to a symbolic constant.
+        /// </summary>
+        public UserCnstSymb VarToSymbCnst(Term v)
+        {
+            Contract.Requires(v != null && v.Symbol.IsVariable);
+            var symbCnstName = ((UserSymbol)v.Symbol).FullName.Replace("~SC2VAR~", "%").Replace("@", ".");
+            UserSymbol symbCnst, other;
+            symbCnst = SymbolTable.Resolve(symbCnstName, out other);
+            Contract.Assert(symbCnst != null && other == null);
+            Contract.Assert(symbCnst.Kind == SymbolKind.UserCnstSymb && ((UserCnstSymb)symbCnst).IsSymbolicConstant);
+            return (UserCnstSymb)symbCnst;
+        }
+
         public Term MkVar(string name, bool isAutoGen, out bool wasAdded)
         {
             UserCnstSymb symb;

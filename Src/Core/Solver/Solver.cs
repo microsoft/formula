@@ -55,31 +55,31 @@
             get { return solverFlags; }
         }
 
-        private FactSet PartialModel
+        internal FactSet PartialModel
         {
             get;
             set;
         }
 
-        private Model Source
+        internal Model Source
         {
             get;
             set;
         }
 
-        private Z3Context Context
+        internal Z3Context Context
         {
             get;
             set;
         }
 
-        private Z3Solver Z3Solver
+        internal Z3Solver Z3Solver
         {
             get;
             set;
         }
 
-        private TypeEmbedder TypeEmbedder
+        internal TypeEmbedder TypeEmbedder
         {
             get;
             set;
@@ -118,6 +118,8 @@
             {
                Strategy = CreateStrategy(solverFlags);
             }
+
+            var se = new SymExecuter(this);
         }
 
         public SearchState GetState(IEnumerable<KeyValuePair<UserSymbol, int>> dofs)

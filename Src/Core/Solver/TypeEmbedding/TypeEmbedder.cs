@@ -47,6 +47,14 @@
         private Map<Term, Tuple<LinkedList<ITypeEmbedding>, LinkedList<ITypeEmbedding>>> typeToFactors =
             new Map<Term, Tuple<LinkedList<ITypeEmbedding>, LinkedList<ITypeEmbedding>>>(Term.Compare);
 
+        /// <summary>
+        /// Maps a type atom to the list of all types directly containing that atom.
+        /// (For instance type 1 is not mapped to a type with Integer.)
+        /// Type embeddings are stored according to the number of atoms in their type expression.
+        /// </summary>
+        private Map<Term, MutableTuple<int, Map<int, LinkedList<ITypeEmbedding>>>> typeAtomsToEmbeddings =
+            new Map<Term, MutableTuple<int, Map<int, LinkedList<ITypeEmbedding>>>>(Term.Compare);
+
         public TermIndex Index
         {
             get;
@@ -221,7 +229,7 @@
         }
 
         /// <summary>
-        /// The unn most contain some constant. 
+        /// The unn must contain some constant. 
         /// In this case, returns a constant.
         /// </summary>
         /// <param name="unn"></param>
@@ -280,6 +288,25 @@
             var rightTE = GetEmbedding(right.Sort);
             return leftTE.MkTest(left, rightTE.Type).And(Context, rightTE.MkCoercion(left).Eq(Context, right));
         }
+
+        /// <summary>
+        /// Chooses an embedding that can hold all the values inhabiting type.
+        /// </summary>
+        /*
+        public ITypeEmbedding ChooseRepresentation(Term type)
+        {
+            Contract.Requires(type != null && type.Groundness != Groundness.Variable);
+            var wtype = Index.MkDataWidenedType(type);
+            MutableTuple<int, Map<int, LinkedList<ITypeEmbedding>>> embSets;
+            foreach (var t in wtype.Enumerate(x => x.Args))
+            {
+                if (t.Symbol.Arity == 0)
+                {
+                    ++size;
+                }
+            }
+        }
+        */
 
         public void Debug_PrintEmbeddings()
         {
@@ -723,6 +750,47 @@
         {
             sortToEmbedding.Add(embedding.Representation, embedding);
             typeToEmbedding.Add(embedding.Type, embedding);
+
+            //// Find the number of atoms in the type expression.
+            int size = 0;
+            foreach (var t in embedding.Type.Enumerate(x => x.Args))
+            {
+                if (t.Symbol.Arity == 0)
+                {
+                    ++size;
+                }
+            }
+
+            //// For every atom, register this type expression according to size.
+            LinkedList<ITypeEmbedding> embeddings;
+            Map<int, LinkedList<ITypeEmbedding>> sizeMap;
+            MutableTuple<int, Map<int, LinkedList<ITypeEmbedding>>> embSets;
+            foreach (var t in embedding.Type.Enumerate(x => x.Args))
+            {
+                if (t.Symbol.Arity == 0)
+                {
+                    if (!typeAtomsToEmbeddings.TryFindValue(t, out embSets))
+                    {
+                        sizeMap = new Map<int, LinkedList<ITypeEmbedding>>((x, y) => x - y);
+                        embSets = new MutableTuple<int, Map<int, LinkedList<ITypeEmbedding>>>(0, sizeMap);
+                        typeAtomsToEmbeddings.Add(t, embSets);
+                    }
+                    else
+                    {
+                        sizeMap = embSets.Item2;
+                    }
+
+                    if (!sizeMap.TryFindValue(size, out embeddings))
+                    {
+                        embeddings = new LinkedList<ITypeEmbedding>();
+                        sizeMap.Add(size, embeddings);
+                    }
+
+                    embSets.Item1++;
+                    embeddings.AddLast(embedding);
+                }
+            }
+
             return embedding;
         }
 

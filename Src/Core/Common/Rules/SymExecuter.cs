@@ -12,10 +12,33 @@
     using API.Nodes;
     using Compiler;
     using Extras;
+    using Solver;
     using Terms;
 
     internal class SymExecuter
     {
+        /// <summary>
+        /// The symbolic least fixpoint.
+        /// </summary>
+        private Map<Term, SymElement> symbLfp = new Map<Term, SymElement>(Term.Compare);
 
+        private Solver solver;
+
+        public SymExecuter(Solver solver)
+        {
+            Contract.Requires(solver != null);
+            this.solver = solver;
+            
+            Set<Term> facts;
+            Map<UserCnstSymb, Term> aliasMap;
+            solver.PartialModel.ConvertSymbCnstsToVars(out facts, out aliasMap);
+
+            foreach (var kv in aliasMap)
+            {
+                Console.WriteLine("{0} : {1}", 
+                    kv.Key.FullName, 
+                    solver.PartialModel.Index.MkDataWidenedType(solver.PartialModel.GetSymbCnstType(kv.Key)).Debug_GetSmallTermString());
+            }
+        }
     }
 }

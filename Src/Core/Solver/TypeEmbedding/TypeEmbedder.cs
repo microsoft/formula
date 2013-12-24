@@ -7,6 +7,7 @@
     using System.Linq;
     using System.Numerics;
 
+    using API;
     using Common;
     using Common.Extras;
     using Common.Terms;
@@ -49,11 +50,11 @@
 
         /// <summary>
         /// Maps a type atom to the list of all types directly containing that atom.
-        /// (For instance type 1 is not mapped to a type with Integer.)
+        /// A range is considered a type atom for the purposes of this map.
         /// Type embeddings are stored according to the number of atoms in their type expression.
         /// </summary>
-        private Map<Term, MutableTuple<int, Map<int, LinkedList<ITypeEmbedding>>>> typeAtomsToEmbeddings =
-            new Map<Term, MutableTuple<int, Map<int, LinkedList<ITypeEmbedding>>>>(Term.Compare);
+        private Map<Term, Map<int, LinkedList<ITypeEmbedding>>> typeAtomsToEmbeddings =
+            new Map<Term, Map<int, LinkedList<ITypeEmbedding>>>(Term.Compare);
 
         public TermIndex Index
         {
@@ -291,28 +292,259 @@
 
         /// <summary>
         /// Chooses an embedding that can hold all the values inhabiting type.
+        /// Prefers types with fewer atoms.
         /// </summary>
-        /*
         public ITypeEmbedding ChooseRepresentation(Term type)
         {
             Contract.Requires(type != null && type.Groundness != Groundness.Variable);
-            var wtype = Index.MkDataWidenedType(type);
-            MutableTuple<int, Map<int, LinkedList<ITypeEmbedding>>> embSets;
+
+            //// Choose representation based on widened type. 
+            //// If there is an embedding of this widened type, then choose it immediately. 
+            int crntMinSize = 0;
+            ITypeEmbedding crntMinEmb;
+            var wtype = GetUnion(type).MkTypeTerm(Index);
+            if (typeToEmbedding.TryFindValue(wtype, out crntMinEmb))
+            {
+                Console.WriteLine("Found exact encoding");
+                return crntMinEmb;
+            }
+
+            //// Get type terms for base sorts
+            bool wasAdded;
+            var strType = Index.MkApply(Index.SymbolTable.GetSortSymbol(BaseSortKind.String), TermIndex.EmptyArgs, out wasAdded);
+            var negType = Index.MkApply(Index.SymbolTable.GetSortSymbol(BaseSortKind.NegInteger), TermIndex.EmptyArgs, out wasAdded);
+            var posType = Index.MkApply(Index.SymbolTable.GetSortSymbol(BaseSortKind.PosInteger), TermIndex.EmptyArgs, out wasAdded);
+            var natType = Index.MkApply(Index.SymbolTable.GetSortSymbol(BaseSortKind.Natural), TermIndex.EmptyArgs, out wasAdded);
+            var intType = Index.MkApply(Index.SymbolTable.GetSortSymbol(BaseSortKind.Integer), TermIndex.EmptyArgs, out wasAdded);
+            var realType = Index.MkApply(Index.SymbolTable.GetSortSymbol(BaseSortKind.Real), TermIndex.EmptyArgs, out wasAdded);
+
+            //// Begin search for embedding with fewest type atoms
+            Rational rat;
+            BaseCnstSymb bcs;
+            BaseSortSymb bss;
+            Map<int, LinkedList<ITypeEmbedding>> sizeMap;            
             foreach (var t in wtype.Enumerate(x => x.Args))
             {
-                if (t.Symbol.Arity == 0)
+                if (t.Symbol.Arity != 0)
                 {
-                    ++size;
+                    continue;
                 }
+
+                if (typeAtomsToEmbeddings.TryFindValue(t, out sizeMap))
+                {
+                    UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                }
+
+                switch (t.Symbol.Kind)
+                {
+                    case SymbolKind.BaseCnstSymb:
+                        {
+                            bcs = (BaseCnstSymb)t.Symbol;
+                            if (bcs.CnstKind == CnstKind.Numeric)
+                            {
+                                rat = (Rational)bcs.Raw;
+                                if (rat.IsInteger && rat.Sign < 0)
+                                {
+                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    if (typeAtomsToEmbeddings.TryFindValue(negType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+                                }
+                                else if (rat.IsInteger && rat.Sign == 0)
+                                {
+                                    if (typeAtomsToEmbeddings.TryFindValue(natType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);                                    
+                                    }
+
+                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+                                }
+                                else if (rat.IsInteger && rat.Sign > 0)
+                                {
+                                    if (typeAtomsToEmbeddings.TryFindValue(posType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    if (typeAtomsToEmbeddings.TryFindValue(natType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+                                }
+
+                                if (typeAtomsToEmbeddings.TryFindValue(realType, out sizeMap))
+                                {
+                                    UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                }
+                            }
+                            else
+                            {
+                                Contract.Assert(bcs.CnstKind == CnstKind.String);
+                                if (typeAtomsToEmbeddings.TryFindValue(strType, out sizeMap))
+                                {
+                                    UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                }
+                            }
+
+                            break;
+                        }
+                    case SymbolKind.BaseSortSymb:
+                        {
+                            bss = (BaseSortSymb)t.Symbol;
+                            switch (bss.SortKind)
+                            {
+                                case BaseSortKind.Real:
+                                case BaseSortKind.String:
+                                    //// These types are not contained by other types.
+                                    break;
+                                case BaseSortKind.NegInteger:
+                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    break;
+                                case BaseSortKind.PosInteger:
+                                    if (typeAtomsToEmbeddings.TryFindValue(natType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    break;
+                                case BaseSortKind.Natural:
+                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    break;
+                                case BaseSortKind.Integer:
+                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out sizeMap))
+                                    {
+                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    }
+
+                                    break;
+                                default:
+                                    throw new NotImplementedException();
+                            }
+
+                            break;
+                        }
+
+                    default:
+                        //// Other atoms do not require special handling
+                        break;
+                }
+
+                Contract.Assert(crntMinEmb != null);
             }
+
+            Contract.Assert(crntMinEmb != null);
+            return crntMinEmb;
         }
-        */
 
         public void Debug_PrintEmbeddings()
         {
             foreach (var kv in typeToEmbedding)
             {
                 kv.Value.Debug_Print();
+            }
+        }
+
+        public void Debug_PrintAtomsToEmbeddingsMap()
+        {
+            foreach (var kv in typeAtomsToEmbeddings)
+            {
+                Console.WriteLine("Type atom: {0}", kv.Key.Debug_GetSmallTermString());
+                foreach (var kvp in kv.Value)
+                {
+                    Console.WriteLine("   Embeddings of size {0}", kvp.Key);
+                    foreach (var e in kvp.Value)
+                    {
+                        Console.WriteLine("      {0}", e.Type.Debug_GetSmallTermString());
+                    }
+                }
+            }
+        }
+
+        private void UpdateMinEmb(Term wtype, Map<int, LinkedList<ITypeEmbedding>> sizeMap, ref int minSize, ref ITypeEmbedding minEmb)
+        {
+            if (sizeMap == null)
+            {
+                return;
+            }
+            else if (minEmb == null)
+            {
+                foreach (var kv in sizeMap)
+                {
+                    foreach (var e in kv.Value)
+                    {
+                        if (Index.IsSubtypeWidened(wtype, e.Type))
+                        {
+                            minSize = kv.Key;
+                            minEmb = e;
+                            return;
+                        }
+                    }
+                }
+
+                throw new Impossible();
+            }
+            else
+            {
+                foreach (var kv in sizeMap)
+                {
+                    if (kv.Key >= minSize)
+                    {
+                        return;
+                    }
+
+                    foreach (var e in kv.Value)
+                    {
+                        if (Index.IsSubtypeWidened(wtype, e.Type))
+                        {
+                            minSize = kv.Key;
+                            minEmb = e;
+                            return;
+                        }
+                    }
+                }
+
+                throw new Impossible();
             }
         }
 
@@ -753,7 +985,7 @@
 
             //// Find the number of atoms in the type expression.
             int size = 0;
-            foreach (var t in embedding.Type.Enumerate(x => x.Args))
+            foreach (var t in embedding.Type.Enumerate(x => x.Symbol != Index.RangeSymbol ? x.Args : null))
             {
                 if (t.Symbol.Arity == 0)
                 {
@@ -764,20 +996,14 @@
             //// For every atom, register this type expression according to size.
             LinkedList<ITypeEmbedding> embeddings;
             Map<int, LinkedList<ITypeEmbedding>> sizeMap;
-            MutableTuple<int, Map<int, LinkedList<ITypeEmbedding>>> embSets;
-            foreach (var t in embedding.Type.Enumerate(x => x.Args))
+            foreach (var t in embedding.Type.Enumerate(x => x.Symbol != Index.RangeSymbol ? x.Args : null))
             {
-                if (t.Symbol.Arity == 0)
+                if (t.Symbol.Arity == 0 || t.Symbol == Index.RangeSymbol)
                 {
-                    if (!typeAtomsToEmbeddings.TryFindValue(t, out embSets))
+                    if (!typeAtomsToEmbeddings.TryFindValue(t, out sizeMap))
                     {
                         sizeMap = new Map<int, LinkedList<ITypeEmbedding>>((x, y) => x - y);
-                        embSets = new MutableTuple<int, Map<int, LinkedList<ITypeEmbedding>>>(0, sizeMap);
-                        typeAtomsToEmbeddings.Add(t, embSets);
-                    }
-                    else
-                    {
-                        sizeMap = embSets.Item2;
+                        typeAtomsToEmbeddings.Add(t, sizeMap);
                     }
 
                     if (!sizeMap.TryFindValue(size, out embeddings))
@@ -786,11 +1012,10 @@
                         sizeMap.Add(size, embeddings);
                     }
 
-                    embSets.Item1++;
                     embeddings.AddLast(embedding);
                 }
             }
-
+           
             return embedding;
         }
 

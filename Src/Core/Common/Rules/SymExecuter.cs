@@ -32,12 +32,16 @@
             Set<Term> facts;
             Map<UserCnstSymb, Term> aliasMap;
             solver.PartialModel.ConvertSymbCnstsToVars(out facts, out aliasMap);
+            solver.TypeEmbedder.Debug_PrintAtomsToEmbeddingsMap();
 
             foreach (var kv in aliasMap)
             {
-                Console.WriteLine("{0} : {1}", 
+                var emb = solver.TypeEmbedder.ChooseRepresentation(solver.PartialModel.GetSymbCnstType(kv.Key));
+
+                Console.WriteLine("{0} : {1} -> {2}", 
                     kv.Key.FullName, 
-                    solver.PartialModel.Index.MkDataWidenedType(solver.PartialModel.GetSymbCnstType(kv.Key)).Debug_GetSmallTermString());
+                    solver.PartialModel.Index.MkDataWidenedType(solver.PartialModel.GetSymbCnstType(kv.Key)).Debug_GetSmallTermString(),
+                    emb.Type.Debug_GetSmallTermString());
             }
         }
     }

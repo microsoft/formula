@@ -35,6 +35,12 @@
         private const string UnboxingName = "UnboxRng2BV{0}_{1}";
         private const string TesterName = "IsRng{0}_{1}";
         private const string SortName = "Rng{0}_{1}";
+        
+        /// <summary>
+        /// This is an base encoding cost to account for the 
+        /// cost of comparing and coercing between finite types.
+        /// </summary>
+        private const uint BaseEncodingCost = 5;
 
         private Z3Con boxingCon;
         private Z3BVSort bvSort;
@@ -100,6 +106,15 @@
         {
             get;
             private set;
+        }
+
+        /// <summary>
+        /// Encoding cost is the base cost plus the number of bits 
+        /// needed to encode an element in this representation.
+        /// </summary>
+        public uint EncodingCost
+        {
+            get { return BaseEncodingCost + bvSort.Size; }
         }
 
         private Z3Context Context

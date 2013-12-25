@@ -32,8 +32,6 @@
             Set<Term> facts;
             Map<UserCnstSymb, Term> aliasMap;
             solver.PartialModel.ConvertSymbCnstsToVars(out facts, out aliasMap);
-            solver.TypeEmbedder.Debug_PrintAtomsToEmbeddingsMap();
-
             foreach (var kv in aliasMap)
             {
                 var emb = solver.TypeEmbedder.ChooseRepresentation(solver.PartialModel.GetSymbCnstType(kv.Key));

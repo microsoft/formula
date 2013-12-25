@@ -30,6 +30,7 @@
         private const string CreatorName = "Mk_{0}";
         private const string TesterName = "Is_{0}";
         private const string SortName = "Singleton_{0}";
+        private const uint BaseEncodingCost = 5;
 
         private Z3Con singletonCon;
 
@@ -98,6 +99,11 @@
         {
             get;
             private set;
+        }
+
+        public uint EncodingCost
+        {
+            get { return BaseEncodingCost; }
         }
 
         private Z3Context Context

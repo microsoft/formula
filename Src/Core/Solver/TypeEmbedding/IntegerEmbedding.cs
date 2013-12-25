@@ -51,6 +51,11 @@
             private set;
         }
 
+        public uint EncodingCost
+        {
+            get { return 15; }
+        }
+
         private Z3Context Context
         {
             get { return Owner.Context; }

@@ -75,6 +75,17 @@
             private set;
         }
 
+        /// <summary>
+        /// This is the minimal cost embeddeding for a constructor
+        /// </summary>
+        public uint EncodingCost
+        {
+            get
+            {
+                return 1;
+            }
+        }
+
         private Z3Context Context
         {
             get { return Owner.Context; }

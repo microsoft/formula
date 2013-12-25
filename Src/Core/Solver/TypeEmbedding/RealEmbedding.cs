@@ -52,6 +52,15 @@
             private set;
         }
 
+        /// <summary>
+        /// Has the smallest encoding cost of any base numeric, 
+        /// because all operations are closed on reals
+        /// </summary>
+        public uint EncodingCost
+        {
+            get { return 10; }
+        }
+
         private Z3Context Context
         {
             get { return Owner.Context; }

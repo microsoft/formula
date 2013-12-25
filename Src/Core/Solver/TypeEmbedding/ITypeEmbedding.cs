@@ -53,6 +53,11 @@
         Tuple<Term, Z3Expr> DefaultMember { get; }
 
         /// <summary>
+        /// The cost for encoding a type in this representation.
+        /// </summary>
+        uint EncodingCost { get; }
+
+        /// <summary>
         /// If t is a Z3 term in this representation,
         /// then MkTest returns a Z3 term that evaluates to true whenever
         /// t evaluates to a member of type.

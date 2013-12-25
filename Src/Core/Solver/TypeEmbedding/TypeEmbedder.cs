@@ -50,10 +50,16 @@
 
         /// <summary>
         /// Maps a type atom to the list of all types directly containing that atom.
-        /// A range is considered a type atom for the purposes of this map.
-        /// Type embeddings are stored according to the number of atoms in their type expression.
+        /// Type embeddings are stored according to their cost.
         /// </summary>
         private Map<Term, Map<int, LinkedList<ITypeEmbedding>>> typeAtomsToEmbeddings =
+            new Map<Term, Map<int, LinkedList<ITypeEmbedding>>>(Term.Compare);
+
+        /// <summary>
+        /// Maps a type rng to the list of all types containing that rng.
+        /// Type embeddings are stored according to their cost.
+        /// </summary>
+        private Map<Term, Map<int, LinkedList<ITypeEmbedding>>> typeRngsToEmbeddings =
             new Map<Term, Map<int, LinkedList<ITypeEmbedding>>>(Term.Compare);
 
         public TermIndex Index
@@ -87,6 +93,7 @@
             MkEnumTypes(Index.SymbolTable.Root, sortToIndex);
             MkConUnnTypes(sortToIndex);
             SetDefaultValues();
+            RegisterEmbeddingAtoms();
         }
 
         public ITypeEmbedding GetEmbedding(Z3Sort sort)
@@ -300,12 +307,11 @@
 
             //// Choose representation based on widened type. 
             //// If there is an embedding of this widened type, then choose it immediately. 
-            int crntMinSize = 0;
+            int crntMinCost = 0;
             ITypeEmbedding crntMinEmb;
             var wtype = GetUnion(type).MkTypeTerm(Index);
             if (typeToEmbedding.TryFindValue(wtype, out crntMinEmb))
             {
-                Console.WriteLine("Found exact encoding");
                 return crntMinEmb;
             }
 
@@ -319,83 +325,86 @@
             var realType = Index.MkApply(Index.SymbolTable.GetSortSymbol(BaseSortKind.Real), TermIndex.EmptyArgs, out wasAdded);
 
             //// Begin search for embedding with fewest type atoms
-            Rational rat;
             BaseCnstSymb bcs;
             BaseSortSymb bss;
-            Map<int, LinkedList<ITypeEmbedding>> sizeMap;            
-            foreach (var t in wtype.Enumerate(x => x.Args))
+            BigInteger rngS1, rngE1, rngS2, rngE2;
+            Map<int, LinkedList<ITypeEmbedding>> costMap;
+            foreach (var t in wtype.Enumerate(x => x.Symbol != Index.RangeSymbol ? x.Args : null))
             {
-                if (t.Symbol.Arity != 0)
+                if (t.Symbol.Arity == 0)
+                {
+                    if (typeAtomsToEmbeddings.TryFindValue(t, out costMap))
+                    {
+                        UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
+                    }
+                }
+                else if (t.Symbol != Index.RangeSymbol)
                 {
                     continue;
                 }
 
-                if (typeAtomsToEmbeddings.TryFindValue(t, out sizeMap))
-                {
-                    UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
-                }
-
                 switch (t.Symbol.Kind)
                 {
+                    case SymbolKind.BaseOpSymb:
+                        {
+                            Contract.Assert(t.Symbol == Index.RangeSymbol);
+                            rngS1 = ((Rational)((BaseCnstSymb)t.Args[0].Symbol).Raw).Numerator;
+                            rngE1 = ((Rational)((BaseCnstSymb)t.Args[1].Symbol).Raw).Numerator;
+                            foreach (var kv in typeRngsToEmbeddings)
+                            {
+                                rngS2 = ((Rational)((BaseCnstSymb)kv.Key.Args[0].Symbol).Raw).Numerator;
+                                rngE2 = ((Rational)((BaseCnstSymb)kv.Key.Args[1].Symbol).Raw).Numerator;
+                                if (rngS2 <= rngS1 && rngE1 <= rngE2)
+                                {
+                                    UpdateMinEmb(wtype, kv.Value, ref crntMinCost, ref crntMinEmb);
+                                }
+                            }
+
+                            if (typeAtomsToEmbeddings.TryFindValue(negType, out costMap))
+                            {
+                                UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
+                            }
+
+                            if (typeAtomsToEmbeddings.TryFindValue(posType, out costMap))
+                            {
+                                UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
+                            }
+
+                            if (typeAtomsToEmbeddings.TryFindValue(natType, out costMap))
+                            {
+                                UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
+                            }
+
+                            if (typeAtomsToEmbeddings.TryFindValue(intType, out costMap))
+                            {
+                                UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
+                            }
+
+                            if (typeAtomsToEmbeddings.TryFindValue(realType, out costMap))
+                            {
+                                UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
+                            }
+
+                            break;
+                        }
                     case SymbolKind.BaseCnstSymb:
                         {
                             bcs = (BaseCnstSymb)t.Symbol;
                             if (bcs.CnstKind == CnstKind.Numeric)
                             {
-                                rat = (Rational)bcs.Raw;
-                                if (rat.IsInteger && rat.Sign < 0)
+                                //// All integers should appear under ranges.
+                                Contract.Assert(!((Rational)bcs.Raw).IsInteger);
+                                if (typeAtomsToEmbeddings.TryFindValue(realType, out costMap))
                                 {
-                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
-                                    {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
-                                    }
-
-                                    if (typeAtomsToEmbeddings.TryFindValue(negType, out sizeMap))
-                                    {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
-                                    }
-                                }
-                                else if (rat.IsInteger && rat.Sign == 0)
-                                {
-                                    if (typeAtomsToEmbeddings.TryFindValue(natType, out sizeMap))
-                                    {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);                                    
-                                    }
-
-                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
-                                    {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
-                                    }
-                                }
-                                else if (rat.IsInteger && rat.Sign > 0)
-                                {
-                                    if (typeAtomsToEmbeddings.TryFindValue(posType, out sizeMap))
-                                    {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
-                                    }
-
-                                    if (typeAtomsToEmbeddings.TryFindValue(natType, out sizeMap))
-                                    {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
-                                    }
-
-                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
-                                    {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
-                                    }
-                                }
-
-                                if (typeAtomsToEmbeddings.TryFindValue(realType, out sizeMap))
-                                {
-                                    UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
                                 }
                             }
                             else
                             {
                                 Contract.Assert(bcs.CnstKind == CnstKind.String);
-                                if (typeAtomsToEmbeddings.TryFindValue(strType, out sizeMap))
+                                if (typeAtomsToEmbeddings.TryFindValue(strType, out costMap))
                                 {
-                                    UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                    UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
                                 }
                             }
 
@@ -411,50 +420,50 @@
                                     //// These types are not contained by other types.
                                     break;
                                 case BaseSortKind.NegInteger:
-                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
+                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out costMap))
                                     {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                        UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
                                     }
 
-                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out sizeMap))
+                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out costMap))
                                     {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                        UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
                                     }
 
                                     break;
                                 case BaseSortKind.PosInteger:
-                                    if (typeAtomsToEmbeddings.TryFindValue(natType, out sizeMap))
+                                    if (typeAtomsToEmbeddings.TryFindValue(natType, out costMap))
                                     {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                        UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
                                     }
 
-                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
+                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out costMap))
                                     {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                        UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
                                     }
 
-                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out sizeMap))
+                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out costMap))
                                     {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                        UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
                                     }
 
                                     break;
                                 case BaseSortKind.Natural:
-                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out sizeMap))
+                                    if (typeAtomsToEmbeddings.TryFindValue(intType, out costMap))
                                     {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                        UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
                                     }
 
-                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out sizeMap))
+                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out costMap))
                                     {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                        UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
                                     }
 
                                     break;
                                 case BaseSortKind.Integer:
-                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out sizeMap))
+                                    if (typeAtomsToEmbeddings.TryFindValue(realType, out costMap))
                                     {
-                                        UpdateMinEmb(wtype, sizeMap, ref crntMinSize, ref crntMinEmb);
+                                        UpdateMinEmb(wtype, costMap, ref crntMinCost, ref crntMinEmb);
                                     }
 
                                     break;
@@ -482,22 +491,6 @@
             foreach (var kv in typeToEmbedding)
             {
                 kv.Value.Debug_Print();
-            }
-        }
-
-        public void Debug_PrintAtomsToEmbeddingsMap()
-        {
-            foreach (var kv in typeAtomsToEmbeddings)
-            {
-                Console.WriteLine("Type atom: {0}", kv.Key.Debug_GetSmallTermString());
-                foreach (var kvp in kv.Value)
-                {
-                    Console.WriteLine("   Embeddings of size {0}", kvp.Key);
-                    foreach (var e in kvp.Value)
-                    {
-                        Console.WriteLine("      {0}", e.Type.Debug_GetSmallTermString());
-                    }
-                }
             }
         }
 
@@ -981,42 +974,49 @@
         private ITypeEmbedding Register(ITypeEmbedding embedding)
         {
             sortToEmbedding.Add(embedding.Representation, embedding);
-            typeToEmbedding.Add(embedding.Type, embedding);
+            typeToEmbedding.Add(embedding.Type, embedding);           
+            return embedding;
+        }
 
-            //// Find the number of atoms in the type expression.
-            int size = 0;
-            foreach (var t in embedding.Type.Enumerate(x => x.Symbol != Index.RangeSymbol ? x.Args : null))
-            {
-                if (t.Symbol.Arity == 0)
-                {
-                    ++size;
-                }
-            }
-
-            //// For every atom, register this type expression according to size.
+        private void RegisterEmbeddingAtoms()
+        {
             LinkedList<ITypeEmbedding> embeddings;
-            Map<int, LinkedList<ITypeEmbedding>> sizeMap;
-            foreach (var t in embedding.Type.Enumerate(x => x.Symbol != Index.RangeSymbol ? x.Args : null))
+            Map<int, LinkedList<ITypeEmbedding>> costMap;
+            Map<Term, Map<int, LinkedList<ITypeEmbedding>>> typesToEmbeddings = null;
+
+            foreach (var embedding in sortToEmbedding.Values)
             {
-                if (t.Symbol.Arity == 0 || t.Symbol == Index.RangeSymbol)
+                //// For every atom and range, register this type expression.
+                foreach (var t in embedding.Type.Enumerate(x => x.Symbol != Index.RangeSymbol ? x.Args : null))
                 {
-                    if (!typeAtomsToEmbeddings.TryFindValue(t, out sizeMap))
+                    if (t.Symbol.Arity == 0)
                     {
-                        sizeMap = new Map<int, LinkedList<ITypeEmbedding>>((x, y) => x - y);
-                        typeAtomsToEmbeddings.Add(t, sizeMap);
+                        typesToEmbeddings = typeAtomsToEmbeddings;
+                    }
+                    else if (t.Symbol == Index.RangeSymbol)
+                    {
+                        typesToEmbeddings = typeRngsToEmbeddings;
+                    }
+                    else
+                    {
+                        continue;
                     }
 
-                    if (!sizeMap.TryFindValue(size, out embeddings))
+                    if (!typesToEmbeddings.TryFindValue(t, out costMap))
+                    {
+                        costMap = new Map<int, LinkedList<ITypeEmbedding>>((x, y) => x - y);
+                        typesToEmbeddings.Add(t, costMap);
+                    }
+
+                    if (!costMap.TryFindValue((int)embedding.EncodingCost, out embeddings))
                     {
                         embeddings = new LinkedList<ITypeEmbedding>();
-                        sizeMap.Add(size, embeddings);
+                        costMap.Add((int)embedding.EncodingCost, embeddings);
                     }
 
                     embeddings.AddLast(embedding);
                 }
             }
-           
-            return embedding;
         }
 
         private Term MkRngType(BigInteger lower, BigInteger upper)

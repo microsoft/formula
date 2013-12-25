@@ -30,6 +30,9 @@
     /// </summary>
     internal class UnionEmbedding : ITypeEmbedding
     {
+        private const uint BaseEncodingCost = 5;
+
+        private uint encodingCost = 0;
         private Set<Z3Fun> allBoxers = new Set<Z3Fun>((x, y) => ((int)x.Id - (int)y.Id));
         private Map<Term, Z3Con> rngBoxings = new Map<Term, Z3Con>(Term.Compare);
         private Map<Symbol, Z3Con> otherBoxings = new Map<Symbol, Z3Con>(Symbol.Compare);
@@ -83,6 +86,27 @@
         {
             get;
             private set;
+        }
+
+        public uint EncodingCost
+        {
+            get
+            {
+                if (encodingCost != 0)
+                {
+                    return encodingCost;
+                }
+
+                uint maxCompCost = 0;
+                foreach (var box in allBoxers)
+                {
+                    maxCompCost = Math.Max(maxCompCost, Owner.GetEmbedding(box.Domain[0]).EncodingCost);
+                }
+
+                //// Finally, account for the number of bits required to label the components of this union.
+                encodingCost = maxCompCost + BaseEncodingCost + (uint)(Math.Ceiling(Math.Log(allBoxers.Count, 2)));
+                return encodingCost;
+            }
         }
 
         private Z3Context Context
@@ -174,6 +198,7 @@
         {
             Contract.Requires(Representation == null);
             Representation = sort;
+
             foreach (var kv in rngBoxings)
             {
                 sortToBoxing.Add(kv.Value.AccessorDecls[0].Range, kv.Value);

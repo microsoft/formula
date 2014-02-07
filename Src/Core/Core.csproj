@@ -131,9 +131,12 @@
     <Compile Include="API\Results\SolveResult.cs" />
     <Compile Include="Common\Extras\BitMethods.cs" />
     <Compile Include="Common\Extras\Z3Utilities.cs" />
+    <Compile Include="Common\Rules\DecisionStack.cs" />
     <Compile Include="Common\Rules\ShapeTrie.cs" />
     <Compile Include="Common\Rules\SymElement.cs" />
     <Compile Include="Common\Rules\SymExecuter.cs" />
+    <Compile Include="Common\Rules\Activation.cs" />
+    <Compile Include="Common\Terms\TermEncIndex.cs" />
     <Compile Include="Solver\Cardinality.cs" />
     <Compile Include="Solver\CardSystem.cs" />
     <Compile Include="Common\Composites\CoreTSystem.cs" />

@@ -43,6 +43,13 @@
 \end{minipage}}\vspace{-3pt}
 ";
 
+        private const string CodeCmntFormat =
+@"\fcolorbox{formula-background-gray}{formula-background-gray}{
+\begin{minipage}{\codewidthper\textwidth}%%TOPMARGIN%%
+ {\tiny\texttt{%%LINENUM%%}}{\color{formula-comment}{\small\texttt{%%CODE%%}}}
+\end{minipage}}\vspace{-3pt}
+";
+
         private static readonly string[] keywords = new string[]
         {
             "domain", "model", "transform", "system", "includes",
@@ -308,11 +315,22 @@
 
                     if (metaDataStart + 1 < line.Length)
                     {
-                        sw.Write(
-                            CodeFormat.
-                              Replace(LineNumParam, lineStr).
-                              Replace(TopMarginParam, isFirstOutput ? TopMargin : "").
-                              Replace(CodeParam, FormatLine(line.Substring(metaDataStart + 1))));
+                        if (line.Substring(metaDataStart + 1).Trim().StartsWith("//"))
+                        {
+                            sw.Write(
+                                CodeCmntFormat.
+                                  Replace(LineNumParam, lineStr).
+                                  Replace(TopMarginParam, isFirstOutput ? TopMargin : "").
+                                  Replace(CodeParam, FormatLine(line.Substring(metaDataStart + 1))));
+                        }
+                        else
+                        {
+                            sw.Write(
+                                CodeFormat.
+                                  Replace(LineNumParam, lineStr).
+                                  Replace(TopMarginParam, isFirstOutput ? TopMargin : "").
+                                  Replace(CodeParam, FormatLine(line.Substring(metaDataStart + 1))));
+                        }
                     }
                     else
                     {

@@ -53,7 +53,8 @@
 
         public uint EncodingCost
         {
-            get { return 15; }
+            get;
+            private set;
         }
 
         private Z3Context Context
@@ -66,10 +67,11 @@
             get { return Owner.Index; }
         }
 
-        public IntegerEmbedding(TypeEmbedder owner)
+        public IntegerEmbedding(TypeEmbedder owner, uint cost)
         {
             Contract.Requires(owner != null);
             Owner = owner;
+            EncodingCost = cost;
             Representation = Context.MkIntSort();
             bool wasAdded;
             Type = Index.MkApply(Index.SymbolTable.GetSortSymbol(BaseSortKind.Integer), TermIndex.EmptyArgs, out wasAdded);

@@ -82,7 +82,8 @@
 
         public uint EncodingCost
         {
-            get { return 16; }
+            get;
+            private set;
         }
 
         private Z3Context Context
@@ -95,10 +96,11 @@
             get { return Owner.Index; }
         }
 
-        public NegIntegerEmbedding(TypeEmbedder owner)
+        public NegIntegerEmbedding(TypeEmbedder owner, uint cost)
         {
             Contract.Requires(owner != null);
             Owner = owner;
+            EncodingCost = cost;
             bool wasAdded;
             Type = Index.MkApply(Index.SymbolTable.GetSortSymbol(BaseSortKind.NegInteger), TermIndex.EmptyArgs, out wasAdded);
             boxingCon = Context.MkConstructor(BoxingName, TesterName, new string[] { UnboxingName }, new Z3Sort[] { Context.MkIntSort() });

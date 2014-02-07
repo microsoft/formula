@@ -17,10 +17,12 @@
     //// Aliases for Z3 types to avoid clashes
     using Z3Expr = Microsoft.Z3.Expr;
     using Z3BoolExpr = Microsoft.Z3.BoolExpr;
+    using Z3Context = Microsoft.Z3.Context;
 
     /// <summary>
     /// A symbolic element is a term, possibly with symbolic constants, that exists in the LFP of the program
-    /// only for those valuations where the side constraint is satisfied.
+    /// only for those valuations where the side constraint is satisfied. For backtracking purposes, side constraints
+    /// map from a state index to a side constraint. The overall side constraint is a disjunction of the map's image.
     /// </summary>
     internal class SymElement
     {
@@ -30,16 +32,113 @@
             private set;
         }
 
-        public Z3Expr Z3Term
+        public Z3Expr Encoding
         {
             get;
             private set;
         }
 
-        public Z3BoolExpr SideConstraint
+        public Map<int, Z3BoolExpr> SideConstraints
         {
             get;
             private set;
+        }
+
+        /// <summary>
+        ///  The earliest index at which the side constraint is known to be a tautology.
+        /// </summary>
+        public int TautologyNumber
+        {
+            get;
+            private set;
+        }
+
+        public SymElement(Term term, Z3Expr encoding, Z3Context context)
+        {
+            Contract.Requires(term != null && encoding != null && context != null);
+            Term = term;
+            Encoding = encoding;
+            SideConstraints = new Map<int, Z3BoolExpr>(Compare);
+        }
+
+        /// <summary>
+        /// Disjoins the current side constraint with constr
+        /// </summary>
+        /// <param name="constr"></param>
+        /// <param name="context"></param>
+        public void ExtendSideConstraint(int index, Z3BoolExpr constr, Z3Context context)
+        {
+            Z3BoolExpr crntConstr;
+            if (SideConstraints.TryFindValue(index, out crntConstr))
+            {
+                SideConstraints[index] = context.MkOr(crntConstr, constr);
+            }
+            else
+            {
+                SideConstraints.Add(index, constr);
+            }
+        }
+
+        /// <summary>
+        /// Removes all constraints introduced at or after index.
+        /// </summary>
+        /// <param name="index"></param>
+        public void ContractSideConstraint(int index)
+        {
+            var deleteList = new LinkedList<int>();
+            foreach (var kv in SideConstraints.GetEnumerable(index))
+            {
+                deleteList.AddLast(kv.Key);
+            }
+
+            foreach (var k in deleteList)
+            {
+                SideConstraints.Remove(k);
+            }
+        }
+
+        /// <summary>
+        /// "null" is the smallest symbolic element.
+        /// </summary>
+        public static int Compare(SymElement e1, SymElement e2)
+        {
+            if (e1 == null && e2 == null)
+            {
+                return 0;
+            }
+            else if (e1 == null && e2 != null)
+            {
+                return -1;
+            }
+            else if (e1 != null && e2 == null)
+            {
+                return 1;
+            }
+            else
+            {
+                return Term.Compare(e1.Term, e2.Term);
+            }
+        }
+
+        public void Debug_Print()
+        {
+            Console.WriteLine(Term.Debug_GetSmallTermString());
+        }
+
+        private static int Compare(int x, int y)
+        {
+            if (x < y)
+            {
+                return -1;
+            }
+            else if (x > y)
+            {
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
         }
     }
 }

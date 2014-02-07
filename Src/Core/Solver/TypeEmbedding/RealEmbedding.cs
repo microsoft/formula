@@ -52,13 +52,10 @@
             private set;
         }
 
-        /// <summary>
-        /// Has the smallest encoding cost of any base numeric, 
-        /// because all operations are closed on reals
-        /// </summary>
         public uint EncodingCost
         {
-            get { return 10; }
+            get;
+            private set;
         }
 
         private Z3Context Context
@@ -71,11 +68,12 @@
             get { return Owner.Index; }
         }
 
-        public RealEmbedding(TypeEmbedder owner)
+        public RealEmbedding(TypeEmbedder owner, uint cost)
         {
             Contract.Requires(owner != null);
             Owner = owner;
             Representation = Context.MkRealSort();
+            EncodingCost = cost;
             bool wasAdded;
             Type = Index.MkApply(Index.SymbolTable.GetSortSymbol(BaseSortKind.Real), TermIndex.EmptyArgs, out wasAdded);
             DefaultMember = new Tuple<Term, Z3Expr>(Index.MkCnst(Rational.Zero, out wasAdded), Context.MkNumeral(0, Representation));

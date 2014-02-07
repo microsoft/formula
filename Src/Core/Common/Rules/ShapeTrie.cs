@@ -15,7 +15,7 @@
     using Terms;
 
     /// <summary>
-    /// Indexes terms by their shape. Used as pre-unification filter.
+    /// Indexes symbolic elements by their shape. Used as pre-unification filter.
     /// </summary>
     internal class ShapeTrie
     {
@@ -27,7 +27,13 @@
         /// <summary>
         /// A map from terms to entries in the trie.
         /// </summary>
-        private Map<Term, Entry> entryMap = new Map<Term, Entry>(Term.Compare);
+        private Map<SymElement, Entry> entryMap = new Map<SymElement, Entry>(SymElement.Compare);
+
+        /// <summary>
+        /// Map from strata to rules that are triggered by this pattern.
+        /// </summary>
+        private Map<int, LinkedList<Tuple<CoreRule, int>>> triggers =
+            new Map<int, LinkedList<Tuple<CoreRule, int>>>((x, y) => x - y);
 
         /// <summary>
         /// The kind of terms stored in this trie.
@@ -59,20 +65,33 @@
         }
 
         /// <summary>
-        /// Attempts to insert a term t.
-        /// Returns true if the term t satisfies the pattern and was inserted into the index. 
+        /// Attempts to insert a symbolic element t.
+        /// Returns true if the element t satisfies the pattern and was inserted into the index. 
         /// </summary>
-        public bool Insert(Term t)
+        /*
+        public bool TryAdd(SymElement t, Set<Activation> pending, int stratum)
         {
-            Contract.Requires(t != null && t.Groundness != Groundness.Type);
-            Contract.Requires(t.Owner == Pattern.Owner);
+            Contract.Requires(t != null && t.Term.Groundness != Groundness.Type);
+            Contract.Requires(t.Term.Owner == Pattern.Owner);
 
             if (entryMap.ContainsKey(t))
             {
                 //// If t was already added then done.
+                if (pending != null)
+                {
+                    LinkedList<Tuple<CoreRule, int>> triggered;
+                    if (triggers.TryFindValue(stratum, out triggered))
+                    {
+                        foreach (var trig in triggered)
+                        {
+                            pending.Add(new Activation(trig.Item1, trig.Item2, t));
+                        }
+                    }
+                }
+
                 return true;
             }
-            else if (!Unifier.IsUnifiable(Pattern, t, false))
+            else if (!Unifier.IsUnifiable(Pattern, t.Term, false))
             {
                 //// Terms t must unify with the pattern for insertion to succeed.
                 //// Pattern is already standardized apart from t.
@@ -83,7 +102,7 @@
             entryMap.Add(t, entry);
             var nodeStack = new Stack<ShapeNode>();
             nodeStack.Push(root);
-            t.Compute<Unit>(
+            t.Term.Compute<Unit>(
                 (x, s) =>
                 {
                     return Unfold(x, nodeStack.Peek().Insert(entry, x), nodeStack);
@@ -92,9 +111,34 @@
                 {
                     nodeStack.Pop().IncrementEntryCount();
                     return default(Unit);
-                });            
+                });
+
+            if (pending != null)
+            {
+                LinkedList<Tuple<CoreRule, int>> triggered;
+                if (triggers.TryFindValue(stratum, out triggered))
+                {
+                    foreach (var trig in triggered)
+                    {
+                        pending.Add(new Activation(trig.Item1, trig.Item2, t));
+                    }
+                }
+            }
 
             return true;
+        }
+        */
+
+        public void AddTrigger(CoreRule rule, int findNumber)
+        {
+            LinkedList<Tuple<CoreRule, int>> rules;
+            if (!triggers.TryFindValue(rule.Stratum, out rules))
+            {
+                rules = new LinkedList<Tuple<CoreRule, int>>();
+                triggers.Add(rule.Stratum, rules);
+            }
+
+            rules.AddLast(new Tuple<CoreRule, int>(rule, findNumber));
         }
 
         private static IEnumerable<Term> Unfold(Term t, ShapeNode[] children, Stack<ShapeNode> stack)
@@ -165,7 +209,7 @@
                 });            
         }
 
-        private Entry GetEntry(Term t)
+        private Entry GetEntry(SymElement t)
         {
             Entry e;
             if (!entryMap.TryFindValue(t, out e))
@@ -255,7 +299,7 @@
                     Console.WriteLine("{0}{{", indentString);
                     foreach (var e in varAndDCEntries)
                     {
-                        Console.WriteLine("{0}{1}", indentString, e.Term.Debug_GetSmallTermString());
+                        e.Element.Debug_Print();
                     }
                     Console.WriteLine("{0}}}", indentString);
                 }
@@ -269,7 +313,7 @@
                         Console.WriteLine("{0}{{", indentString);
                         foreach (var e in kv.Value)
                         {
-                            Console.WriteLine("{0}{1}", indentString, e.Term.Debug_GetSmallTermString());
+                            e.Element.Debug_Print();
                         }
                         Console.WriteLine("{0}}}", indentString);
                     }
@@ -458,7 +502,7 @@
 
         private class Entry
         {
-            public Term Term
+            public SymElement Element
             {
                 get;
                 private set;
@@ -482,15 +526,15 @@
                 private set;
             }
 
-            public Entry(Term t)
+            public Entry(SymElement t)
             {
                 Contract.Requires(t != null);
-                Term = t;
+                Element = t;
             }
 
             public static int Compare(Entry e1, Entry e2)
             {
-                return Term.Compare(e1.Term, e2.Term);
+                return SymElement.Compare(e1.Element, e2.Element);
             }
         }
     }

@@ -74,19 +74,22 @@
             private set;
         }
 
-        public TypeEmbedder(TermIndex index, Z3Context context)
+        public TypeEmbedder(
+            TermIndex index, 
+            Z3Context context, 
+            Map<BaseSortKind, uint> baseSortCosts)
         {
             Contract.Requires(index != null && context != null);
             Index = index;
             Context = context;
 
             //// Build base sorts
-            Register(new RealEmbedding(this));
-            Register(new IntegerEmbedding(this));
-            Register(new NaturalEmbedding(this));
-            Register(new PosIntegerEmbedding(this));
-            Register(new NegIntegerEmbedding(this));
-            Register(new StringEmbedding(this));
+            Register(new RealEmbedding(this, baseSortCosts[BaseSortKind.Real]));
+            Register(new IntegerEmbedding(this, baseSortCosts[BaseSortKind.Integer]));
+            Register(new NaturalEmbedding(this, baseSortCosts[BaseSortKind.Natural]));
+            Register(new PosIntegerEmbedding(this, baseSortCosts[BaseSortKind.PosInteger]));
+            Register(new NegIntegerEmbedding(this, baseSortCosts[BaseSortKind.NegInteger]));
+            Register(new StringEmbedding(this, baseSortCosts[BaseSortKind.String]));
 
             //// Build finite enumerations
             var sortToIndex = new Map<Term, Tuple<uint, UserSymbol>>(Term.Compare);
@@ -514,8 +517,6 @@
                         }
                     }
                 }
-
-                throw new Impossible();
             }
             else
             {
@@ -536,8 +537,6 @@
                         }
                     }
                 }
-
-                throw new Impossible();
             }
         }
 

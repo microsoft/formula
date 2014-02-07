@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Diagnostics.Contracts;
     using System.IO;
+    using System.Numerics;
     using System.Threading;
     using System.Reflection;
 
@@ -36,26 +37,42 @@
             NodePredFactory.Instance.MkPredicate(NodeKind.Update)
         };
 
-        private static Map<string, CnstKind> TopSettingKinds;
+        private static Map<string, Func<Setting, List<Flag>, bool>> TopSettingValidators;
 
         static Configuration()
         {
-            TopSettingKinds = new Map<string, CnstKind>(string.CompareOrdinal);
-            TopSettingKinds[Parse_ActiveParserSetting] = CnstKind.String;
-            TopSettingKinds[Parse_ActiveRenderSetting] = CnstKind.String;
-            TopSettingKinds[Solver_ActiveStrategySetting] = CnstKind.String;
+            TopSettingValidators = new Map<string, Func<Setting, List<Flag>, bool>>(string.CompareOrdinal);
+            TopSettingValidators[Parse_ActiveParserSetting] = ValidateStringSetting;
+            TopSettingValidators[Parse_ActiveRenderSetting] = ValidateStringSetting;
+            TopSettingValidators[Solver_ActiveStrategySetting] = ValidateStringSetting;
+            TopSettingValidators[Solver_RealCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
+            TopSettingValidators[Solver_IntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
+            TopSettingValidators[Solver_NaturalCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
+            TopSettingValidators[Solver_NegIntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
+            TopSettingValidators[Solver_PosIntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
+            TopSettingValidators[Solver_StringCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
         }
 
         /// <summary>
         /// Names for the various collections
         /// </summary>
+        internal const string ParsersCollectionName = "parsers";
+        internal const string ModulesCollectionName = "modules";
+        internal const string StrategiesCollectionName = "strategies";
+
+        /// <summary>
+        /// Names for the various predefined settings
+        /// </summary>
         internal const string DefaultsSetting = "defaults";
         internal const string Parse_ActiveParserSetting = "parse_ActiveParser";
         internal const string Parse_ActiveRenderSetting = "parse_ActiveRenderer";
         internal const string Solver_ActiveStrategySetting = "solver_ActiveStrategy";
-        internal const string ParsersCollectionName = "parsers";
-        internal const string ModulesCollectionName = "modules";
-        internal const string StrategiesCollectionName = "strategies";
+        internal const string Solver_RealCostSetting = "solver_RealCost";
+        internal const string Solver_IntegerCostSetting = "solver_IntegerCost";
+        internal const string Solver_NaturalCostSetting = "solver_NaturalCost";
+        internal const string Solver_NegIntegerCostSetting = "solver_NegIntegerCost";
+        internal const string Solver_PosIntegerCostSetting = "solver_PosIntegerCost";
+        internal const string Solver_StringCostSetting = "solver_StringCost";
 
         /// <summary>
         /// These are configurations there were inherited either lexically, or by using the
@@ -481,9 +498,9 @@
 
         private bool TopSet(AST<Setting> setting, List<Flag> flags)
         {
-            CnstKind kind;
+            Func<Setting, List<Flag>, bool> validator;
             var name = setting.Node.Key.Name;
-            if (!TopSettingKinds.TryFindValue(name, out kind))
+            if (!TopSettingValidators.TryFindValue(name, out validator))
             {
                 var flag = new Flag(
                     SeverityKind.Error,
@@ -494,14 +511,8 @@
                 return false;
             }
 
-            if (kind != setting.Node.Value.CnstKind)
+            if (!validator(setting.Node, flags))
             {
-                var flag = new Flag(
-                    SeverityKind.Error,
-                    setting.Node,
-                    Constants.BadSetting.ToString(name, setting.Node.Value.Raw, string.Format("Expected at {0} value", kind.ToString().ToLowerInvariant())),
-                    Constants.BadSetting.Code);
-                flags.Add(flag);
                 return false;
             }
 
@@ -1142,7 +1153,43 @@
                         
             return succeeded;
         }
-        
+
+        private static bool ValidateIntSetting(Setting setting, BigInteger minValue, BigInteger maxValue, List<Flag> flags)
+        {
+            Rational rat;
+            if (setting.Value.CnstKind != CnstKind.Numeric ||
+                !(rat = (Rational)setting.Value.Raw).IsInteger ||
+                rat.Numerator < minValue ||
+                rat.Numerator > maxValue)
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    setting,
+                    Constants.BadSetting.ToString(setting.Key.Name, setting.Value.Raw, string.Format("Expected an integer value in {0}..{1}", minValue, maxValue)),
+                    Constants.BadSetting.Code);
+                flags.Add(flag);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static bool ValidateStringSetting(Setting setting, List<Flag> flags)
+        {
+            if (setting.Value.CnstKind != CnstKind.String)
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    setting,
+                    Constants.BadSetting.ToString(setting.Key.Name, setting.Value.Raw, "Expected a string value"),
+                    Constants.BadSetting.Code);
+                flags.Add(flag);
+                return false;
+            }
+
+            return true;
+        }
+
         internal class PluginSettings
         {
             private Map<string, Cnst> settings = new Map<string, Cnst>(string.CompareOrdinal);

@@ -58,31 +58,36 @@
         internal FactSet PartialModel
         {
             get;
-            set;
+            private set;
         }
 
         internal Model Source
         {
             get;
-            set;
+            private set;
         }
 
         internal Z3Context Context
         {
             get;
-            set;
+            private set;
         }
 
         internal Z3Solver Z3Solver
         {
             get;
-            set;
+            private set;
         }
 
         internal TypeEmbedder TypeEmbedder
         {
             get;
-            set;
+            private set;
+        }
+
+        internal TermIndex Index
+        {
+            get { return PartialModel.Index; }
         }
 
         /// <summary>
@@ -108,7 +113,7 @@
             CreateContextAndSolver();
 
             //// Step 2. Create type embedder
-            TypeEmbedder = new TypeEmbedder(partialModel.Index, Context);
+            CreateTypeEmbedder();
 
             //// Step 3. Create cardinality system.
             Cardinalities = new CardSystem(partialModel);
@@ -144,6 +149,69 @@
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        private void CreateTypeEmbedder()
+        {
+            var conf = (Configuration)Source.Config.CompilerData;
+            Cnst value;
+            var costMap = new Map<BaseSortKind, uint>((x, y) => (int)x - (int)y);
+
+            if (conf.TryGetSetting(Configuration.Solver_RealCostSetting, out value))
+            {
+                costMap[BaseSortKind.Real] = (uint)((Rational)value.Raw).Numerator;
+            }
+            else
+            {
+                costMap[BaseSortKind.Real] = 10;
+            }
+
+            if (conf.TryGetSetting(Configuration.Solver_StringCostSetting, out value))
+            {
+                costMap[BaseSortKind.String] = (uint)((Rational)value.Raw).Numerator;
+            }
+            else
+            {
+                costMap[BaseSortKind.String] = 10;
+            }
+
+            if (conf.TryGetSetting(Configuration.Solver_IntegerCostSetting, out value))
+            {
+                costMap[BaseSortKind.Integer] = (uint)((Rational)value.Raw).Numerator;
+            }
+            else
+            {
+                costMap[BaseSortKind.Integer] = 11;
+            }
+
+            if (conf.TryGetSetting(Configuration.Solver_NaturalCostSetting, out value))
+            {
+                costMap[BaseSortKind.Natural] = (uint)((Rational)value.Raw).Numerator;
+            }
+            else
+            {
+                costMap[BaseSortKind.Natural] = 12;
+            }
+
+            if (conf.TryGetSetting(Configuration.Solver_PosIntegerCostSetting, out value))
+            {
+                costMap[BaseSortKind.PosInteger] = (uint)((Rational)value.Raw).Numerator;
+            }
+            else
+            {
+                costMap[BaseSortKind.PosInteger] = 13;
+            }
+
+            if (conf.TryGetSetting(Configuration.Solver_NegIntegerCostSetting, out value))
+            {
+                costMap[BaseSortKind.NegInteger] = (uint)((Rational)value.Raw).Numerator;
+            }
+            else
+            {
+                costMap[BaseSortKind.NegInteger] = 13;
+            }
+
+            TypeEmbedder = new TypeEmbedder(PartialModel.Index, Context, costMap);
         }
 
         /// <summary>

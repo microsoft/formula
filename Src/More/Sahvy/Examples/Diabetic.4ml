@@ -1,0 +1,81 @@
+﻿model M of SHSystem at "..\\Domain\\SHSystem.4ml"
+{
+	p1 is O.Const(0.01).
+	p2 is O.Const(0.025).
+	p3 is O.Const(0.000013).
+	iVi is O.Const(0.083333).
+	n is O.Const(0.093).
+	Gb is O.Const(4.5).
+	Ib is O.Const(15).
+	
+	// ODE
+	G is O.Var("G").
+	I is O.Var("I").
+    X is O.Var("X").
+    T is O.Var("T").
+    g is O.Var("g").
+    i is O.Var("i").
+	
+	DiffEq(G, O.Add(O.Sub(O.Neg(O.Mul(p1,G)), O.Mul(X, O.Add(G,Gb))), g)).
+	DiffEq(X, O.Add(O.Neg(O.Mul(p2,X)), O.Mul(p3,I))).
+	DiffEq(I, O.Add(O.Neg(O.Mul(n,O.Add(I,Ib))), O.Mul(i, iVi))).
+    DiffEq(T, 1).
+	
+	// CONTROLLER
+	cin is C.Var("measured G", 16, 6).
+	cout is C.Var("insulin", 16, 6).
+
+    cT is C.Var("measured T", 16, 6).
+	cg is C.Var("influx of glucose", 16, 6).
+
+	// Sample and hold
+	Sample(G, cin).
+	Hold(cout, i).
+    One is C.RConst(1,16,6).
+    Two is C.RConst(2,16,6).
+    Six is C.RConst(6,16,6).
+    Nine is C.RConst(9,16,6).
+    V is C.RConst(16.66,16,6).
+    Assign(cout, ITE(LE(cin, Six), C.Add(One, C.Div(C.Mul(Two,cin),Nine)), V)).
+
+    Sample(T, cT).
+	Hold(cg, g).
+    C0 is C.RConst(0,16,6).
+    C30 is C.RConst(30,16,6).
+    C60 is C.RConst(60,16,6).
+    C120 is C.RConst(120,16,6).
+    C180 is C.RConst(180,16,6).
+    Assign(cg, 
+        ITE(LE(cT, C30), 
+            C.Div(cT,C60), 
+            ITE(GE(cT, C120),
+                C0,
+                C.Div(C.Sub(C120,cT),C180)
+            )
+        )).
+
+	// Initial ranges
+	InitialRangeC(G, -2, 2).
+	//InitialRangeC(G, 5.9, 6.1).
+	InitialRangeC(I, -0.1, 0.1).
+    InitialRangeC(X, 0, 0).
+    InitialRangeC(T, 0, 0).
+	InitialRangeD(cout, 0, 0).
+    InitialRangeD(cg, 0, 0).
+
+	// Safety formula (AG f)
+	Safe(GE(G, -50)).
+	Safe(LE(G, 2500)).
+
+	DiscretePeriod(1).
+	Order(2).
+	StepBound(360).
+	SolverStep(0.05,0.001).
+	ErrorEstimate  (0.1).
+	CutoffThreshold(0.00000001).
+
+	AxisX("time", TIME, 0, 360).
+	AxisY("G", O.Mul(10,G), -50, 250).
+	AxisZ("search", SEARCHINDEX, 0, 10).
+	//AxisZ("X", O.Mul(100,X), 0, 100).
+}

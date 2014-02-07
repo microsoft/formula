@@ -1,0 +1,27 @@
+﻿model M of SHSystem at "..\\Domain\\SHSystem.4ml"
+{
+	// ODE
+	x is O.Var("x").
+	y is O.Var("y").
+
+	DiffEq(x, y).
+	DiffEq(y, O.Neg(x)).
+
+	// Initial ranges
+	InitialRangeC(x, 0.999999, 1).
+	InitialRangeC(y, 0, 0).
+
+	// Safety formula (AG f)
+	Safe(GE(x, -100)).
+
+	DiscretePeriod(0.1).
+	Order(2).
+	StepBound(100).
+	SolverStep(0.01,0.001).
+	ErrorEstimate  (0.01).
+	CutoffThreshold(0.000001).
+
+	AxisX("time", TIME, 0, 100).
+	AxisY("x", O.Mul(100,x), -100, 100).
+	AxisZ("y", O.Mul(100,y), -100, 100).
+}

@@ -1,0 +1,65 @@
+﻿model M of SHSystem at "..\\Domain\\SHSystem.4ml"
+{
+	// ODE
+	r1 is O.Const(2).
+	r2 is O.Const(2).
+	v1 is O.Const(0.5).
+	v2 is O.Const(0.5).
+	w is O.Const(12). // 0.75 << 4
+
+	x1 is O.Var("x1").
+	x2 is O.Var("x2").
+	x1in is O.Var("x1in").
+	DiffEq(x1, O.Sub(O.Mul(x1in,w), v1)).
+	DiffEq(x2, O.Sub(O.Mul(O.Sub(0.0625,x1in),w), v2)).
+	
+	// CONTROLLER
+	x1s is C.Var("measured x1", 8, 4).
+	x2s is C.Var("measured x2", 8, 4).
+	control is C.Var("control1", 8, 4).
+	r1C is C.RConst(2, 8, 4).
+	r2C is C.RConst(2, 8, 4).
+	Zero is C.RConst(0, 8, 4).
+	One is C.Const(1, 8, 4).
+	prev is Pre(control).
+
+	Assign(control, 
+		C.ITE(
+			C.EQ(prev,One),
+			C.ITE(
+				C.LE(x2s, r2C),
+				Zero,
+				One),
+			C.ITE(
+				C.LE(x1s, r1C),
+				One,
+				Zero)
+		)).
+
+	// Sample and hold
+	Sample(x1, x1s).
+	Sample(x2, x2s).
+	Hold(control, x1in).
+
+	// Initial ranges
+	InitialRangeC(x1, 2, 2.1).
+	InitialRangeC(x2, 3, 3).
+	InitialRangeD(control, 1, 1).
+	InitialRangeD(prev, 1, 1).
+
+	// Safety formula (AG f)
+	Safe(GE(x1in, 0)).
+
+	DiscretePeriod(0.1).
+	Order(2).
+	StepBound(100).
+	SolverStep(0.1,0.1).
+	ErrorEstimate  (0.00001).
+	CutoffThreshold(0.000001).
+	SearchProcedure(DFS_exhaustive).
+
+	AxisX("time", TIME, 0, 100).
+	AxisY("x1", O.Mul(10,x1), 10, 30).
+	AxisZ("x2", O.Mul(10,x2), 10, 30).
+	//AxisZ("x2", SEARCHINDEX, 0, 30).
+}

@@ -1,0 +1,4 @@
+# Ignore other dependencies that may be placed here when build projecting in Src/More
+
+/Flowstar/*
+/OpenTK/*

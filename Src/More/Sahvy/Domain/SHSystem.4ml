@@ -1,0 +1,206 @@
+domain SHSystem extends O::ODE, C::Controller
+{
+	Hold   ::= new (lhs: C.Var, rhs: O.Var).
+	Sample ::= new (lhs: O.Term, rhs: C.Var).
+
+	// Reset continuous-time variable
+	Reset ::= new (lhs: O.Term, rhs: O.Var).
+
+	// Describes equivalence classes for states, used for finding overlapping simulations
+	StateDescriptor ::= new (O.Term + C.Var).
+
+	// Expression language for unsafe formula
+	BoolTerm ::= EQ + LE + GE + LT + GT + Not + And + Or.
+	EQ  ::= new (arg1: any Term, arg2: any Term).
+	LE  ::= new (arg1: any Term, arg2: any Term).
+	GE  ::= new (arg1: any Term, arg2: any Term).
+	LT  ::= new (arg1: any Term, arg2: any Term).
+	GT  ::= new (arg1: any Term, arg2: any Term).
+	Not ::= new (arg1: any BoolTerm).
+	And ::= new (arg1: any BoolTerm, arg2: any BoolTerm).
+	Or  ::= new (arg1: any BoolTerm, arg2: any BoolTerm).
+	Safe ::= new (formula: BoolTerm).
+
+	CStateVar ::= (O.Var).
+	CStateVar(X) :- DiffEq(X, _).
+	DStateVar ::= (C.FPTerm).
+	DStateVar(X) :- X is C.Var, no Sample(_, X).
+	DStateVar(X) :- X is C.Pre.
+
+	InitialRangeC ::= fun (var: O.Var -> lower: Real, upper: Real).
+	InitialRangeD ::= fun (var: C.FPTerm -> lower: Integer, upper: Integer).
+		
+	//Accuracy ::= fun (var: O.Var -> accuracy: Real).
+
+	invalidInitials :- CStateVar(X), count({Y|Y is InitialRangeC(X,_,_)}) != 1.
+	invalidInitials :- InitialRangeC(X,_,_), no CStateVar(X).
+	invalidInitials :- DStateVar(X), count({Y|Y is InitialRangeD(X,_,_)}) != 1.
+	invalidInitials :- InitialRangeD(X,_,_), no DStateVar(X).
+
+	SolverStep ::= new (step: Real, ministep: Real).
+	CutoffThreshold ::= new (threshold: Real).
+	ErrorEstimate ::= new (estimate: Real).
+	DiscretePeriod ::= new (Real).
+	Order ::= new (PosInteger).
+	StepBound ::= new (PosInteger).
+	SearchProcedures ::= { BFS, BFS_exhaustive, BFS_refinement, DFS, DFS_exhaustive, DFS_refinement }.
+	SearchProcedure ::= new (proc: SearchProcedures).
+	AxisX ::= new (title: String, var: O.Term + {TIME}, minValue: Real, maxValue: Real).
+	AxisY ::= new (title: String, var: O.Term, minValue: Real, maxValue: Real).
+	AxisZ ::= new (title: String, var: O.Term + {SEARCHINDEX}, minValue: Real, maxValue: Real).
+
+	validVisualization :-
+		count({X|X is AxisX}) = 1,
+		count({X|X is AxisY}) = 1,
+		count({X|X is AxisZ}) = 1,
+		AxisX(_,_,mx,Mx), mx <= Mx,
+		AxisY(_,_,my,My), my <= My,
+		AxisZ(_,_,mz,Mz), mz <= Mz.
+
+	conforms 
+		no invalidInitials,
+		count({X|X is DiscretePeriod}) = 1,
+		count({A|A is SolverStep}) = 1,
+		count({B|B is CutoffThreshold}) = 1,
+		count({W|W is ErrorEstimate}) = 1,
+		count({Z|Z is SearchProcedure}) <= 1,
+		DiscretePeriod(Y), Y > 0,
+		validVisualization.
+}
+
+domain ODE
+{
+	UnaryTerm ::= Neg + Sin + Cos + Exp + Sqrt.
+	BinaryTerm ::= Add + Sub + Mul + Div.
+	Term ::= Var + Real + Const + UnaryTerm + BinaryTerm + Pow.
+	
+	// Differential equation (dx/dt = rhs)
+	DiffEq ::= new (x:Var, rhs:Term).
+	
+	// Variable
+	Var  ::= new (name: String).
+
+	// A real constant
+	Const ::= new (value: Real).
+	
+	// Unary operations
+	Neg  ::= new (arg1: any Term).
+	Sin  ::= new (arg1: any Term).
+	Cos  ::= new (arg1: any Term).
+	Exp  ::= new (arg1: any Term).
+	Sqrt ::= new (arg1: any Term).
+	
+	// Binary operations
+	Add  ::= new (arg1: any Term, arg2: any Term).
+	Sub  ::= new (arg1: any Term, arg2: any Term).
+	Mul  ::= new (arg1: any Term, arg2: any Term).
+	Div  ::= new (arg1: any Term, arg2: any Term).
+	
+	// Power function
+	Pow  ::= new (arg1: any Term, k: Integer).
+}
+
+domain Controller
+{	
+	Assign ::= new (var: Var, rhs: FPTerm).
+	
+	// Fixed point number Termessions
+	FPTerm       ::= Var + Const + RConst + UnaryFPTerm + BinaryFPTerm + ITE + Pre.
+	UnaryFPTerm  ::= Neg.
+	BinaryFPTerm ::= Add + Sub + Mul + Div + Min + Max.
+
+	// Boolean expressions
+	BoolTerm  ::= EQ + LE + GE + LT + GT + Not + And + Or.
+		
+	// Constant
+	Const ::= new (value: Integer, bits: PosInteger, decimals: Natural).
+
+	// Converted constant (from real)
+	RConst ::= new (value: Real, bits: PosInteger, decimals: Natural).
+
+	// Variable (signed)
+	Var ::= new (name: String, bits: PosInteger, decimals: Natural).
+	
+	// Previous value operator
+	Pre ::= new (arg1: any FPTerm).
+
+	// Unary operations
+	Neg  ::= new (arg1: any FPTerm).
+	
+	// Binary operations
+	Add  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+	Sub  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+	Mul  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+	Div  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+	Min  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+	Max  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+		
+	// If then else
+	ITE  ::= new (test: any BoolTerm, arg1: any FPTerm, arg2: any FPTerm).
+	
+	// Boolean operations
+	EQ  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+	LE  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+	GE  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+	LT  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+	GT  ::= new (arg1: any FPTerm, arg2: any FPTerm).
+	Not ::= new (arg1: any BoolTerm).
+	And ::= new (arg1: any BoolTerm, arg2: any BoolTerm).
+	Or  ::= new (arg1: any BoolTerm, arg2: any BoolTerm).
+		
+	ControlTerm ::= FPTerm + BoolTerm.
+	invalidOp :- X is ControlTerm, count({Y | Bits(X,Y)}) != 1.
+	invalidOp :- X is ControlTerm, count({Y | Decimals(X,Y)}) != 1.
+
+	conforms no invalidOp.
+
+	_(X) :- Add(X,_); Add(_,X).
+	_(X) :- Sub(X,_); Sub(_,X).
+	_(X) :- Mul(X,_); Mul(_,X).
+	_(X) :- Div(X,_); Div(_,X).
+
+	// Calculate bits and decimals for each term
+	Bits ::= (term:FPTerm + BoolTerm, bits: PosInteger).
+	Bits(X, bits) :- X is Const(_, bits, _).
+	Bits(X, bits) :- X is RConst(_, bits, _).
+	Bits(X, bits) :- X is Var(_, bits, _).
+	Bits(X, bits) :- X is Pre(Y), Bits(Y, bits).
+	Bits(X, bits) :- X is Neg(Y), Bits(Y, bits).
+	Bits(X, bits) :- X is Add(Y,_), Bits(Y, bits); X is Add(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is Sub(Y,_), Bits(Y, bits); X is Sub(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is Mul(Y,_), Bits(Y, bits); X is Mul(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is Div(Y,_), Bits(Y, bits); X is Div(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is Min(Y,_), Bits(Y, bits); X is Min(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is Max(Y,_), Bits(Y, bits); X is Max(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is ITE(_,Y,_), Bits(Y, bits); X is ITE(_,_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is EQ(Y,_), Bits(Y, bits); X is EQ(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is LE(Y,_), Bits(Y, bits); X is LE(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is GE(Y,_), Bits(Y, bits); X is GE(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is LT(Y,_), Bits(Y, bits); X is LT(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is GT(Y,_), Bits(Y, bits); X is GT(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is Not(Y), Bits(Y, bits).
+	Bits(X, bits) :- X is And(Y,_), Bits(Y, bits); X is And(_,Y), Bits(Y, bits).
+	Bits(X, bits) :- X is Or(Y,_), Bits(Y, bits); X is Or(_,Y), Bits(Y, bits).
+
+	Decimals ::= (term:FPTerm + BoolTerm, decimals: Natural).
+	Decimals(X, dec) :- X is Const(_, _, dec).
+	Decimals(X, dec) :- X is RConst(_, _, dec).
+	Decimals(X, dec) :- X is Var(_, _, dec).
+	Decimals(X, dec) :- X is Pre(Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is Neg(Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is Add(Y,_), Decimals(Y, dec); X is Add(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is Sub(Y,_), Decimals(Y, dec); X is Sub(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is Mul(Y,_), Decimals(Y, dec); X is Mul(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is Div(Y,_), Decimals(Y, dec); X is Div(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is Min(Y,_), Decimals(Y, dec); X is Min(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is Max(Y,_), Decimals(Y, dec); X is Max(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is ITE(_,Y,_), Decimals(Y, dec); X is ITE(_,_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is EQ(Y,_), Decimals(Y, dec); X is EQ(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is LE(Y,_), Decimals(Y, dec); X is LE(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is GE(Y,_), Decimals(Y, dec); X is GE(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is LT(Y,_), Decimals(Y, dec); X is LT(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is GT(Y,_), Decimals(Y, dec); X is GT(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is Not(Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is And(Y,_), Decimals(Y, dec); X is And(_,Y), Decimals(Y, dec).
+	Decimals(X, dec) :- X is Or(Y,_), Decimals(Y, dec); X is Or(_,Y), Decimals(Y, dec).
+}

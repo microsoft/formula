@@ -1,0 +1,87 @@
+﻿model M of SHSystem at "..\\Domain\\SHSystem.4ml"
+{
+	// ODE
+	dx is O.Var("dX").
+	v is O.Var("v").
+	a is O.Var("a").
+	vL is O.Var("vL").
+	aL is O.Var("aL").
+	DiffEq(dx, O.Sub(vL,v)).
+	DiffEq(v, a).
+	DiffEq(vL, aL).
+	
+	// Constants
+	zero is C.RConst(0, 10, 0).
+	maxDec is C.RConst(-20, 10, 0).
+	maxAcc is C.RConst(10, 10, 0).
+	K1 is C.RConst(1, 10, 0).
+	K2 is C.RConst(-2, 10, 0).
+	K3 is C.RConst(2, 10, 0).
+	delta is C.RConst(10, 10, 0).
+	Two is C.RConst(2, 10, 0).
+	desiredDistance is C.RConst(70, 10, 0).
+	
+	// Leader controller model
+	leaderC is C.Var("leader control", 10, 0).
+	vLs is C.Var("leader v", 10, 0).
+	Sample(vL, vLs).
+	Hold(leaderC, aL).
+	Assign(leaderC, ITE(GT(vLs,zero), maxDec, zero)).
+
+	// CONTROLLER	
+	control is C.Var("control", 10, 0).
+	vs is C.Var("measured v", 10, 0).
+	dX is C.Var("measured delta x", 10, 0).
+	dV is C.Var("measured delta v", 10, 0).
+	withRev is 
+			C.Mul(
+				K2, 
+				C.Sub(desiredDistance, dX)
+			).
+	value is
+		C.Mul(
+				K2, 
+				C.Sub(desiredDistance, dX)
+			).
+		/*C.ITE(
+			C.LT(vs,zero),
+			zero,
+			withRev).*/
+	prevValue is C.Pre(value).
+	avgValue is C.Div(C.Add(prevValue,value),Two).
+	Assign(control, C.Max(C.Min(avgValue,maxAcc),maxDec)).
+
+	// Sample and hold
+	Sample(dx, dX).
+	Sample(O.Sub(vL,v), dV).
+	Sample(v, vs).
+	Hold(control, a).
+
+	// Initial ranges
+	InitialRangeC(v, 30, 30).
+	InitialRangeC(dx, 30, 81).
+	InitialRangeC(vL, 20, 21).
+	//InitialRangeC(dx, 30, 30).
+	//InitialRangeC(vL, 20, 20).
+	InitialRangeD(leaderC, -20, -20).
+	//InitialRangeD(control, -20, 10).
+	InitialRangeD(control, 0, 0).
+	InitialRangeD(prevValue, 0, 0).
+	
+	// Safety formula (AG f)
+	//Safe(Or(GE(dx, 5), LT(vL,0))).
+	Safe(GE(dx, 3)).
+
+	DiscretePeriod(0.1).
+	Order(2).
+	StepBound(40).
+	SolverStep(0.1,0.1).
+	ErrorEstimate(0.1).
+	CutoffThreshold(0.001).
+	SearchProcedure(DFS_refinement).
+
+	AxisX("time", TIME, 0, 40).
+	AxisY("delta x", O.Mul(0.1,dx), 0, 10).
+	//AxisZ("vL", O.Mul(0.1,O.Sub(vL,v)), -1, 10).	
+	AxisZ("search", SEARCHINDEX, 0, 10).
+}

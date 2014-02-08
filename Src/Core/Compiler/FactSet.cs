@@ -1079,9 +1079,10 @@
             foreach (var mr in dcnr.Compositions)
             {
                 if (string.CompareOrdinal(renaming == null ? string.Empty : renaming, 
-                                          mr.Rename == null ? string.Empty : mr.Rename) == 0)
+                                          mr.Rename == null ? string.Empty : mr.Rename) == 0 &&
+                    Contains(mr, containee, string.Empty))
                 {
-                    return Contains(mr, containee, string.Empty);
+                    return true;
                 }
             }
 

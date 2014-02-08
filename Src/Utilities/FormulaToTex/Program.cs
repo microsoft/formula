@@ -27,7 +27,9 @@
         private const char CodeIndicator = ':';
         private const char CmntIndicator = ';';
         private const char SuffixIndicator = '#';
-        private static readonly char[] Indicators = new char[] { CodeIndicator, CmntIndicator, SuffixIndicator };
+        private const char LineNumberIndicator = '!';
+
+        private static readonly char[] Indicators = new char[] { CodeIndicator, CmntIndicator, SuffixIndicator, LineNumberIndicator };
 
         private const string CmntFormat =
 @"\fcolorbox{formula-background-gray}{formula-background-gray}{
@@ -261,7 +263,7 @@
         private static void WriteCode(StreamReader sr, StreamWriter sw, StreamWriter suffixsw)
         {
             string line;
-            int lineNum = 0;
+            int lineNum = 0, newLineNum;
             int metaDataStart;
             bool isFirstOutput = true;
             var linkDefs = new List<string>();
@@ -284,6 +286,13 @@
                 else if (line[metaDataStart] == SuffixIndicator && metaDataStart + 1 < line.Length)
                 {
                     suffixsw.WriteLine(line.Substring(metaDataStart + 1));
+                }
+                else if (line[metaDataStart] == LineNumberIndicator && metaDataStart + 1 < line.Length)
+                {
+                    if (int.TryParse(line.Substring(metaDataStart + 1), out newLineNum))
+                    {
+                        lineNum = newLineNum - 1;
+                    }
                 }
                 else if (line[metaDataStart] == CodeIndicator)
                 {

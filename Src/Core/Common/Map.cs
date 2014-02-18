@@ -4,11 +4,13 @@
     using System.Collections;
     using System.Collections.Generic;
     using System.Diagnostics.Contracts;
+    using System.Threading;
 
     public class Map<S, T> : IEnumerable<KeyValuePair<S, T>>
     {
         private Comparison<S> comparer;
-        private Node lastFound = null;
+
+        private ThreadLocal<Node> lastFound = new ThreadLocal<Node>();
 
         private int numberOfKeys = 0;
 
@@ -182,7 +184,7 @@
             numberOfKeys = 0;
             phantomList.Clear();
             root = null;
-            lastFound = null;
+            lastFound.Value = null;
         }
 
         [Pure]
@@ -369,9 +371,9 @@
 
         public bool TryFindValue(S key, out T value)
         {
-            if (lastFound != null && Compare(lastFound, key) == 0)
+            if (lastFound.Value != null && Compare(lastFound.Value, key) == 0)
             {
-                value = lastFound.Value;
+                value = lastFound.Value.Value;
                 return true;
             }
 
@@ -383,7 +385,7 @@
                 if (cmp == 0)
                 {
                     value = checkNode.Value;
-                    lastFound = checkNode;
+                    lastFound.Value = checkNode;
                     return true;
                 }
                 else if (cmp > 0)
@@ -402,7 +404,7 @@
 
         public bool Remove(S key)
         {
-            lastFound = null;
+            lastFound.Value = null;
             Node deletePos = FindNearestNode(key);
             if (deletePos == null || Compare(deletePos, key) != 0)
             {

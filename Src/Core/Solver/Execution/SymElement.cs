@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Formula.Common.Rules
+﻿namespace Microsoft.Formula.Solver
 {
     using System;
     using System.Collections.Generic;
@@ -10,9 +10,10 @@
     using API;
     using API.ASTQueries;
     using API.Nodes;
-    using Compiler;
-    using Extras;
-    using Terms;
+    using Common;
+    using Common.Extras;
+    using Common.Rules;
+    using Common.Terms;
 
     //// Aliases for Z3 types to avoid clashes
     using Z3Expr = Microsoft.Z3.Expr;

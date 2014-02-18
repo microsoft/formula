@@ -1,4 +1,4 @@
-﻿namespace Microsoft.Formula.Common.Rules
+﻿namespace Microsoft.Formula.Solver
 {
     using System;
     using System.Collections.Generic;
@@ -10,9 +10,10 @@
     using API;
     using API.Nodes;
     using API.ASTQueries;
-    using Compiler;
-    using Extras;
-    using Terms;
+    using Common;
+    using Common.Extras;
+    using Common.Rules;
+    using Common.Terms;
 
     /// <summary>
     /// Indexes symbolic elements by their shape. Used as pre-unification filter.

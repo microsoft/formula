@@ -67,6 +67,13 @@
         private Map<Term, CoreRule> rules = new Map<Term, CoreRule>(Term.Compare);
 
         /// <summary>
+        /// A map from subterm matchers back to rules. The CoreSubRule is the rule that executes the matcher.
+        /// The remaining rules copy the result of matching under a sub constructor.
+        /// </summary>
+        private Map<SubtermMatcher, Tuple<CoreSubRule, LinkedList<CoreRule>>> subRules = 
+            new Map<SubtermMatcher, Tuple<CoreSubRule, LinkedList<CoreRule>>>(SubtermMatcher.Compare);
+
+        /// <summary>
         /// A map from a compr to a constructor used to hold comprehension. Note that
         /// these symbols do not appear in symbolMap, because they are not holding partial rules.
         /// </summary>
@@ -85,6 +92,15 @@
                 foreach (var r in rules.Values)
                 {
                     yield return r;
+                }
+
+                foreach (var r in subRules.Values)
+                {
+                    yield return r.Item1;
+                    foreach (var rp in r.Item2)
+                    {
+                        yield return rp;
+                    }
                 }
             }
         }
@@ -178,7 +194,7 @@
                 return false;
             }
 
-            if (!BuildSubAndRelRules(flags, ModuleData.SymbolTable.Root) || cancel.IsCancellationRequested)
+            if (!CompileSubRules(flags, ModuleData.SymbolTable.Root) || cancel.IsCancellationRequested)
             {
                 return false;
             }
@@ -430,45 +446,57 @@
             return index.MkApply(comprSymb, args, out wasAdded);
         }
 
-        private bool BuildSubAndRelRules(List<Flag> flags, Namespace n)
+        private bool CompileSubRules(List<Flag> flags, Namespace n)
         {
-            MapSymb map;
             ConSymb con;
-
+            SubtermMatcher matcher;
             bool result = true;
             foreach (var s in n.Symbols)
             {
-                if (!s.IsDataConstructor)
-                {
-                    continue;
-                }
-                else if (s.Kind == SymbolKind.MapSymb)
-                {
-                    map = (MapSymb)s;
-                }
-                else if (s.Kind == SymbolKind.ConSymb)
+                if (s.Kind == SymbolKind.ConSymb)
                 {
                     con = (ConSymb)s;
-                    if (con.IsSub)
+                    if (!con.IsSub)
                     {
-                        var patterns = new Term[con.Arity];
-                        for (int i = 0; i < con.Arity; ++i)
-                        {
-                            patterns[i] = Index.GetCanonicalTerm(con, i);
-                        }
-
-                        Index.MkSubTermMatcher(true, patterns);
+                        continue;
                     }
-                    else if (con.IsNew)
-                    {
 
+                    var patterns = new Term[con.Arity];
+                    for (int i = 0; i < con.Arity; ++i)
+                    {
+                        patterns[i] = Index.GetCanonicalTerm(con, i);
+                    }
+
+                    matcher = Index.MkSubTermMatcher(true, patterns);
+                    if (!matcher.IsSatisfiable)
+                    {
+                        flags.Add(
+                            new Flag(
+                                SeverityKind.Error,
+                                s.Definitions.First().Node,
+                                Constants.SubRuleUnsat.ToString(s.FullName),
+                                Constants.SubRuleUnsat.Code));
+                        result = false;
+                    }
+                    else if (!matcher.IsTriggerable)
+                    {
+                        flags.Add(
+                            new Flag(
+                                SeverityKind.Warning,
+                                s.Definitions.First().Node,
+                                Constants.SubRuleUntrig.ToString(s.FullName),
+                                Constants.SubRuleUntrig.Code));
+                    }
+                    else
+                    {
+                        MkSubRule(con, matcher);
                     }
                 }
             }
 
             foreach (var c in n.Children)
             {
-                result = BuildSubAndRelRules(flags, c) && result;
+                result = CompileSubRules(flags, c) && result;
             }
 
             return result;
@@ -613,6 +641,17 @@
             {
                 //// Console.WriteLine("Rule body: {0}", kv.Key.Debug_GetSmallTermString());
                 kv.Value.Debug_PrintRule();
+            }
+
+            Console.WriteLine("** Sub rules");
+            foreach (var kv in subRules)
+            {
+                //// Console.WriteLine("Rule body: {0}", kv.Key.Debug_GetSmallTermString());
+                kv.Value.Item1.Debug_PrintRule();
+                foreach (var rp in kv.Value.Item2)
+                {
+                    rp.Debug_PrintRule();
+                }
             }
 
             Console.WriteLine("** Rules");
@@ -1234,6 +1273,53 @@
                 symbolTypeMap.Add(headCon, argTypes);
                 return index.MkApply(headCon, vars.ToArray(), out wasAdded);
             }
+        }
+
+        private void MkSubRule(ConSymb symb, SubtermMatcher matcher)
+        {
+            Contract.Requires(matcher != null && matcher.IsTriggerable);
+
+            bool wasAdded;
+            Tuple<CoreSubRule, LinkedList<CoreRule>> matcherRules;
+            if (!subRules.TryFindValue(matcher, out matcherRules))
+            {
+                var bindVar = Index.MkVar(string.Format("{0}{1}{2}", SymbolTable.ManglePrefix, "dc", 0), true, out wasAdded);
+                var headVars = new Term[matcher.NPatterns];
+                for (int i = 0; i < matcher.NPatterns; ++i)
+                {
+                    headVars[i] = Index.MkVar(string.Format("{0}{1}{2}", SymbolTable.ManglePrefix, "dc", i + 1), true, out wasAdded);
+                }
+
+                var headCon = index.MkFreshConstructor(matcher.NPatterns);
+                var head = index.MkApply(headCon, headVars, out wasAdded);
+                var subRule = new CoreSubRule(GetNextRuleId(), head, bindVar, matcher);
+                matcherRules = new Tuple<CoreSubRule, LinkedList<CoreRule>>(subRule, new LinkedList<CoreRule>());
+                subRules.Add(matcher, matcherRules);
+            }
+
+            //// Next make a rule of the form symb(x1,...,xn) :- matcher(x1,...,xn).
+            var copyHeadArgs = new Term[symb.Arity];
+            var subRuleHead = matcherRules.Item1.Head;
+            for (int i = 0; i < symb.Arity; ++i)
+            {
+                copyHeadArgs[i] = subRuleHead.Args[i];
+            }
+
+            var copyRule = new CoreRule(
+                GetNextRuleId(),
+                Index.MkApply(symb, copyHeadArgs, out wasAdded),
+                new FindData(
+                    //// Non-descriptive reification, because this rule will not be cloned but reification symbol expected.
+                    Index.MkApply(reifySymbs[SymbIndexRule], new Term[] { Index.FalseValue, Index.FalseValue }, out wasAdded), 
+                    subRuleHead, 
+                    Index.FalseValue),
+                default(FindData),
+                TermIndex.EmptyArgs,
+                x => false,
+                Index.MkApply(symb.SortSymbol, TermIndex.EmptyArgs, out wasAdded),
+                symb.Definitions.First().Node);
+
+            matcherRules.Item2.AddLast(copyRule);
         }
 
         private FindData MkProjectionRule(Set<Term> headVars, FindData part, ConstraintSystem environment, out Term body)

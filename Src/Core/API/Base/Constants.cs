@@ -310,6 +310,10 @@
 
         public static readonly MessageString NotImplemented = new MessageString("Feature not implemented: {0}", 40);
 
+        public static readonly MessageString SubRuleUnsat = new MessageString("The sub constructor {0} is unsatisfiable.", 41);
+
+        public static readonly MessageString SubRuleUntrig = new MessageString("The sub constructor {0} will never be triggered in this context.", 42);
+
         public struct MessageString
         {
             private string msg;

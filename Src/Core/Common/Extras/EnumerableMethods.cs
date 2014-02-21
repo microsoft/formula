@@ -8,6 +8,11 @@
 
     internal static class EnumerableMethods
     {
+        public static IEnumerable<T> None<T>()
+        {
+            yield break;
+        }
+
         public static IEnumerable<T> GetEnumerable<T>(T t1)
         {
             yield return t1;

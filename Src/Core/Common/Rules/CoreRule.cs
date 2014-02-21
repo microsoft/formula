@@ -18,16 +18,21 @@
     {
         private enum ConstrainNodeKind { Ground, Nonground, TypeRel, EqRel }
         private enum InitStatusKind { Uninit, Success, Fail }
+        public enum RuleKind { Regular, Sub }
 
         private Set<Term> initConstrs;
         private Map<Term, ConstraintNode> nodes = new Map<Term, ConstraintNode>(Term.Compare);
-        private int stratum = -1;
         private Matcher matcher1;
         private ConstraintNode[] projVector1;
         private Matcher matcher2;
         private ConstraintNode[] projVector2;
-
         private InitStatusKind initStatus = InitStatusKind.Uninit;
+        protected int stratum = -1;
+
+        public virtual RuleKind Kind
+        {
+            get { return RuleKind.Regular; }
+        }
 
         public TermIndex Index
         {
@@ -217,7 +222,26 @@
             }
         }
 
-        public CoreRule Clone(
+        /// <summary>
+        /// Base Constructor for CoreSubRule
+        /// </summary>
+        protected CoreRule(int ruleId, Term head, FindData f1)
+        {
+            Index = head.Owner;
+            RuleId = ruleId;
+            Head = head;
+
+            //// HeadType is irrelevant
+            HeadType = head.Owner.FalseValue;
+            Find1 = f1;
+            Trigger1 = Executer.MkPattern(Find1.Pattern, null);
+            Find2 = default(FindData);
+            Node = null;
+            ComprehensionSymbols = new Set<Symbol>(Symbol.Compare);
+            initConstrs = new Set<Term>(Term.Compare);
+        }
+
+        public virtual CoreRule Clone(
             int ruleId,
             Predicate<Symbol> isCompr,
             TermIndex index,
@@ -257,7 +281,7 @@
             return cloneRule;
         }
 
-        public void Execute(
+        public virtual void Execute(
             Term binding, 
             int findNumber, 
             Executer index, 
@@ -398,7 +422,7 @@
             return r1.RuleId - r2.RuleId;
         }
 
-        public void Debug_PrintRule()
+        public virtual void Debug_PrintRule()
         {
             Console.WriteLine("ID: {0}, Stratum: {1}", RuleId, stratum < 0 ? "?" : stratum.ToString());
             if (Head.Symbol.PrintableName.StartsWith(SymbolTable.ManglePrefix))
@@ -454,12 +478,12 @@
             Console.WriteLine("    .");
         }
 
-        private void Pend(
+        protected void Pend(
             bool keepDerivations,
-            Executer index, 
-            Map<Term, Set<Derivation>> pending, 
-            Term t, 
-            Term bind1, 
+            Executer index,
+            Map<Term, Set<Derivation>> pending,
+            Term t,
+            Term bind1,
             Term bind2)
         {
             if (!keepDerivations)

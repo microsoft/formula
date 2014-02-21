@@ -771,7 +771,7 @@
                     yield return new Tuple<Node, PrintData>(
                         fld,
                         new PrintData(
-                            string.Format("{0} ::= {1}(", con.Name, con.IsNew ? "new " : ""), 
+                            string.Format("{0} ::= {1}(", con.Name, con.IsNew ? "new " : (con.IsSub ? "sub " : "")), 
                             i < con.Fields.Count - 1 ? ", " : ").\n", data.Indentation));
                 }
                 else

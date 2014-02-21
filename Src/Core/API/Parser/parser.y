@@ -25,7 +25,7 @@
 %token COMMA
  
 %token NO IS WEAKARROW STRONGARROW
-%token NEW INJ BIJ SUR FUN ANY
+%token NEW INJ BIJ SUR FUN ANY SUB
 %token BAREID QUALID DIGITS REAL FRAC
 %token STRSNGSTART STRSNG STRSNGESC STRSNGEND
 %token STRMULSTART STRMUL STRMULESC STRMULEND
@@ -547,11 +547,16 @@ TypeDecl
 TypeDeclBody 
         : UnnBody        { EndUnnDecl(); } 
 
-		| LPAREN		 { StartConDecl(false); } 
+		| LPAREN		 { StartConDecl(false, false); } 
 		  Fields
 		  RPAREN         { EndTypeDecl(); }
 
-		| NEW	         { StartConDecl(true); }
+		| SUB	         { StartConDecl(false, true); }
+		  LPAREN
+		  Fields
+		  RPAREN         { EndTypeDecl(); }
+
+		| NEW	         { StartConDecl(true, false); }
 		  LPAREN
 		  Fields
 		  RPAREN         { EndTypeDecl(); }

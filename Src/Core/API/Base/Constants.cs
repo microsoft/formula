@@ -144,6 +144,7 @@
         Raw,
         Name,
         IsNew,
+        IsSub,
         ContractKind,
         ComposeKind,
         IsAny,
@@ -278,6 +279,8 @@
         public static readonly MessageString StratificationError = new MessageString("A set comprehension depends on itself. {0}", 25);
 
         public static readonly MessageString ArgNewnessError = new MessageString("The new-kind constructor {0} cannot accept derived values of type {1} in argument {2}.", 26);
+
+        public static readonly MessageString SubArgNewnessError = new MessageString("The derived-kind sub constructor {0} cannot accept derived values of type {1} in argument {2}.", 26);
 
         public static readonly MessageString RelationalError = new MessageString("The constructor {0} cannot have relational constraints on itself; see argument {1}.", 27);
 

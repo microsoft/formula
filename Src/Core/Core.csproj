@@ -131,6 +131,7 @@
     <Compile Include="API\Results\SolveResult.cs" />
     <Compile Include="Common\Extras\BitMethods.cs" />
     <Compile Include="Common\Extras\Z3Utilities.cs" />
+    <Compile Include="Common\Terms\SubtermMatcher.cs" />
     <Compile Include="Solver\Execution\DecisionStack.cs" />
     <Compile Include="Solver\Execution\SymFixpoint.cs" />
     <Compile Include="Solver\Execution\ShapeTrie.cs" />

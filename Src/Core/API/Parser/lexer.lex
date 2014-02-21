@@ -69,6 +69,7 @@
 			 keywords.Add("bij", (int)Tokens.BIJ);
 			 keywords.Add("sur", (int)Tokens.SUR);
 			 keywords.Add("any", (int)Tokens.ANY);
+			 keywords.Add("sub", (int)Tokens.SUB);
 
 			 keywords.Add("ensures", (int)Tokens.ENSURES);
 			 keywords.Add("requires", (int)Tokens.REQUIRES);

@@ -172,8 +172,13 @@
                 var actSet = new ActionSet(rule, index);
                 result = actSet.Validate(flags, cancel, true) && actSet.Compile(this, flags, cancel) && result;
             }
-
+         
             if (!result || cancel.IsCancellationRequested)
+            {
+                return false;
+            }
+
+            if (!BuildSubAndRelRules(flags, ModuleData.SymbolTable.Root) || cancel.IsCancellationRequested)
             {
                 return false;
             }
@@ -183,7 +188,7 @@
                 NodePredFactory.Instance.Star,
                 NodePredFactory.Instance.MkPredicate(NodeKind.ModRef)
             };
-
+          
             ModuleData.Reduced.FindAll(query, (path, node) => Import((ModRef)node), cancel);
             if (result)
             {
@@ -423,6 +428,50 @@
 
             args[i] = head;
             return index.MkApply(comprSymb, args, out wasAdded);
+        }
+
+        private bool BuildSubAndRelRules(List<Flag> flags, Namespace n)
+        {
+            MapSymb map;
+            ConSymb con;
+
+            bool result = true;
+            foreach (var s in n.Symbols)
+            {
+                if (!s.IsDataConstructor)
+                {
+                    continue;
+                }
+                else if (s.Kind == SymbolKind.MapSymb)
+                {
+                    map = (MapSymb)s;
+                }
+                else if (s.Kind == SymbolKind.ConSymb)
+                {
+                    con = (ConSymb)s;
+                    if (con.IsSub)
+                    {
+                        var patterns = new Term[con.Arity];
+                        for (int i = 0; i < con.Arity; ++i)
+                        {
+                            patterns[i] = Index.GetCanonicalTerm(con, i);
+                        }
+
+                        Index.MkSubTermMatcher(true, patterns);
+                    }
+                    else if (con.IsNew)
+                    {
+
+                    }
+                }
+            }
+
+            foreach (var c in n.Children)
+            {
+                result = BuildSubAndRelRules(flags, c) && result;
+            }
+
+            return result;
         }
 
         private void Import(ModRef modRef)

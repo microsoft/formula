@@ -1245,6 +1245,7 @@
             reservedWords.Add("machine");
             reservedWords.Add("is");
             reservedWords.Add("no");
+            reservedWords.Add("sub");
             reservedWords.Add("new");
             reservedWords.Add("fun");
             reservedWords.Add("inj");

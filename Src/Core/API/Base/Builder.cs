@@ -723,7 +723,21 @@
                     return BuilderResultKind.Fail_BadArgs;
                 }
 
-                stack.Push(new ConDecl(span, name, isNew));
+                stack.Push(new ConDecl(span, name, isNew, false));
+                return BuilderResultKind.Success;
+            });
+        }
+
+        public BuilderResultKind PushSubDecl(string name, bool isNew, Span span = default(Span))
+        {
+            return Modify(() =>
+            {
+                if (string.IsNullOrEmpty(name))
+                {
+                    return BuilderResultKind.Fail_BadArgs;
+                }
+
+                stack.Push(new ConDecl(span, name, false, true));
                 return BuilderResultKind.Success;
             });
         }

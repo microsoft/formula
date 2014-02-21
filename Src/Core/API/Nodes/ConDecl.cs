@@ -40,17 +40,25 @@
             private set;
         }
 
+        public bool IsSub
+        {
+            get;
+            private set;
+        }
+
         public override NodeKind NodeKind
         {
             get { return NodeKind.ConDecl; }
         }
 
-        internal ConDecl(Span span, string name, bool isNew)
+        internal ConDecl(Span span, string name, bool isNew, bool isSub)
             : base(span)
         {
             Contract.Requires(name != null);
+            Contract.Requires(!isSub || !isNew);
 
             IsNew = isNew;
+            IsSub = isSub;
             Name = name;
             fields = new LinkedList<Field>();
             Fields = new ImmutableCollection<Field>(fields);
@@ -60,6 +68,7 @@
             : base(n.Span)
         {
             IsNew = n.IsNew;
+            IsSub = n.IsSub;
             Name = n.Name;
             CompilerData = n.CompilerData;
         }
@@ -69,6 +78,11 @@
             if (attribute == AttributeKind.IsNew)
             {
                 value = IsNew;
+                return true;
+            }
+            else if (attribute == AttributeKind.IsSub)
+            {
+                value = IsSub;
                 return true;
             }
 
@@ -101,7 +115,8 @@
             }
 
             return pred.AttributePredicate(AttributeKind.Name, Name) &&
-                   pred.AttributePredicate(AttributeKind.IsNew, IsNew);
+                   pred.AttributePredicate(AttributeKind.IsNew, IsNew) &&
+                   pred.AttributePredicate(AttributeKind.IsSub, IsSub);
         }
 
         internal void SetConfig(Config conf)
@@ -152,7 +167,7 @@
             }
 
             var nn = (ConDecl)n;
-            return nn.IsNew == IsNew && nn.Name == Name && nn.fields.Count == fields.Count;
+            return nn.IsNew == IsNew && nn.IsSub == IsSub && nn.Name == Name && nn.fields.Count == fields.Count;
         }
 
         protected override int GetDetailedNodeKindHash()
@@ -160,7 +175,7 @@
             var v = (int)NodeKind;
             unchecked
             {
-                v += Name.GetHashCode() + IsNew.GetHashCode();
+                v += Name.GetHashCode() + IsNew.GetHashCode() + IsSub.GetHashCode();
             }
 
             return v;

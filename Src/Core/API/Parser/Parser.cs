@@ -616,11 +616,11 @@
             }
         }
 
-        private void StartConDecl(bool isNew)
+        private void StartConDecl(bool isNew, bool isSub)
         {
             Contract.Requires(currentModule != null && currentModule.IsDomOrTrans);
             Contract.Requires(crntTypeDecl == null);
-            crntTypeDecl = new ConDecl(crntTypeDeclSpan, crntTypeDeclName, isNew);
+            crntTypeDecl = new ConDecl(crntTypeDeclSpan, crntTypeDeclName, isNew, isSub);
             if (crntSentConf != null)
             {
                 ((ConDecl)crntTypeDecl).SetConfig(crntSentConf);

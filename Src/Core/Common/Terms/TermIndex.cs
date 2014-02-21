@@ -75,6 +75,18 @@
         /// </summary>
         private Map<int, Term> arityToTypeMap = new Map<int, Term>((x, y) => x - y);
 
+        /// <summary>
+        /// Maps a type atom t to all pairs (f, i) where f ::= (..., T_i, ...) and t /\ T_i \neq \emptyset.
+        /// All numeric types are generalized to Real.
+        /// All string types are generalized to String.
+        /// </summary>
+        private Map<Term, Set<Tuple<UserSymbol, int>>> typeUses = null;
+
+        /// <summary>
+        /// A cache of subterm matchers.
+        /// </summary>
+        private Map<Tuple<bool, Term[]>, SubtermMatcher> matcherCache = new Map<Tuple<bool, Term[]>, SubtermMatcher>(SubtermMatcher.Compare);
+
         public long Count
         {
             get
@@ -434,6 +446,21 @@
                 isFindVar ? "scfind" : "scvar",
                 symbConstName.Replace(".", "@")), true, out wasAdded);
         }
+
+        public SubtermMatcher MkSubTermMatcher(bool onlyNewKinds, Term[] patterns)
+        {
+            Contract.Requires(patterns != null && patterns.Length > 0);
+            SubtermMatcher matcher;
+            var matcherLabel = new Tuple<bool, Term[]>(onlyNewKinds, patterns);
+            if (matcherCache.TryFindValue(matcherLabel, out matcher))
+            {
+                return matcher;
+            }
+
+            matcher = new SubtermMatcher(this, onlyNewKinds, patterns);
+            matcherCache.Add(matcherLabel, matcher);
+            return matcher;
+        }
         
         /// <summary>
         /// Recreates the term t in this index. Requires all symbols, except variables,
@@ -605,6 +632,168 @@
             return ParseGroundTerm(ast, conf, flags, out grndTerm);
         }
 
+        /// <summary>
+        /// Returns all pairs (f, i) where f ::= (..., T_i, ...) and type /\ T_i \neq \emptyset.
+        /// </summary>
+        public IEnumerable<Tuple<UserSymbol, int>> GetTypeUses(Term type)
+        {
+            Contract.Requires(type != null && type.Groundness != Groundness.Variable);
+
+            //// Need to build a map from type atoms to arg positions.
+            if (typeUses == null)
+            {
+                typeUses = new Map<Term, Set<Tuple<UserSymbol, int>>>(Term.Compare);
+                BuildTypeUses(SymbolTable.Root);              
+            }
+
+            bool wasAdded;
+            Term useKey, intr;
+            var realType = MkApply(SymbolTable.GetSortSymbol(BaseSortKind.Real), EmptyArgs, out wasAdded);
+            var stringType = MkApply(SymbolTable.GetSortSymbol(BaseSortKind.String), EmptyArgs, out wasAdded);
+
+            BaseCnstSymb bcs;
+            BaseSortSymb bss;
+            Set<Tuple<UserSymbol, int>> uses;
+            foreach (var t in type.Enumerate(x =>
+                {
+                    if (x.Symbol.Kind == SymbolKind.UnnSymb)
+                    {
+                        return EnumerableMethods.GetEnumerable(GetCanonicalTerm((UserSymbol)x.Symbol, 0));
+                    }
+                    else if (x.Symbol == TypeUnionSymbol)
+                    {
+                        return x.Args;
+                    }
+                    else
+                    {
+                        return null;
+                    }
+                }))
+            {
+                switch (t.Symbol.Kind)
+                {
+                    case SymbolKind.ConSymb:
+                        {
+                            useKey = MkApply(((ConSymb)t.Symbol).SortSymbol, EmptyArgs, out wasAdded);
+                            if (typeUses.TryFindValue(useKey, out uses))
+                            {
+                                foreach (var use in uses)
+                                {
+                                    yield return use;
+                                }
+                            }
+
+                            break;
+                        }
+                    case SymbolKind.MapSymb:
+                        {
+                            useKey = MkApply(((MapSymb)t.Symbol).SortSymbol, EmptyArgs, out wasAdded);
+                            if (typeUses.TryFindValue(useKey, out uses))
+                            {
+                                foreach (var use in uses)
+                                {
+                                    yield return use;
+                                }
+                            }
+
+                            break;
+                        }
+                    case SymbolKind.UserSortSymb:
+                    case SymbolKind.UserCnstSymb:
+                        {
+                            if (typeUses.TryFindValue(t, out uses))
+                            {
+                                foreach (var use in uses)
+                                {
+                                    yield return use;
+                                }
+                            }
+
+                            break;
+                        }
+                    case SymbolKind.BaseCnstSymb:
+                        {
+                            bcs = (BaseCnstSymb)t.Symbol;
+                            if (bcs.CnstKind == CnstKind.Numeric)
+                            {
+                                typeUses.TryFindValue(realType, out uses);
+                            }
+                            else if (bcs.CnstKind == CnstKind.String)
+                            {
+                                typeUses.TryFindValue(stringType, out uses);
+                            }
+                            else
+                            {
+                                throw new NotImplementedException();
+                            }
+
+                            if (uses != null)
+                            {
+                                foreach (var tup in uses)
+                                {
+                                    if (tup.Item1.CanonicalForm[tup.Item2].AcceptsConstant(bcs))
+                                    {
+                                        yield return tup;
+                                    }
+                                }
+                            }
+
+                            break;
+                        }
+                    case SymbolKind.BaseSortSymb:
+                        {
+                            bss = (BaseSortSymb)t.Symbol;
+                            switch (bss.SortKind)
+                            {
+                                case BaseSortKind.Integer:
+                                case BaseSortKind.Natural:
+                                case BaseSortKind.NegInteger:
+                                case BaseSortKind.PosInteger:
+                                case BaseSortKind.Real:
+                                    typeUses.TryFindValue(realType, out uses);
+                                    break;
+                                case BaseSortKind.String:
+                                    typeUses.TryFindValue(stringType, out uses);
+                                    break;
+                                default:
+                                    throw new NotImplementedException();
+                            }
+
+                            if (uses != null)
+                            {
+                                foreach (var tup in uses)
+                                {
+                                    if (MkIntersection(GetCanonicalTerm(tup.Item1, tup.Item2), t, out intr))
+                                    {
+                                        yield return tup;
+                                    }
+                                }
+                            }
+
+                            break;
+                        }
+                    case SymbolKind.BaseOpSymb:
+                        {
+                            if (t.Symbol == RangeSymbol && typeUses.TryFindValue(realType, out uses))
+                            {
+                                if (uses != null)
+                                {
+                                    foreach (var tup in uses)
+                                    {
+                                        if (MkIntersection(GetCanonicalTerm(tup.Item1, tup.Item2), t, out intr))
+                                        {
+                                            yield return tup;
+                                        }
+                                    }
+                                }
+                            }
+
+                            break;
+                        }
+                }
+            }
+        }
+
         private void SetTypeCnstTypes(Namespace space)
         {
             bool wasAdded;
@@ -700,6 +889,116 @@
             }
 
             return bin;
+        }
+
+        private void BuildTypeUses(Namespace n)
+        {
+            bool wasAdded;
+            BaseCnstSymb bcs;
+            BaseSortSymb bss;
+            AppFreeCanUnn[] canForm;
+            Tuple<UserSymbol, int> use;
+
+            var realType = MkApply(SymbolTable.GetSortSymbol(BaseSortKind.Real), EmptyArgs, out wasAdded);
+            var stringType = MkApply(SymbolTable.GetSortSymbol(BaseSortKind.String), EmptyArgs, out wasAdded);
+            foreach (var s in n.Symbols)
+            {
+                if (s.Kind == SymbolKind.ConSymb)
+                {
+                    canForm = ((ConSymb)s).CanonicalForm;
+                }
+                else if (s.Kind == SymbolKind.MapSymb)
+                {
+                    canForm = ((MapSymb)s).CanonicalForm;
+                }
+                else
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < s.Arity; ++i)
+                {
+                    use = new Tuple<UserSymbol, int>(s, i);
+                    using (var it = canForm[i].RangeMembers.GetEnumerator())
+                    {
+                        if (it.MoveNext())
+                        {
+                            GetUseSet(realType).Add(use);
+                        }
+                    }
+
+                    foreach (var sp in canForm[i].NonRangeMembers)
+                    {
+                        switch (sp.Kind)
+                        {
+                            case SymbolKind.BaseCnstSymb:
+                                {
+                                    bcs = (BaseCnstSymb)sp;
+                                    if (bcs.CnstKind == CnstKind.Numeric)
+                                    {
+                                        GetUseSet(realType).Add(use);
+                                    }
+                                    else if (bcs.CnstKind == CnstKind.String)
+                                    {
+                                        GetUseSet(stringType).Add(use);
+                                    }
+                                    else
+                                    {
+                                        throw new NotImplementedException();
+                                    }
+
+                                    break;
+                                }
+                            case SymbolKind.UserCnstSymb:
+                            case SymbolKind.UserSortSymb:
+                                {
+                                    GetUseSet(MkApply(sp, EmptyArgs, out wasAdded)).Add(use);
+                                    break;
+                                }
+                            case SymbolKind.BaseSortSymb:
+                                {
+                                    bss = (BaseSortSymb)sp;
+                                    switch (bss.SortKind)
+                                    {
+                                        case BaseSortKind.Integer:
+                                        case BaseSortKind.Natural:
+                                        case BaseSortKind.NegInteger:
+                                        case BaseSortKind.PosInteger:
+                                        case BaseSortKind.Real:
+                                            GetUseSet(realType).Add(use);
+                                            break;
+                                        case BaseSortKind.String:
+                                            GetUseSet(stringType).Add(use);
+                                            break;
+                                        default:
+                                            throw new NotImplementedException();
+                                    }
+
+                                    break;
+                                }
+                            default:
+                                throw new NotImplementedException();
+                        }
+                    }
+                }                                               
+            }
+
+            foreach (var c in n.Children)
+            {
+                BuildTypeUses(c);
+            }
+        }
+
+        private Set<Tuple<UserSymbol, int>> GetUseSet(Term typeAtom)
+        {
+            Set<Tuple<UserSymbol, int>> uses;
+            if (!typeUses.TryFindValue(typeAtom, out uses))
+            {
+                uses = new Set<Tuple<UserSymbol, int>>(UseCompare);
+                typeUses.Add(typeAtom, uses);
+            }
+
+            return uses;
         }
 
         private IEnumerable<Node> ParseGround_Unfold(Node n,
@@ -2727,6 +3026,21 @@
                 {
                     return cmp < 0 ? -1 : 1;
                 }
+            }
+
+            return 0;
+        }
+
+        private static int UseCompare(Tuple<UserSymbol, int> u1, Tuple<UserSymbol, int> u2)
+        {
+            if (u1.Item1.Id != u2.Item1.Id)
+            {
+                return u1.Item1.Id < u2.Item1.Id ? -1 : 1;
+            }
+
+            if (u1.Item2 != u2.Item2)
+            {
+                return u1.Item2 < u2.Item2 ? -1 : 1;
             }
 
             return 0;

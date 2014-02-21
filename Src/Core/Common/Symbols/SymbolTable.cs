@@ -29,6 +29,7 @@
         public const string RequiresName = "requires";
         public const string EnsuresName = "ensures";
         public const string SCValueName = ManglePrefix + "scValue";
+        private const string SubPrefixName = ManglePrefix + "sub";
         private const string ArgPrefixName = ManglePrefix + "arg";
 
         private static readonly char[] namespaceSep = new char[] { '.' };
@@ -532,6 +533,10 @@
                     isValid = false;
                 }
                 else if (s.Kind == SymbolKind.ConSymb && ((ConSymb)s).IsNew || s.Kind == SymbolKind.MapSymb)
+                {
+                    isValid = CheckNewness((UserSymbol)s, flags) & isValid;
+                }
+                else if (s.Kind == SymbolKind.ConSymb && ((ConSymb)s).IsSub)
                 {
                     isValid = CheckNewness((UserSymbol)s, flags) & isValid;
                 }
@@ -1405,6 +1410,17 @@
             AppFreeCanUnn u;
             UserSymbol dataSymbol;
             var result = true;
+
+            Constants.MessageString errMsg;
+            if (s.Kind == SymbolKind.ConSymb && ((ConSymb)s).IsSub)
+            {
+                errMsg = Constants.SubArgNewnessError;
+            }
+            else
+            {
+                errMsg = Constants.ArgNewnessError;
+            }
+
             for (int i = 0; i < s.Arity; ++i)
             {
                 u = s.CanonicalForm[i];
@@ -1422,8 +1438,8 @@
                                 flags.Add(new Flag(
                                     SeverityKind.Error,
                                     s.Definitions.First<AST<Node>>().Node,
-                                    Constants.ArgNewnessError.ToString(s.Name, dataSymbol.Name, i + 1),
-                                    Constants.ArgNewnessError.Code));
+                                    errMsg.ToString(s.Name, dataSymbol.Name, i + 1),
+                                    errMsg.Code));
                                 result = false;
                             }
 
@@ -1434,8 +1450,8 @@
                                 flags.Add(new Flag(
                                     SeverityKind.Error,
                                     s.Definitions.First<AST<Node>>().Node,
-                                    Constants.ArgNewnessError.ToString(s.Name, ((UserSymbol)e).Name, i + 1),
-                                    Constants.ArgNewnessError.Code));
+                                    errMsg.ToString(s.Name, ((UserSymbol)e).Name, i + 1),
+                                    errMsg.Code));
                                 result = false;
                             }
 

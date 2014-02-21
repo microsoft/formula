@@ -308,7 +308,13 @@
         public AST<ConDecl> MkConDecl(string name, bool isNew, Span span = default(Span))
         {
             Contract.Requires(!string.IsNullOrEmpty(name));
-            return new ASTConcr<ConDecl>(new ConDecl(span, name, isNew));
+            return new ASTConcr<ConDecl>(new ConDecl(span, name, isNew, false));
+        }
+
+        public AST<ConDecl> MkSubDecl(string name, Span span = default(Span))
+        {
+            Contract.Requires(!string.IsNullOrEmpty(name));
+            return new ASTConcr<ConDecl>(new ConDecl(span, name, false, true));
         }
 
         public AST<MapDecl> MkMapDecl(string name, MapKind kind, bool isPartial, Span span = default(Span))

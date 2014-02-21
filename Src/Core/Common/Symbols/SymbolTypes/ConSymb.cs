@@ -39,6 +39,11 @@
             get { return ((ConDecl)Definitions.First<AST<Node>>().Node).IsNew; }
         }
 
+        public bool IsSub
+        {
+            get { return ((ConDecl)Definitions.First<AST<Node>>().Node).IsSub; }
+        }
+
         public UserSortSymb SortSymbol
         {
             get;
@@ -94,7 +99,8 @@
             if (s.Kind != Kind || 
                 s.IsAutoGen != IsAutoGen || 
                 sDecl == null || 
-                sDecl.Node.IsNew != IsNew || 
+                sDecl.Node.IsNew != IsNew ||
+                sDecl.Node.IsSub != IsSub ||
                 sDecl.Node.Fields.Count != arity)
             {
                 return false;
@@ -197,7 +203,16 @@
 
         internal override AST<Node> CopyCanonicalForm(Span span, string renaming)
         {
-            var conDecl = Factory.Instance.MkConDecl(Name, IsNew, span);
+            AST<ConDecl> conDecl;
+            if (IsSub)
+            {
+                conDecl = Factory.Instance.MkSubDecl(Name, span);
+            }
+            else
+            {
+                conDecl = Factory.Instance.MkConDecl(Name, IsNew, span);
+            }
+
             for (int i = 0; i < arity; ++i)
             {
                 var fld = Factory.Instance.MkField(

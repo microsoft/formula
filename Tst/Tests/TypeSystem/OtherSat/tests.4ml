@@ -1,6 +1,6 @@
 domain ConvTypes
 {
-  F ::= new (Integer).
+  F ::= new (any Integer).
   G ::= (Integer).
 
   q0 :- x is Any.
@@ -15,16 +15,16 @@ domain ConvTypes
 
 domain Good
 {
-   F0 ::= new (x: NegInteger, y: Real).
+   F0 ::= new (x: any NegInteger, y: any Real).
    q0 :- F0(x, x). 
 
-   F1 ::= new (x: NegInteger + { "hello" }, y: String).
+   F1 ::= new (x: any NegInteger + { "hello" }, y: any String).
    q1 :- F1(x, x). 
 
-   F2 ::= new (x: Boolean, y: String + { TRUE }).
+   F2 ::= new (x: any Boolean, y: any String + { TRUE }).
    q2 :- F2(x, x). 
 
-   F3 ::= new (x: { 1..1000 }, y: { "hello", RED, 1 }).
+   F3 ::= new (x: any { 1..1000 }, y: any { "hello", RED, 1 }).
    q3 :- F3(x, x). 
 }
 

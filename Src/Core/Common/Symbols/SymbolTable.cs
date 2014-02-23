@@ -31,6 +31,7 @@
         public const string SCValueName = ManglePrefix + "scValue";
         private const string SubPrefixName = ManglePrefix + "sub";
         private const string ArgPrefixName = ManglePrefix + "arg";
+        private const string RelSubName = ManglePrefix + "rel";
 
         private static readonly char[] namespaceSep = new char[] { '.' };
         private static readonly NodePred[] QueryModelFactIds =
@@ -1295,6 +1296,123 @@
                 Factory.Instance.MkId(ModuleSpace.Name + "." + NotInvTotalCnstrName, span));
         }
 
+        /// <summary>
+        /// Does nothing if no relational constraints
+        /// </summary>
+        private void MkRelConstraints(UserSymbol symb, List<Flag> flags)
+        {
+            var span = ModuleData.Source.AST.Node.Span;
+            //// The indices where relational constraints need to be placed.
+            Func<int, bool> isAnyFun;
+            UserSortSymb sortSymb;
+            if (symb.Kind == SymbolKind.ConSymb)
+            {
+                var con = (ConSymb)symb;
+                if (!con.IsNew)
+                {
+                    return;
+                }
+
+                sortSymb = con.SortSymbol;
+                isAnyFun = con.IsAnyArg;
+            }
+            else if (symb.Kind == SymbolKind.MapSymb)
+            {
+                var map = ((MapSymb)symb);
+                sortSymb = map.SortSymbol;
+                isAnyFun = map.IsAnyArg;
+            }
+            else
+            {
+                return;
+            }
+
+            var relIndices = new LinkedList<int>();
+            for (int i = 0; i < symb.Arity; ++i)
+            {
+                if (isAnyFun(i))
+                {
+                    continue;
+                }
+                else if (symb.CanonicalForm[i].UserSorts.IsEmpty())
+                {
+                    continue;
+                }
+                else
+                {
+                    relIndices.AddLast(i);
+                }
+            }
+
+            UserSymbol subSymb;
+            var subSymbName = RelSubName + ManglePrefix + symb.FullName;
+            var result = symb.Namespace.TryGetSymbol(subSymbName, out subSymb);
+            if (relIndices.Count == 0)
+            {
+                if (subSymb != null)
+                {
+                    ((ConSymb)subSymb).DoNotGenSubRule();
+                }
+
+                return;
+            }
+
+            Contract.Assert(result);
+            //// If there is already a sub symbol, then it doesn't need to be redefined.
+
+            foreach (var p in relIndices)
+            {
+                foreach (var s in symb.CanonicalForm[p].UserSorts)
+                {
+                    var symbApp = Factory.Instance.MkFuncTerm(Factory.Instance.MkId(symb.FullName, span), span);
+                    for (int i = 0; i < symb.Arity; ++i)
+                    {
+                        if (i != p)
+                        {
+                            symbApp = Factory.Instance.AddArg(symbApp, Factory.Instance.MkId("_", span));
+                        }
+                        else
+                        {
+                            symbApp = Factory.Instance.AddArg(symbApp, MkArgVar(p, false, span, flags));
+                        }
+                    }
+
+                    symbApp = Factory.Instance.AddArg(
+                                     Factory.Instance.MkFuncTerm(Factory.Instance.MkId(subSymb.FullName, span), span),
+                                     symbApp);
+
+                    var body = Factory.Instance.MkBody(span);
+                    body = Factory.Instance.AddConjunct(body, Factory.Instance.MkFind(null, symbApp, span));
+                    body = Factory.Instance.AddConjunct(
+                        body, 
+                        Factory.Instance.MkRelConstr(
+                            RelKind.Typ,
+                            MkArgVar(p, false, span, flags),
+                            Factory.Instance.MkId(s.DataSymbol.FullName, span),
+                            span));
+
+                    var negbody = Factory.Instance.MkBody(span);
+                    negbody = Factory.Instance.AddConjunct(
+                        negbody, 
+                        Factory.Instance.MkFind(MkArgVar(p, true, span, flags), Factory.Instance.MkId(s.DataSymbol.FullName, span), span));
+
+                    negbody = Factory.Instance.AddConjunct(
+                        negbody,
+                        Factory.Instance.MkRelConstr(RelKind.Eq, MkArgVar(p, true, span, flags), MkArgVar(p, false, span, flags), span));
+
+                    var compr = Factory.Instance.MkComprehension(span);
+                    compr = Factory.Instance.AddBody(compr, negbody);
+                    compr = Factory.Instance.AddHead(compr, MkArgVar(p, true, span, flags));
+
+                    body = Factory.Instance.AddConjunct(body, Factory.Instance.MkNo(compr, span));
+                    var rule = Factory.Instance.MkRule(span);
+                    rule = Factory.Instance.AddBody(rule, body);
+                    rule = Factory.Instance.AddHead(rule, Factory.Instance.MkId(ModuleSpace.FullName + "." + NotRelCnstrName, span));
+                    introRules.AddLast(rule);
+                }
+            }            
+        }
+
         private AST<Rule> MkFuncConstr(MapSymb map, List<Flag> flags)
         {
             var span = ModuleData.Source.AST.Node.Span;
@@ -1612,6 +1730,7 @@
                     if (n.Symbol.Size == null)
                     {
                         n.Symbol.Size = isInfinite ? SizeExpr.Infinity : new SizeExpr(argSizes);
+                        MkRelConstraints(dataSymb, flags);
                         if (dataSymb.Kind == SymbolKind.MapSymb)
                         {
                             MkMapConstraints((MapSymb)dataSymb, argSizes, flags);
@@ -1666,6 +1785,7 @@
                         if (n.Symbol.Size == null)
                         {
                             n.Symbol.Size = isInfinite ? SizeExpr.Infinity : new SizeExpr(argSizes);
+                            MkRelConstraints(dataSymb, flags);
                             if (dataSymb.Kind == SymbolKind.MapSymb)
                             {
                                 MkMapConstraints((MapSymb)dataSymb, argSizes, flags);
@@ -2040,6 +2160,8 @@
             if (ModuleData.Source.AST.Node.NodeKind == NodeKind.Domain)
             {
                 //// ---------- Create derived constants for relational constraints.
+                result = MkRelSubSymbols(span, flags) & result;
+
                 var userCnst = new UserCnstSymb(ModuleSpace, Factory.Instance.MkId(ConformsName, span), UserCnstSymbKind.Derived, true);
                 result = ModuleSpace.TryAddSymbol(userCnst, IncSymbolCount, flags) & result;
                 AddPrHdSymb(userCnst);
@@ -2161,6 +2283,93 @@
                 var scValue = new ConSymb(Root, scValueDecl, true);
                 result = Root.TryAddSymbol(scValue, IncSymbolCount, flags) & result;
                 AddPrHdSymb(scValue);
+            }
+
+            return result;
+        }
+
+        private bool MkRelSubSymbols(Span span, List<Flag> flags)
+        {
+            UserSymbol subSymb;
+            string subSymbName;
+            bool hasRelConstraints;
+            var defs = new LinkedList<AST<ConDecl>>();
+            foreach (var symb in Root.Symbols)
+            {
+                hasRelConstraints = false;
+                if (symb.Kind == SymbolKind.ConSymb)
+                {
+                    var con = ((AST<ConDecl>)symb.Definitions.First()).Node;
+                    if (!con.IsNew)
+                    {
+                        continue;
+                    }
+
+                    foreach (var f in con.Fields)
+                    {
+                        if (!f.IsAny)
+                        {
+                            hasRelConstraints = true;
+                            break;
+                        }
+                    }
+                }
+                else if (symb.Kind == SymbolKind.MapSymb)
+                {
+                    var map = ((AST<MapDecl>)symb.Definitions.First()).Node;
+                    foreach (var f in map.Dom)
+                    {
+                        if (!f.IsAny)
+                        {
+                            hasRelConstraints = true;
+                            break;
+                        }
+                    }
+
+                    if (!hasRelConstraints)
+                    {
+                        foreach (var f in map.Cod)
+                        {
+                            if (!f.IsAny)
+                            {
+                                hasRelConstraints = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+
+                if (!hasRelConstraints)
+                {
+                    continue;
+                }
+
+                subSymbName = RelSubName + ManglePrefix + symb.FullName;
+                if (Root.TryGetSymbol(subSymbName, out subSymb))
+                {
+                    continue;
+                }
+
+                defs.AddLast(
+                    Factory.Instance.AddField(
+                        Factory.Instance.MkSubDecl(subSymbName, span), 
+                        Factory.Instance.MkField(
+                            null,
+                            Factory.Instance.MkId(symb.FullName, span),
+                            false,
+                            span)));
+            }
+
+            bool result = true;
+            foreach (var def in defs)
+            {
+                subSymb = new ConSymb(Root, def, true);
+                result = Root.TryAddSymbol(subSymb, IncSymbolCount, flags) && result;
+                AddPrHdSymb(subSymb);
             }
 
             return result;

@@ -629,92 +629,6 @@
             }
         }
 
-        /*
-        private void CheckRelConstraints()
-        {
-            ConSymb con;
-            MapSymb map;
-            bool isNotRel = false;
-            Set<Derivation> dervs = KeepDerivations ? new Set<Derivation>(Derivation.Compare) : null;
-
-            Term f;
-            foreach (var kv in facts)
-            {
-                f = kv.Key;
-                foreach (var t in f.Enumerate(x => x.Args))
-                {
-                    if (t.Symbol.Kind == SymbolKind.ConSymb)
-                    {
-                        con = (ConSymb)t.Symbol;
-                        if (con.IsAutoGen || !con.IsNew)
-                        {
-                            continue;
-                        }
-
-                        for (int i = 0; i < con.Arity; ++i)
-                        {
-                            if (!con.IsAnyArg(i) && t.Args[i].Symbol.IsDataConstructor && !facts.ContainsKey(t.Args[i]))
-                            {
-                                isNotRel = true;
-                                if (KeepDerivations)
-                                {
-                                    dervs.UnionWith(kv.Value);
-                                }
-
-                                break;
-                            }
-                        }                        
-                    }
-                    else if (t.Symbol.Kind == SymbolKind.MapSymb)
-                    {
-                        map = (MapSymb)t.Symbol;
-                        if (map.IsAutoGen)
-                        {
-                            continue;
-                        }
-
-                        for (int i = 0; i < map.Arity; ++i)
-                        {
-                            if (!map.IsAnyArg(i) && t.Args[i].Symbol.IsDataConstructor && !facts.ContainsKey(t.Args[i]))
-                            {
-                                isNotRel = true;
-                                if (KeepDerivations)
-                                {
-                                    dervs.UnionWith(kv.Value);
-                                }
-
-                                break;
-                            }
-                        }                        
-                    }
-                }
-
-                if (!KeepDerivations && isNotRel)
-                {
-                    break;
-                }
-            }
-
-            if (!isNotRel)
-            {
-                return;
-            }
-
-            Namespace modSpace, otherSpace;
-            modSpace = TermIndex.SymbolTable.Resolve(
-                factSets.Model.Node.Domain.Name,
-                out otherSpace);
-            Contract.Assert(modSpace != null && otherSpace == null);
-             
-            UserSymbol notRelSymb, otherSymb;
-            notRelSymb = TermIndex.SymbolTable.Resolve(SymbolTable.NotRelCnstrName, out otherSymb, modSpace);
-            Contract.Assert(notRelSymb != null && otherSymb == null);
-
-            bool wasAdded;
-            facts.Add(TermIndex.MkApply(notRelSymb, TermIndex.EmptyArgs, out wasAdded), dervs);
-        }
-        */
-
         private ProofTree MkProof(ProofState root, Term goal)
         {
             Contract.Requires(root != null && root.Derivation == null);
@@ -939,13 +853,6 @@
                 subindices.AddLast(index);
             }
         }
-
-        /*
-        private void CheckRelConstrs()
-        {
-            bool isNotRelational
-        }
-        */
 
         private static int Compare(Tuple<CoreRule, int> p1, Tuple<CoreRule, int> p2)
         {

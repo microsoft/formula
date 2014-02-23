@@ -12,7 +12,7 @@ OUT: []> dt ConvTypes
 OUT: Reduced form
 OUT: domain ConvTypes
 OUT: {
-OUT:   F ::= new (Integer).
+OUT:   F ::= new (any Integer).
 OUT:   G ::= (Integer).
 OUT: 
 OUT:   q0
@@ -94,10 +94,10 @@ OUT: []> dt Good
 OUT: Reduced form
 OUT: domain Good
 OUT: {
-OUT:   F0 ::= new (x: NegInteger, y: Real).
-OUT:   F1 ::= new (x: NegInteger + { "hello" }, y: String).
-OUT:   F2 ::= new (x: Boolean, y: String + { TRUE }).
-OUT:   F3 ::= new (x: { 1..1000 }, y: { "hello", RED, 1 }).
+OUT:   F0 ::= new (x: any NegInteger, y: any Real).
+OUT:   F1 ::= new (x: any NegInteger + { "hello" }, y: any String).
+OUT:   F2 ::= new (x: any Boolean, y: any String + { TRUE }).
+OUT:   F3 ::= new (x: any { 1..1000 }, y: any { "hello", RED, 1 }).
 OUT: 
 OUT:   q0
 OUT:     :-

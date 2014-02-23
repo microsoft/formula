@@ -136,7 +136,6 @@ OUT:          |    String     |   0   |  unn
 OUT:          |     TRUE      |   0   | ncnst 
 OUT:          |    Things     |   0   |  unn  
 OUT:          |    Triple     |   3   |  con  
-OUT:          |   ~scValue    |   2   |  con  
 OUT:    T1    |      Any      |   0   |  unn  
 OUT:    T1    |   Constant    |   0   |  unn  
 OUT:    T1    |     Data      |   0   |  unn  
@@ -499,7 +498,6 @@ OUT:            |  PosInteger   |   0   |  unn
 OUT:            |     Real      |   0   |  unn  
 OUT:            |    String     |   0   |  unn  
 OUT:            |     TRUE      |   0   | ncnst 
-OUT:            |   ~scValue    |   2   |  con  
 OUT:     T2     |      Any      |   0   |  unn  
 OUT:     T2     |   Constant    |   0   |  unn  
 OUT:     T2     |     Data      |   0   |  unn  

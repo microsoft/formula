@@ -50,12 +50,23 @@
             internal set;
         }
 
+        /// <summary>
+        /// True if this is a sub constructor, and a corresponding sub rule should be generated.
+        /// Can be false if the sub rule is optimized away.
+        /// </summary>
+        internal bool IsSubRuleGenerated
+        {
+            get;
+            private set;
+        }
+
         internal ConSymb(Namespace space, AST<ConDecl> def, bool isAutogen)
             : base(space, def.Node.Name, isAutogen)
         {
             definitions.Add(def);
             arity = def.Node.Fields.Count;
             fldAttrs = new Tuple<bool, string>[arity];
+            IsSubRuleGenerated = def.Node.IsSub;
         }
 
         /// <summary>
@@ -137,6 +148,16 @@
             {
                 definitions.Add((AST<ConDecl>)def);
             }
+        }
+
+        /// <summary>
+        /// Indicates that this sub constructor should not have a sub rule generated.
+        /// Used to optimize away from rules introduced by relational constraints.
+        /// </summary>
+        internal void DoNotGenSubRule()
+        {
+            Contract.Requires(IsSub);
+            IsSubRuleGenerated = false;
         }
 
         internal override bool ResolveTypes(SymbolTable table, List<Flag> flags, CancellationToken cancel)
@@ -228,7 +249,9 @@
 
         internal override UserSymbol CloneSymbol(Namespace space, Span span, string renaming)
         {
-            return new ConSymb(space, (AST<ConDecl>)CopyCanonicalForm(span, renaming), IsAutoGen);
+            var clone = new ConSymb(space, (AST<ConDecl>)CopyCanonicalForm(span, renaming), IsAutoGen);
+            clone.IsSubRuleGenerated = IsSubRuleGenerated;
+            return clone;
         }
 
         private bool BuildFldAttrs(List<Flag> flags)

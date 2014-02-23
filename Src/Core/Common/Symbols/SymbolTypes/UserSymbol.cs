@@ -14,6 +14,17 @@
     public abstract class UserSymbol : Symbol
     {
         /// <summary>
+        /// True if the symbol is a mangled symbol, which is not intended to be directly used.
+        /// </summary>
+        public bool IsMangled
+        {
+            get
+            {
+                return Name.StartsWith(SymbolTable.ManglePrefix);
+            }
+        }
+
+        /// <summary>
         /// True if this symbol was automatically introduced by the compiler.
         /// </summary>
         public bool IsAutoGen

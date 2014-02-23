@@ -1041,6 +1041,7 @@
             foreach (var symb in symbolTable.Root.Symbols)
             {
                 if (symb.Kind != Common.Terms.SymbolKind.UserCnstSymb ||
+                    symb.IsMangled ||
                     ((Common.Terms.UserCnstSymb)symb).UserCnstKind != Common.Terms.UserCnstSymbKind.Variable)
                 {
                     continue;
@@ -1215,7 +1216,7 @@
             foreach (var s in nspace.Symbols)
             {
                 cnst = s as UserCnstSymb;
-                if (cnst == null || !cnst.IsTypeConstant)
+                if (cnst == null || !cnst.IsTypeConstant || cnst.IsMangled)
                 {
                     continue;
                 }
@@ -1235,7 +1236,7 @@
             foreach (var s in nspace.Symbols)
             {
                 cnst = s as UserCnstSymb;
-                if (cnst == null || !cnst.IsSymbolicConstant)
+                if (cnst == null || !cnst.IsSymbolicConstant || cnst.IsMangled)
                 {
                     continue;
                 }
@@ -1277,6 +1278,10 @@
                     {
                         continue;
                     }
+                }
+                else if (s.IsMangled)
+                {
+                    continue;
                 }
 
                 var column = new string[] 

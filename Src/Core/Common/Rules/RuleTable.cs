@@ -456,7 +456,7 @@
                 if (s.Kind == SymbolKind.ConSymb)
                 {
                     con = (ConSymb)s;
-                    if (!con.IsSub)
+                    if (!con.IsSub || !con.IsSubRuleGenerated)
                     {
                         continue;
                     }

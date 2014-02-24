@@ -69,7 +69,21 @@
 
         public override CoreRule Clone(int ruleId, Predicate<Symbol> isCompr, TermIndex index, Map<Term, Term> bindingReificationCache, Map<UserSymbol, UserSymbol> symbolTransfer, string renaming)
         {
-            throw new NotImplementedException();
+            Contract.Requires(isCompr == null && index != null && bindingReificationCache == null && string.IsNullOrEmpty(renaming));
+            bool wasAdded;
+            var newHeadArgs = new Term[Head.Symbol.Arity];
+            var newHeadCon = symbolTransfer[(UserSymbol)Head.Symbol];
+            for (int i = 0; i < newHeadArgs.Length; ++i)
+            {
+                newHeadArgs[i] = index.MkVar(((UserSymbol)Head.Args[i].Symbol).Name, true, out wasAdded); 
+            }
+
+            var newHead = index.MkApply(newHeadCon, newHeadArgs, out wasAdded);
+            return new CoreSubRule(
+                ruleId,
+                newHead,
+                index.MkVar(((UserSymbol)Find1.Binding.Symbol).Name, true, out wasAdded),
+                Matcher.Clone(index));
         }
 
         public override void Execute(Term binding, int findNumber, Executer index, bool keepDerivations, Map<Term, Set<Derivation>> pending)

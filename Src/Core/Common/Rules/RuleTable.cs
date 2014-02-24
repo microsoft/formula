@@ -158,6 +158,7 @@
             Contract.Requires(ModuleData.Reduced.Node.NodeKind == NodeKind.Transform);
             var clone = new RuleTable((Transform)ModuleData.Reduced.Node, index == null ? new TermIndex(ModuleData.SymbolTable) : index);
             clone.Import(this, null);
+            CloneSubRules(clone);
             var result = clone.Stratify(new List<Flag>(), default(CancellationToken));
             Contract.Assert(result);
             return clone;
@@ -1272,6 +1273,55 @@
                 var headCon = index.MkFreshConstructor(vars.Count);
                 symbolTypeMap.Add(headCon, argTypes);
                 return index.MkApply(headCon, vars.ToArray(), out wasAdded);
+            }
+        }
+
+        /// <summary>
+        /// Adds sub rules to a direct clone of a transform table.
+        /// </summary>
+        /// <param name="clone"></param>
+        private void CloneSubRules(RuleTable clone)
+        {
+            //// In this case need to clone subrules.
+            bool wasAdded;
+            var symbTrans = new Map<UserSymbol, UserSymbol>(Symbol.Compare);
+            foreach (var tup in subRules.Values)
+            {
+                var subRule = tup.Item1;
+                var depRules = tup.Item2;
+                var clonedMatcherSymb = clone.index.MkFreshConstructor(subRule.Head.Symbol.Arity);
+
+                symbTrans.Add((UserSymbol)subRule.Head.Symbol, clonedMatcherSymb);
+                var clonedSubRule = (CoreSubRule)subRule.Clone(GetNextRuleId(), null, clone.Index, null, symbTrans, null);
+                var depClones = new LinkedList<CoreRule>();
+                clone.subRules.Add(clonedSubRule.Matcher, new Tuple<CoreSubRule, LinkedList<CoreRule>>(clonedSubRule, depClones));
+                foreach (var depRule in depRules)
+                {
+                    //// Next make a rule of the form symb(x1,...,xn) :- matcher(x1,...,xn).
+                    var clonedCopyHead = clone.index.MkClone(depRule.Head);
+                    for (int i = 0; i < clonedCopyHead.Symbol.Arity; ++i)
+                    {
+                        if (clonedCopyHead.Args[i] != clonedSubRule.Head.Args[i])
+                        {
+                            throw new Exception("Bad clone");
+                        }
+                    }
+
+                    var clonedCopyRule = new CoreRule(
+                        GetNextRuleId(),
+                        clonedCopyHead,
+                        new FindData(
+                            //// Non-descriptive reification, because this rule will not be cloned but reification symbol expected.
+                            clone.index.MkApply(clone.reifySymbs[SymbIndexRule], new Term[] { clone.index.FalseValue, clone.index.FalseValue }, out wasAdded),
+                            clonedSubRule.Head,
+                            clone.index.FalseValue),
+                        default(FindData),
+                        TermIndex.EmptyArgs,
+                        x => false,
+                        clone.index.MkApply(((ConSymb)(clonedCopyHead.Symbol)).SortSymbol, TermIndex.EmptyArgs, out wasAdded),
+                        ((ConSymb)(clonedCopyHead.Symbol)).Definitions.First().Node);
+                    depClones.AddLast(clonedCopyRule);
+                }
             }
         }
 

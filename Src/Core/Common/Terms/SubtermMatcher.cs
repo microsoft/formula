@@ -187,6 +187,13 @@
             }
         }
 
+        /// <summary>
+        /// Private constructor used for cloning
+        /// </summary>
+        private SubtermMatcher()
+        {
+        }
+
         public IEnumerable<Term[]> EnumerateMatches(Term t)
         {
             Contract.Requires(t != null && t.Groundness == Groundness.Ground);
@@ -213,6 +220,41 @@
 
                 --crntLevel;
             }
+        }
+
+        public SubtermMatcher Clone(TermIndex index)
+        {
+            var srcIndex = pattern[0].Owner;
+            var clone = new SubtermMatcher();
+            clone.IsMatchOnlyNewKinds = IsMatchOnlyNewKinds;
+            clone.Trigger = Trigger == null ? null : index.MkClone(Trigger);
+            clone.IsSatisfiable = IsSatisfiable;
+            clone.IsTriggerable = IsTriggerable;
+
+            Map<Term, Set<int>> levelMatches, clonedLevelMatches;
+            clone.pattern = new Term[pattern.Length];
+            clone.matchingUnions = new AppFreeCanUnn[pattern.Length];
+            for (int i = 0; i < pattern.Length; ++i)
+            {
+                clone.pattern[i] = index.MkClone(pattern[i]);
+                if (matchingUnions[i] != null)
+                {
+                    clone.matchingUnions[i] = new AppFreeCanUnn(index.MkClone(matchingUnions[i].MkTypeTerm(srcIndex)));
+                }
+
+                if (matcher.TryFindValue(i, out levelMatches))
+                {
+                    clonedLevelMatches = new Map<Term, Set<int>>(Term.Compare);
+                    foreach (var kv in levelMatches)
+                    {
+                        clonedLevelMatches.Add(index.MkClone(kv.Key), kv.Value);                    
+                    }
+
+                    clone.matcher.Add(i, clonedLevelMatches);
+                }
+            }
+
+            return clone;
         }
 
         /// <summary>

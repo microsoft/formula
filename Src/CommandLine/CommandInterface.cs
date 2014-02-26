@@ -52,8 +52,8 @@
         private const string SolveMsg = "Start a solve task. Use: solve partial_model max_sols goals";
         private const string ApplyMsg = "Start an apply task. Use: apply transformstep";
         private const string GenDataMsg = "Generate C# data model. Use: generate modname";
-        private const string TruthMsg = "Test if a ground term is derivable under a model. Use: truth query_id [ground_term | *]";
-        private const string ProofMsg = "Enumerate proofs that a ground term is derivable under a model. Use: proof query_id [ground_term]";
+        private const string TruthMsg = "Test if a ground term is derivable under a model\apply. Use: truth task_id [ground_term | *]";
+        private const string ProofMsg = "Enumerate proofs that a ground term is derivable under a model\apply. Use: proof task_id [ground_term]";
         private const string ExtractMsg = "Extract and install a result. Use: extract (app_id | solv_id n) output_name [render_class render_dll]";
         private const string DelVarMsg = "Deleted variable '{0}'";
 
@@ -404,15 +404,15 @@
             int queryId;
             if (!int.TryParse(cmdParts[0], out queryId))
             {
-                sink.WriteMessageLine(string.Format("{0} is not a query id", cmdParts[0]), SeverityKind.Warning);
+                sink.WriteMessageLine(string.Format("{0} is not a query/apply id", cmdParts[0]), SeverityKind.Warning);
                 return;
             }
 
             TaskKind kind;
             System.Threading.Tasks.Task task;
-            if (!taskManager.TryGetTask(queryId, out task, out kind) || kind != TaskKind.Query)
+            if (!taskManager.TryGetTask(queryId, out task, out kind) || (kind != TaskKind.Query && kind != TaskKind.Apply))
             {
-                sink.WriteMessageLine(string.Format("{0} is not a query id", cmdParts[0]), SeverityKind.Warning);
+                sink.WriteMessageLine(string.Format("{0} is not a query/apply id", cmdParts[0]), SeverityKind.Warning);
                 return;
             }
             else if (!task.IsCompleted)
@@ -421,25 +421,61 @@
                 return;
             }
 
-            var result = ((System.Threading.Tasks.Task<QueryResult>)task).Result;
-            List<Flag> flags;
-            var goal = cmdParts.Length == 1 ? string.Format("{0}.requires", result.Source.Node.Name) : cmdParts[1];
-            if (goal.Trim() == "*")
+            if (kind == TaskKind.Query)
             {
-                sink.WriteMessageLine("Listing all derived values...", SeverityKind.Info);
-                foreach (var a in result.EnumerateDerivations())
+                var result = ((System.Threading.Tasks.Task<QueryResult>)task).Result;
+                List<Flag> flags;
+                var goal = cmdParts.Length == 1 ? string.Format("{0}.requires", result.Source.Node.Name) : cmdParts[1];
+                if (goal.Trim() == "*")
                 {
-                    sink.WriteMessage("   ");
-                    a.Print(sink.Writer);
-                    sink.WriteMessageLine(string.Empty);
+                    sink.WriteMessageLine("Listing all derived values...", SeverityKind.Info);
+                    foreach (var a in result.EnumerateDerivations())
+                    {
+                        sink.WriteMessage("   ");
+                        a.Print(sink.Writer);
+                        sink.WriteMessageLine(string.Empty);
+                    }
+                    sink.WriteMessageLine("List complete", SeverityKind.Info);
                 }
-                sink.WriteMessageLine("List complete", SeverityKind.Info);
+                else
+                {
+                    var isTrue = result.IsDerivable(goal, out flags);
+                    WriteFlags(new ProgramName("CommandLine.4ml"), flags);
+                    sink.WriteMessageLine(string.Format("Truth value: {0}", isTrue));
+                }
+            }
+            else if (kind == TaskKind.Apply)
+            {
+                var result = ((System.Threading.Tasks.Task<ApplyResult>)task).Result;
+                List<Flag> flags;
+                if (cmdParts.Length == 1)
+                {
+                    sink.WriteMessageLine(string.Format("You must supply a ground term"), SeverityKind.Warning);
+                    return;
+                }
+
+                var goal = cmdParts[1].Trim();
+                if (goal.Trim() == "*")
+                {                    
+                    sink.WriteMessageLine("Listing all derived values...", SeverityKind.Info);
+                    foreach (var a in result.EnumerateDerivations())
+                    {
+                        sink.WriteMessage("   ");
+                        a.Print(sink.Writer);
+                        sink.WriteMessageLine(string.Empty);
+                    }
+                    sink.WriteMessageLine("List complete", SeverityKind.Info);
+                }
+                else
+                {
+                    var isTrue = result.IsDerivable(goal, out flags);
+                    WriteFlags(new ProgramName("CommandLine.4ml"), flags);
+                    sink.WriteMessageLine(string.Format("Truth value: {0}", isTrue));
+                }
             }
             else
             {
-                var isTrue = result.IsDerivable(goal, out flags);
-                WriteFlags(new ProgramName("CommandLine.4ml"), flags);
-                sink.WriteMessageLine(string.Format("Truth value: {0}", isTrue));
+                throw new NotImplementedException();
             }
         }
 
@@ -599,15 +635,15 @@
             int queryId;
             if (!int.TryParse(cmdParts[0], out queryId))
             {
-                sink.WriteMessageLine(string.Format("{0} is not a query id", cmdParts[0]), SeverityKind.Warning);
+                sink.WriteMessageLine(string.Format("{0} is not a query/apply id", cmdParts[0]), SeverityKind.Warning);
                 return;
             }
 
             TaskKind kind;
             System.Threading.Tasks.Task task;
-            if (!taskManager.TryGetTask(queryId, out task, out kind) || kind != TaskKind.Query)
+            if (!taskManager.TryGetTask(queryId, out task, out kind) || (kind != TaskKind.Query && kind != TaskKind.Apply))
             {
-                sink.WriteMessageLine(string.Format("{0} is not a query id", cmdParts[0]), SeverityKind.Warning);
+                sink.WriteMessageLine(string.Format("{0} is not a query/apply id", cmdParts[0]), SeverityKind.Warning);
                 return;
             }
             else if (!task.IsCompleted)
@@ -616,12 +652,32 @@
                 return;
             }
 
-            var result = ((System.Threading.Tasks.Task<QueryResult>)task).Result;
+            IEnumerable<ProofTree> proofs;
             List<Flag> flags;
             LiftedBool isTrue;
 
-            var goal = cmdParts.Length == 1 ? string.Format("{0}.requires", result.Source.Node.Name) : cmdParts[1];
-            var proofs = result.EnumerateProofs(goal, out flags, out isTrue);
+            if (kind == TaskKind.Query)
+            {
+                var result = ((System.Threading.Tasks.Task<QueryResult>)task).Result;
+                var goal = cmdParts.Length == 1 ? string.Format("{0}.requires", result.Source.Node.Name) : cmdParts[1];
+                proofs = result.EnumerateProofs(goal, out flags, out isTrue);
+            }
+            else if (kind == TaskKind.Apply)
+            {
+                if (cmdParts.Length == 1)
+                {
+                    sink.WriteMessageLine(string.Format("You must supply a ground term"), SeverityKind.Warning);
+                    return;
+                }
+
+                var result = ((System.Threading.Tasks.Task<ApplyResult>)task).Result;
+                proofs = result.EnumerateProofs(cmdParts[1], out flags, out isTrue);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+
             WriteFlags(new ProgramName("CommandLine.4ml"), flags);
             sink.WriteMessageLine(string.Format("Truth value: {0}", isTrue));
             sink.WriteMessageLine("");

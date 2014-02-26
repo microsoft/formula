@@ -22,6 +22,17 @@
         private ExecuterStatistics stats;
 
         /// <summary>
+        /// After an operation is completed, then API clients may indirectly create terms in the index of this application.
+        /// These operations need to locked.
+        /// </summary>
+        private SpinLock termIndexLock = new SpinLock();
+
+        /// <summary>
+        /// This is non-null if the application applies a basic transform 
+        /// </summary>
+        private Executer basicTransExe = null;
+
+        /// <summary>
         /// The apply target
         /// </summary>
         ModuleData applyTarget;
@@ -158,6 +169,102 @@
                 });
         }
 
+        /// <summary>
+        /// Determines if a ground term was derived. 
+        /// (Only if applied to a basic transform)
+        /// </summary>
+        /// <returns></returns>
+        public LiftedBool IsDerivable(string t, out List<Flag> flags)
+        {
+            flags = new List<Flag>();
+            if (applyTarget.Reduced.Node.NodeKind != NodeKind.Transform)
+            {
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    applyTarget.Reduced.Node,
+                    Constants.BadSyntax.ToString("This operation cannot be performed on this type of application."),
+                    Constants.BadSyntax.Code));
+                return LiftedBool.Unknown;
+            }
+
+            Term grndTerm;
+            if (!ParseGroundGoal(t, flags, out grndTerm))
+            {
+                return LiftedBool.Unknown;
+            }
+
+            return basicTransExe.IsDerived(grndTerm);
+        }
+
+        /// <summary>
+        /// Enumerates all values that were derived by the query operation. 
+        /// (Only if applied to a basic transform)
+        /// </summary>
+        /// <returns></returns>
+        public IEnumerable<AST<Node>> EnumerateDerivations()
+        {
+            if (applyTarget.Reduced.Node.NodeKind != NodeKind.Transform)
+            {
+                yield break;
+            }
+
+            Symbol s;
+            foreach (var kv in basicTransExe.Fixpoint)
+            {
+                s = kv.Key.Symbol;
+                if ((s.Kind == SymbolKind.UserCnstSymb || s.Kind == SymbolKind.ConSymb || s.Kind == SymbolKind.MapSymb) &&
+                    ((UserSymbol)s).Name.StartsWith(SymbolTable.ManglePrefix))
+                {
+                    continue;
+                }
+
+                yield return Factory.Instance.ToAST(kv.Key);
+            }
+        }
+
+        /// <summary>
+        /// Enumerates proof trees (only if applied to a basic transform). 
+        /// </summary>
+        public IEnumerable<ProofTree> EnumerateProofs(string t, out List<Flag> flags, out LiftedBool truthValue)
+        {
+            flags = new List<Flag>();
+            if (applyTarget.Reduced.Node.NodeKind != NodeKind.Transform)
+            {
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    applyTarget.Reduced.Node,
+                    Constants.BadSyntax.ToString("This operation cannot be performed on this type of application."),
+                    Constants.BadSyntax.Code));
+                truthValue = LiftedBool.Unknown;
+                return new ProofTree[0];
+            }
+
+            Term grndTerm;
+            if (!ParseGroundGoal(t, flags, out grndTerm))
+            {
+                truthValue = LiftedBool.Unknown;
+                return new ProofTree[0];
+            }
+            else if (!basicTransExe.IsDerived(grndTerm))
+            {
+                truthValue = false;
+                return new ProofTree[0];
+            }
+            else if (!basicTransExe.KeepDerivations)
+            {
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.BadSyntax.ToString("Cannot retrieve proofs; derivations were not kept."),
+                    Constants.BadSyntax.Code));
+                truthValue = true;
+                return new ProofTree[0];
+            }
+
+            truthValue = true;
+            return basicTransExe.GetDerivations(grndTerm);
+        }
+
         internal void Start()
         {
             Contract.Assert(modelOutputs == null);
@@ -180,6 +287,7 @@
                 var copyRules = ((RuleTable)applyTarget.FinalOutput).CloneTransformTable(index);
                 var exe = new Executer(copyRules, modelInputs, valueInputs, stats, KeepDerivations);
                 exe.Execute();
+                basicTransExe = exe;
 
                 var transToUserMap = MkTransToUserMap();
                 foreach (var kv in transToUserMap)
@@ -490,6 +598,397 @@
             }
 
             return name;
+        }
+
+        private bool ParseGroundGoal(string t, List<Flag> flags, out Term grndTerm)
+        {
+            Contract.Requires(basicTransExe != null);
+
+            ImmutableCollection<Flag> parseFlags;
+            var ast = Factory.Instance.ParseDataTerm(t, out parseFlags, index.Env.Parameters);
+            flags.AddRange(parseFlags);
+            if (ast == null)
+            {
+                grndTerm = null;
+                return false;
+            }
+            else if (WasCancelled)
+            {
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    ast.Node,
+                    Constants.BadSyntax.ToString("Application operation was cancelled; derivation is unknown."),
+                    Constants.BadSyntax.Code));
+                grndTerm = null;
+                return false;
+            }
+
+            var simplified = Compiler.EliminateQuotations((Configuration)((Transform)applyTarget.Reduced.Node).Config.CompilerData, ast, flags);
+            if (simplified.NodeKind != NodeKind.Id && simplified.NodeKind != NodeKind.Cnst && simplified.NodeKind != NodeKind.FuncTerm)
+            {
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    simplified,
+                    Constants.BadSyntax.ToString("Expected an identifier, constant, or function"),
+                    Constants.BadSyntax.Code));
+                grndTerm = null;
+                return false;
+            }
+
+            grndTerm = Expand(Factory.Instance.ToAST(simplified), flags);
+            Contract.Assert(grndTerm == null || grndTerm.Groundness == Groundness.Ground);
+            return grndTerm != null;
+        }
+
+        /// <summary>
+        /// Converts a term AST to a term, and expands symbolic constants as much as possible. 
+        /// Returns null if there are errors.
+        /// Should only be called after the set has been successfully compiled.
+        /// </summary>
+        private Term Expand(AST<Node> ast, List<Flag> flags)
+        {
+            bool gotLock = false;
+            try
+            {
+                termIndexLock.Enter(ref gotLock);
+
+                UserSymbol other;
+                var symTable = index.SymbolTable;
+                var valParamToValue = new Map<UserCnstSymb, Term>(Symbol.Compare);                
+                foreach (var kv in valueInputs)
+                {
+                    valParamToValue.Add(
+                        (UserCnstSymb)symTable.Resolve(string.Format("%{1}", kv.Key), out other, symTable.ModuleSpace),
+                        kv.Value);
+                }
+
+                var success = new SuccessToken();
+                var symbStack = new Stack<Tuple<Namespace, Symbol>>();
+                symbStack.Push(new Tuple<Namespace, Symbol>(index.SymbolTable.Root, null));
+                var result = ast.Compute<Tuple<Term, Term>>(
+                    x => Expand_Unfold(x, symbStack, success, flags),
+                    (x, y) => Expand_Fold(x, y, symbStack, valParamToValue, success, flags));
+                return result == null ? null : result.Item1;
+            }
+            finally
+            {
+                if (gotLock)
+                {
+                    termIndexLock.Exit();
+                }
+            }
+        }
+
+        private IEnumerable<Node> Expand_Unfold(Node n,
+                                                Stack<Tuple<Namespace, Symbol>> symbStack,
+                                                SuccessToken success,
+                                                List<Flag> flags)
+        {
+            var space = symbStack.Peek().Item1;
+            switch (n.NodeKind)
+            {
+                case NodeKind.Cnst:
+                    {
+                        bool wasAdded;
+                        var cnst = (Cnst)n;
+                        BaseCnstSymb symb;
+                        switch (cnst.CnstKind)
+                        {
+                            case CnstKind.Numeric:
+                                symb = (BaseCnstSymb)index.MkCnst((Rational)cnst.Raw, out wasAdded).Symbol;
+                                break;
+                            case CnstKind.String:
+                                symb = (BaseCnstSymb)index.MkCnst((string)cnst.Raw, out wasAdded).Symbol;
+                                break;
+                            default:
+                                throw new NotImplementedException();
+                        }
+
+                        symbStack.Push(new Tuple<Namespace, Symbol>(space, symb));
+                        return null;
+                    }
+                case NodeKind.Id:
+                    {
+                        var id = (Id)n;
+                        UserSymbol symb;
+                        if (index.SymbolTable.HasRenamingPrefix(id))
+                        {
+                            if (!Resolve(id.Name, "constant", id, space, x => x.IsNonVarConstant, out symb, flags))
+                            {
+                                symbStack.Push(new Tuple<Namespace, Symbol>(null, null));
+                                success.Failed();
+                                return null;
+                            }
+                        }
+                        else if (!Resolve(id.Fragments[0], "variable or constant", id, space, x => x.Kind == SymbolKind.UserCnstSymb, out symb, flags))
+                        {
+                            symbStack.Push(new Tuple<Namespace, Symbol>(null, null));
+                            success.Failed();
+                            return null;
+                        }
+                        else if (id.Fragments.Length > 1 && symb.IsNonVarConstant)
+                        {
+                            var flag = new Flag(
+                                SeverityKind.Error,
+                                id,
+                                Constants.BadSyntax.ToString("constants do not have fields"),
+                                Constants.BadSyntax.Code);
+                            flags.Add(flag);
+                            symbStack.Push(new Tuple<Namespace, Symbol>(null, null));
+                            success.Failed();
+                            return null;
+                        }
+                        else if (symb.IsVariable)
+                        {
+                            var flag = new Flag(
+                                SeverityKind.Error,
+                                id,
+                                Constants.BadSyntax.ToString("Variables cannot appear here."),
+                                Constants.BadSyntax.Code);
+                            flags.Add(flag);
+                            symbStack.Push(new Tuple<Namespace, Symbol>(null, null));
+                            success.Failed();
+                            return null;
+                        }
+
+                        symbStack.Push(new Tuple<Namespace, Symbol>(symb.Namespace, symb));
+                        return null;
+                    }
+                case NodeKind.FuncTerm:
+                    {
+                        var ft = (FuncTerm)n;
+                        if (ft.Function is Id)
+                        {
+                            UserSymbol symb;
+                            var ftid = (Id)ft.Function;
+                            if (ValidateUse_UserFunc(ft, space, out symb, flags, true))
+                            {
+                                symbStack.Push(new Tuple<Namespace, Symbol>(symb.Namespace, symb));
+                            }
+                            else
+                            {
+                                symbStack.Push(new Tuple<Namespace, Symbol>(null, null));
+                                success.Failed();
+                                return null;
+                            }
+
+                            return ft.Args;
+                        }
+                        else
+                        {
+                            var flag = new Flag(
+                                SeverityKind.Error,
+                                ft,
+                                Constants.BadSyntax.ToString("Only data constructors can appear here."),
+                                Constants.BadSyntax.Code);
+                            flags.Add(flag);
+                            symbStack.Push(new Tuple<Namespace, Symbol>(null, null));
+                            success.Failed();
+                            return null;
+                        }
+                    }
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
+        private Tuple<Term, Term> Expand_Fold(
+                   Node n,
+                   IEnumerable<Tuple<Term, Term>> args,
+                   Stack<Tuple<Namespace, Symbol>> symbStack,
+                   Map<UserCnstSymb, Term> valParamToValue,
+                   SuccessToken success,
+                   List<Flag> flags)
+        {
+            bool wasAdded;
+            var space = symbStack.Peek().Item1;
+            var symb = symbStack.Pop().Item2;
+
+            if (symb == null)
+            {
+                return null;
+            }
+            if (symb.IsNonVarConstant)
+            {
+                var cnst = symb as UserCnstSymb;
+                if (cnst != null && cnst.IsSymbolicConstant)
+                {
+                    var expDef = valParamToValue[cnst];
+                    Contract.Assert(expDef != null);
+                    return new Tuple<Term, Term>(expDef, index.MkDataWidenedType(expDef));
+                }
+                else
+                {
+                    var valTerm = index.MkApply(symb, TermIndex.EmptyArgs, out wasAdded);
+                    return new Tuple<Term, Term>(valTerm, valTerm);
+                }
+            }
+            else if (symb.IsDataConstructor)
+            {
+                var con = (UserSymbol)symb;
+                var sort = symb.Kind == SymbolKind.ConSymb ? ((ConSymb)con).SortSymbol : ((MapSymb)con).SortSymbol;
+
+                var i = 0;
+                var vargs = new Term[con.Arity];
+                var typed = true;
+                foreach (var a in args)
+                {
+                    if (a == null)
+                    {
+                        //// If an arg is null, then it already has errors, 
+                        //// so skip it an check the rest.
+                        typed = false;
+                        continue;
+                    }
+                    else if (a.Item2.Symbol.IsNonVarConstant)
+                    {
+                        if (!sort.DataSymbol.CanonicalForm[i].AcceptsConstant(a.Item2.Symbol))
+                        {
+                            flags.Add(new Flag(
+                                SeverityKind.Error,
+                                n,
+                                Constants.BadArgType.ToString(i + 1, sort.DataSymbol.FullName),
+                                Constants.BadArgType.Code));
+                            success.Failed();
+                            typed = false;
+                            continue;
+                        }
+                    }
+                    else if (a.Item2.Symbol.Kind == SymbolKind.UserSortSymb)
+                    {
+                        if (!sort.DataSymbol.CanonicalForm[i].Contains(a.Item2.Symbol))
+                        {
+                            flags.Add(new Flag(
+                                SeverityKind.Error,
+                                n,
+                                Constants.BadArgType.ToString(i + 1, sort.DataSymbol.FullName),
+                                Constants.BadArgType.Code));
+                            success.Failed();
+                            typed = false;
+                            continue;
+                        }
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+
+                    vargs[i] = a.Item1;
+                    ++i;
+                }
+
+                if (!typed)
+                {
+                    success.Failed();
+                    return null;
+                }
+
+                return new Tuple<Term, Term>(
+                            index.MkApply(con, vargs, out wasAdded),
+                            index.MkApply(sort, TermIndex.EmptyArgs, out wasAdded));
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
+        }
+
+        private bool Resolve(
+                        string id,
+                        string kind,
+                        Node n,
+                        Namespace space,
+                        Predicate<UserSymbol> validator,
+                        out UserSymbol symbol,
+                        List<Flag> flags)
+        {
+            UserSymbol other = null;
+
+            symbol = index.SymbolTable.Resolve(id, out other, space);
+            if (symbol == null || !validator(symbol))
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    n,
+                    Constants.UndefinedSymbol.ToString(kind, id),
+                    Constants.UndefinedSymbol.Code);
+                flags.Add(flag);
+                return false;
+            }
+            else if (other != null)
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    n,
+                    Constants.AmbiguousSymbol.ToString(
+                        "identifier",
+                        id,
+                        string.Format("({0}, {1}): {2}",
+                                symbol.Definitions.First<AST<Node>>().Node.Span.StartLine,
+                                symbol.Definitions.First<AST<Node>>().Node.Span.StartCol,
+                                symbol.FullName),
+                        string.Format("({0}, {1}): {2}",
+                                other.Definitions.First<AST<Node>>().Node.Span.StartLine,
+                                other.Definitions.First<AST<Node>>().Node.Span.StartCol,
+                                other.FullName)),
+                    Constants.AmbiguousSymbol.Code);
+                flags.Add(flag);
+                return false;
+            }
+
+            return true;
+        }
+
+        private bool ValidateUse_UserFunc(FuncTerm ft, Namespace space, out UserSymbol symbol, List<Flag> flags, bool allowDerived = false)
+        {
+            Contract.Assert(ft.Function is Id);
+            var result = true;
+            var id = (Id)ft.Function;
+
+            if (!Resolve(id.Name, "constructor", id, space, x => x.IsDataConstructor, out symbol, flags))
+            {
+                return false;
+            }
+            else if (symbol.Arity != ft.Args.Count)
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    ft,
+                    Constants.BadSyntax.ToString(string.Format("{0} got {1} arguments but needs {2}", symbol.FullName, ft.Args.Count, symbol.Arity)),
+                    Constants.BadSyntax.Code);
+                flags.Add(flag);
+                result = false;
+            }
+
+            if (symbol.Kind == SymbolKind.ConSymb && !allowDerived && !((ConSymb)symbol).IsNew)
+            {
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    ft,
+                    Constants.ModelNewnessError.ToString(),
+                    Constants.ModelNewnessError.Code));
+                result = false;
+            }
+
+            var i = 0;
+            foreach (var a in ft.Args)
+            {
+                ++i;
+                if (a.NodeKind != NodeKind.Compr)
+                {
+                    continue;
+                }
+
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    ft,
+                    Constants.BadSyntax.ToString(string.Format("comprehension not allowed in argument {1} of {0}", symbol == null ? id.Name : symbol.FullName, i)),
+                    Constants.BadSyntax.Code);
+                flags.Add(flag);
+                result = false;
+            }
+
+            return result;
         }
     }
 }

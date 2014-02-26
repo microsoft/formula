@@ -69,7 +69,8 @@
 
         public override CoreRule Clone(int ruleId, Predicate<Symbol> isCompr, TermIndex index, Map<Term, Term> bindingReificationCache, Map<UserSymbol, UserSymbol> symbolTransfer, string renaming)
         {
-            Contract.Requires(isCompr == null && index != null && bindingReificationCache == null && string.IsNullOrEmpty(renaming));
+            Contract.Assert(isCompr == null && index != null && bindingReificationCache == null && string.IsNullOrEmpty(renaming));
+
             bool wasAdded;
             var newHeadArgs = new Term[Head.Symbol.Arity];
             var newHeadCon = symbolTransfer[(UserSymbol)Head.Symbol];

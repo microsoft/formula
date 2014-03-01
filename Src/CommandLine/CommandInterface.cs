@@ -52,8 +52,8 @@
         private const string SolveMsg = "Start a solve task. Use: solve partial_model max_sols goals";
         private const string ApplyMsg = "Start an apply task. Use: apply transformstep";
         private const string GenDataMsg = "Generate C# data model. Use: generate modname";
-        private const string TruthMsg = "Test if a ground term is derivable under a model\apply. Use: truth task_id [ground_term | *]";
-        private const string ProofMsg = "Enumerate proofs that a ground term is derivable under a model\apply. Use: proof task_id [ground_term]";
+        private const string TruthMsg = "Test if a ground term is derivable under a model/apply. Use: truth task_id [ground_term | *]";
+        private const string ProofMsg = "Enumerate proofs that a ground term is derivable under a model/apply. Use: proof task_id [ground_term]";
         private const string ExtractMsg = "Extract and install a result. Use: extract (app_id | solv_id n) output_name [render_class render_dll]";
         private const string DelVarMsg = "Deleted variable '{0}'";
 

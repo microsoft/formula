@@ -71,6 +71,15 @@ model Small of AlgTrees
     Tree(sub2).
 }
 
+model Med of AlgTrees
+{
+    sub1 is Node(3,     Node(1, NIL, NIL), Node(2, NIL, NIL)).  
+    sub2 is Node(7,     sub1, sub1).
+    sub3 is Node(15,    sub2, sub2).
+    sub4 is Node(31,    sub3, sub3).
+    Tree(sub4).
+}
+
 model Big of AlgTrees
 {
     sub1 is Node(3,     Node(1, NIL, NIL), Node(2, NIL, NIL)).  

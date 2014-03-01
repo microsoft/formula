@@ -1525,6 +1525,7 @@
 
                         if (x.Symbol.IsDataConstructor)
                         {
+                            /*
                             needCompute = false;
                             foreach (var y in x.Args)
                             {
@@ -1540,6 +1541,7 @@
                             {
                                 return x;
                             }
+                            */
 
                             i = 0;
                             us = (UserSymbol)x.Symbol;

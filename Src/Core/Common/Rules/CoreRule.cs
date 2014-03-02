@@ -1512,7 +1512,7 @@
                 int i;
                 Term computed;
                 UserSymbol us;
-                bool needCompute, wasAdded;
+                bool wasAdded;
                 var success = new SuccessToken();
                 var result = Term.Compute<Term>(
                     (x, s) => x.Args,

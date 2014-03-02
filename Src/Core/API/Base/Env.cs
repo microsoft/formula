@@ -9,6 +9,7 @@
     using System.Threading.Tasks;
 
     using Nodes;
+    using Common;
     using Common.Extras;
     using Compiler;
 
@@ -25,7 +26,10 @@
 
         private Dictionary<ProgramName, Program> programs =
             new Dictionary<ProgramName, Program>();
-       
+
+        private DependencyCollection<ProgramName, Unit> programDeps =
+            new DependencyCollection<ProgramName, Unit>(ProgramName.Compare, Unit.Compare);
+           
         private CancellationTokenSource canceler = null;
 
         internal Dictionary<ProgramName, Program> Programs
@@ -1036,14 +1040,176 @@
             return true;
         }
 
-        public InstallResult Uninstall(IEnumerable<ProgramName> programs)
+        public bool Uninstall(IEnumerable<ProgramName> progs, out InstallResult result)
         {
-            throw new NotImplementedException();
+            if (!GetEnvLock())
+            {
+                result = null;
+                return false;
+            }
+
+            result = new InstallResult();
+            if (progs == null)
+            {
+                goto Unlock;
+            }
+
+            var delSet = new Set<ProgramName>(ProgramName.Compare);
+            foreach (var del in progs)
+            {
+                if (del != null && programs.ContainsKey(del))
+                {
+                    delSet.Add(del);
+                }                
+            }
+
+            int size;
+            var top = programDeps.GetTopologicalSort(out size);
+            var nextDeps = new DependencyCollection<ProgramName, Unit>(ProgramName.Compare, Unit.Compare);
+            bool isDeleted;
+            foreach (var n in top)
+            {
+                isDeleted = false;
+                foreach (var p in EnumeratePrograms(n))
+                {
+                    if (delSet.Contains(p))
+                    {
+                        isDeleted = true;
+                        break;
+                    }
+                }
+
+                if (isDeleted)
+                {
+                    foreach (var p in EnumeratePrograms(n))
+                    {
+                        if (programs.ContainsKey(p))
+                        {
+                            result.AddTouched((AST<Program>)Factory.Instance.ToAST(programs[p]), InstallKind.Uninstalled);
+                            programs.Remove(p);
+                        }
+                    }
+
+                    //// If this node is deleted, then all programs depending on it are deleted.
+                    foreach (var pr in n.Provides)
+                    {
+                        foreach (var p in EnumeratePrograms(pr.Target))
+                        {
+                            delSet.Add(p);
+                        }
+                    }
+                }
+                else
+                {
+                    //// If this node is not deleted, then it depends on its requests.
+                    foreach (var p in EnumeratePrograms(n))
+                    {
+                        nextDeps.Add(p);
+                    }
+
+                    if (n.Kind == DependencyNodeKind.Normal)
+                    {
+                        foreach (var rq in n.Requests)
+                        {
+                            nextDeps.Add(rq.Target.Resource, n.Resource, default(Unit));
+                        }
+                    }
+                    else
+                    {
+                        foreach (var m in n.InternalNodes)
+                        {
+                            foreach (var rq in m.Requests)
+                            {
+                                nextDeps.Add(rq.Target.Resource, m.Resource, default(Unit));
+                            }
+                        }
+                    }
+                }
+            }
+
+            //// Rebuild the directory structure
+            string schemeStr;
+            var newFileRoot = new ASTConcr<Folder>(new Folder("/"));
+            var newEnvRoot = new ASTConcr<Folder>(new Folder("/"));
+            foreach (var kv in programs)
+            {
+                var path = kv.Key.Uri.AbsoluteUri;
+                if (path.StartsWith(ProgramName.EnvironmentScheme.AbsoluteUri))
+                {
+                    schemeStr = ProgramName.EnvironmentScheme.AbsoluteUri;
+                }
+                else if (path.StartsWith(ProgramName.FileScheme.AbsoluteUri))
+                {
+                    schemeStr = ProgramName.FileScheme.AbsoluteUri;
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+
+                var segments = path.Substring(schemeStr.Length).Split(ProgramName.UriSeparators);
+                Contract.Assert(segments.Length > 0);
+                if (kv.Key.IsFileProgramName)
+                {
+                    AST<Folder> newRoot = newFileRoot;
+                    if (segments.Length > 1)
+                    {
+                        newRoot = MkSubFolders(newRoot.Node, segments.Truncate<string>(1));
+                    }
+
+                    newRoot = Factory.Instance.AddProgram(newRoot, (AST<Program>)Factory.Instance.ToAST(kv.Value));
+                    newFileRoot = (ASTConcr<Folder>)Factory.Instance.ToAST(newRoot.Root);
+                }
+                else
+                {
+                    AST<Folder> newRoot = newEnvRoot;
+                    if (segments.Length > 1)
+                    {
+                        newRoot = MkSubFolders(newRoot.Node, segments.Truncate<string>(1));
+                    }
+
+                    newRoot = Factory.Instance.AddProgram(newRoot, (AST<Program>)Factory.Instance.ToAST(kv.Value));
+                    newEnvRoot = (ASTConcr<Folder>)Factory.Instance.ToAST(newRoot.Root);
+                }
+            }
+
+            FileRoot = newFileRoot;
+            EnvRoot = newEnvRoot;
+
+        Unlock:
+            ReleaseEnvLock();
+            return true;
         }
 
         public bool Reinstall(IEnumerable<Program> programs, out InstallResult result)
         {
             throw new NotImplementedException();
+        }
+
+        private IEnumerable<ProgramName> EnumeratePrograms(DependencyCollection<ProgramName, Unit>.IDependencyNode n)
+        {
+            if (n.Kind == DependencyNodeKind.Cyclic)
+            {
+                foreach (var i in n.InternalNodes)
+                {
+                    yield return i.Resource;
+                }
+            }
+            else if (n.Kind == DependencyNodeKind.Normal)
+            {
+                var scc = n.SCCNode;
+                if (scc == n)
+                {
+                    yield return n.Resource;
+                }
+                else
+                {
+                    foreach (var i in scc.InternalNodes)
+                    {
+                        yield return i.Resource;
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -1106,7 +1272,8 @@
 
                 //// Add the program to the program map
                 programs.Add(p.Program.Node.Name, p.Program.Node);
-                
+                RegisterProgramDependencies(p.Program);
+
                 //// Add the program to the folder tree
                 var path = p.Program.Node.Name.Uri.AbsoluteUri;
                 string schemeStr;
@@ -1204,6 +1371,23 @@
             {
                 return crnt;
             }
+        }
+
+        private void RegisterProgramDependencies(AST<Program> program)
+        {
+            var modRefQuery = new API.ASTQueries.NodePred[]
+            {
+                API.ASTQueries.NodePredFactory.Instance.Star,
+                API.ASTQueries.NodePredFactory.Instance.MkPredicate(NodeKind.ModRef)
+            };
+
+            programDeps.Add(program.Node.Name);
+            program.FindAll(
+                modRefQuery, 
+                (ch, n) =>                
+                {
+                    programDeps.Add(((Location)n.CompilerData).Program.Name, program.Node.Name, default(Unit));
+                });
         }
 
         private void ReleaseEnvLock()

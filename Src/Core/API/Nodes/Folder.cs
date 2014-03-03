@@ -70,11 +70,11 @@
             Programs = new ImmutableCollection<Program>(Programs);
         }
 
-        private Folder(Folder f)
+        private Folder(Folder f, bool keepCompilerData)
             : base(f.Span)
         {
             Name = f.Name;
-            CompilerData = f.CompilerData;
+            CompilerData = keepCompilerData ? f.CompilerData : null;
         }
 
         public override bool TryGetStringAttribute(AttributeKind attribute, out string value)
@@ -97,11 +97,11 @@
             }
 
             return pred.AttributePredicate == null ? true : pred.AttributePredicate(AttributeKind.Name, Name);
-        }  
+        }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Folder(this);
+            var cnode = new Folder(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -114,7 +114,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Folder(this);
+            var cnode = new Folder(this, true);
             int occurs = 0;
             cnode.SubFolders = new ImmutableCollection<Folder>(CloneCollection<Folder>(subFolders, replace, pos, ref occurs, out cnode.subFolders));
             cnode.Programs = new ImmutableCollection<Program>(CloneCollection<Program>(programs, replace, pos, ref occurs, out cnode.programs));

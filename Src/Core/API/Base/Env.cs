@@ -395,6 +395,9 @@
                 return false;
             }
 
+            //// Clean any attached compiler data.
+            transformStep = (AST<Step>)transformStep.DeepClone();
+
             bool succeeded = true;
             int i = 1, otherId;
             var ids = new Common.Map<string, int>(string.Compare);
@@ -963,6 +966,94 @@
                 return false;
             }
 
+            LockedInstall(filename, out result);
+
+            ReleaseEnvLock();
+            return true;
+        }
+
+        public bool Install(AST<Program> program, out InstallResult result)
+        {
+            Contract.Requires(program != null);
+            if (!GetEnvLock())
+            {
+                result = null;
+                return false;
+            }
+
+            LockedInstall(program, out result);
+
+            ReleaseEnvLock();
+            return true;
+        }
+
+        public bool Uninstall(IEnumerable<ProgramName> progs, out InstallResult result)
+        {
+            if (!GetEnvLock())
+            {
+                result = null;
+                return false;
+            }
+
+            LockedUninstall(progs, out result);
+
+            ReleaseEnvLock();
+            return true;
+        }
+
+        public bool Reinstall(IEnumerable<ProgramName> progs, out InstallResult result)
+        {
+            if (!GetEnvLock())
+            {
+                result = null;
+                return false;
+            }
+
+            result = new InstallResult();
+            if (progs == null)
+            {
+                goto Unlock;
+            }
+
+            InstallResult uninstRes;
+            var uninstallResults = new LinkedList<InstallResult>();
+            foreach (var p in progs)
+            {
+                if (p != null && p.IsFileProgramName)
+                {
+                    LockedUninstall(new ProgramName[] { p }, out uninstRes);
+                    if (uninstRes != null)
+                    {
+                        uninstallResults.AddLast(uninstRes);
+                    }
+                }
+            }
+
+            InstallResult instRes;
+            foreach (var ur in uninstallResults)
+            {
+                foreach (var istat in ur.Touched)
+                {
+                    if (istat.Program.Node.Name.IsFileProgramName)
+                    {
+                        LockedInstall(istat.Program.Node.Name.Uri.LocalPath, out instRes);
+                        result.Union(instRes);
+                    }
+                    else
+                    {
+                        LockedInstall(istat.Program, out instRes);
+                        result.Union(instRes);
+                    }
+                }
+            }
+
+        Unlock:
+            ReleaseEnvLock();
+            return true;
+        }
+
+        private void LockedInstall(string filename, out InstallResult result)
+        {
             result = new InstallResult();
             result.Succeeded = true;
             ProgramName progName;
@@ -980,8 +1071,7 @@
                     Constants.BadFile.Code,
                     unknown.Node.Name);
                 result.AddFlag(unknown, flag);
-                ReleaseEnvLock();
-                return false;
+                return;
             }
 
             var task = Factory.Instance.ParseFile(progName, canceler.Token);
@@ -1000,20 +1090,10 @@
             result.AddFlags(task.Result);
             result.Succeeded = InstallSafeProgram(task.Result.Program, result) &
                                result.Succeeded;
-
-            ReleaseEnvLock();
-            return true;
         }
 
-        public bool Install(AST<Program> program, out InstallResult result)
+        private void LockedInstall(AST<Program> program, out InstallResult result)
         {
-            Contract.Requires(program != null);
-            if (!GetEnvLock())
-            {
-                result = null;
-                return false;
-            }
-
             result = new InstallResult();
             result.Succeeded = true;
 
@@ -1035,23 +1115,14 @@
                 result.AddTouched(clone, InstallKind.Compiled);
                 result.Succeeded = InstallSafeProgram(clone, result) & result.Succeeded;
             }
-
-            ReleaseEnvLock();
-            return true;
         }
 
-        public bool Uninstall(IEnumerable<ProgramName> progs, out InstallResult result)
+        private void LockedUninstall(IEnumerable<ProgramName> progs, out InstallResult result)
         {
-            if (!GetEnvLock())
-            {
-                result = null;
-                return false;
-            }
-
             result = new InstallResult();
             if (progs == null)
             {
-                goto Unlock;
+                return;
             }
 
             var delSet = new Set<ProgramName>(ProgramName.Compare);
@@ -1060,7 +1131,7 @@
                 if (del != null && programs.ContainsKey(del))
                 {
                     delSet.Add(del);
-                }                
+                }
             }
 
             int size;
@@ -1175,15 +1246,6 @@
 
             FileRoot = newFileRoot;
             EnvRoot = newEnvRoot;
-
-        Unlock:
-            ReleaseEnvLock();
-            return true;
-        }
-
-        public bool Reinstall(IEnumerable<Program> programs, out InstallResult result)
-        {
-            throw new NotImplementedException();
         }
 
         private IEnumerable<ProgramName> EnumeratePrograms(DependencyCollection<ProgramName, Unit>.IDependencyNode n)

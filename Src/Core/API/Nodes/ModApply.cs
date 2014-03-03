@@ -42,15 +42,15 @@
             Args = new ImmutableCollection<Node>(args);
         }
 
-        private ModApply(ModApply n)
+        private ModApply(ModApply n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new ModApply(this);
+            var cnode = new ModApply(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -63,7 +63,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new ModApply(this);
+            var cnode = new ModApply(this, true);
             int occurs = 0;
             cnode.Module = CloneField<ModRef>(Module, replace, pos, ref occurs);
             cnode.Args = new ImmutableCollection<Node>(CloneCollection<Node>(args, replace, pos, ref occurs, out cnode.args));

@@ -8,7 +8,7 @@
     using System.Threading;
     using Nodes;
 
-    public class ASTConcr<T> : AST<T> where T : Node
+    public class ASTConcr<T> : AST<T>, IInternalClonable where T : Node
     {
         private int? cachedHashCode = null;
 
@@ -118,7 +118,13 @@
 
         public AST<Node> DeepClone(CancellationToken cancel = default(CancellationToken))
         {
-            var result = Compute<Node>((n) => n.Children, (n, clones) => n.DeepClone(clones), cancel);
+            var result = Compute<Node>((n) => n.Children, (n, clones) => n.DeepClone(clones, false), cancel);
+            return result == null ? null : Factory.Instance.ToAST(result);
+        }
+        
+        public AST<Node> DeepClone(bool keepCompilerData, CancellationToken cancel = default(CancellationToken))
+        {
+            var result = Compute<Node>((n) => n.Children, (n, clones) => n.DeepClone(clones, keepCompilerData), cancel);
             return result == null ? null : Factory.Instance.ToAST(result);
         }
 

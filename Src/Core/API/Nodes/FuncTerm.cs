@@ -60,7 +60,7 @@
             Args = new ImmutableCollection<Node>(args);
         }
 
-        private FuncTerm(FuncTerm n)
+        private FuncTerm(FuncTerm n, bool keepCompilerData)
             : base(n.Span)
         {
             if (n.Function is OpKind)
@@ -68,12 +68,12 @@
                 Function = (OpKind)n.Function;
             }
 
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new FuncTerm(this);
+            var cnode = new FuncTerm(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -90,7 +90,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new FuncTerm(this);
+            var cnode = new FuncTerm(this, true);
             int occurs = 0;
 
             if (Function is Id)

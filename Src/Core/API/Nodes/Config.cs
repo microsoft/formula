@@ -34,15 +34,15 @@
             Settings = new ImmutableCollection<Setting>(settings);
         }
 
-        private Config(Config n)
+        private Config(Config n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Config(this);
+            var cnode = new Config(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -54,7 +54,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Config(this);
+            var cnode = new Config(this, true);
             int occurs = 0;
             cnode.Settings = new ImmutableCollection<Setting>(CloneCollection<Setting>(settings, replace, pos, ref occurs, out cnode.settings));
             return cnode;

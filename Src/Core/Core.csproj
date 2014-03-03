@@ -116,6 +116,7 @@
     <Compile Include="API\Base\Factory.cs" />
     <Compile Include="API\Base\Flag.cs" />
     <Compile Include="API\Base\ChildInfo.cs" />
+    <Compile Include="API\Base\IInternalClonable.cs" />
     <Compile Include="API\Base\ProgramName.cs" />
     <Compile Include="API\Base\ProofTree.cs" />
     <Compile Include="API\Generators\CSharpAlias.cs" />

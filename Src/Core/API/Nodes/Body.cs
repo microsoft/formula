@@ -34,23 +34,23 @@
             Constraints = new ImmutableCollection<Node>(constraints);
         }
 
-        private Body(Body n)
+        private Body(Body n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Body(this);
+            var cnode = new Body(this, true);
             int occurs = 0;
             cnode.Constraints = new ImmutableCollection<Node>(CloneCollection<Node>(constraints, replace, pos, ref occurs, out cnode.constraints));
             return cnode;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Body(this);
+            var cnode = new Body(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {

@@ -772,7 +772,7 @@
             return n.Substitute(
                 NodePredFactory.Instance.MkPredicate((attr, obj) => attr == AttributeKind.Name && unquoteMap.ContainsKey((string)obj)),
                 (path) => unquoteMap[((Id)((LinkedList<ChildInfo>)path).Last.Value.Node).Name].Root.NodeKind,
-                (path) => unquoteMap[((Id)((LinkedList<ChildInfo>)path).Last.Value.Node).Name].DeepClone().Root,
+                (path) => ((IInternalClonable)unquoteMap[((Id)((LinkedList<ChildInfo>)path).Last.Value.Node).Name]).DeepClone(true).Root,
                 cancel);
         }
     }

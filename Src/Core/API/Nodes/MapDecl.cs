@@ -75,13 +75,13 @@
             Cod = new ImmutableCollection<Field>(cod);
         }
 
-        private MapDecl(MapDecl n)
+        private MapDecl(MapDecl n, bool keepCompilerData)
             : base(n.Span)
         {
             MapKind = n.MapKind;
             IsPartial = n.IsPartial;
             Name = n.Name;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         public override bool TryGetStringAttribute(AttributeKind attribute, out string value)
@@ -137,9 +137,9 @@
                    pred.AttributePredicate(AttributeKind.Name, Name);
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new MapDecl(this);
+            var cnode = new MapDecl(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -157,7 +157,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new MapDecl(this);
+            var cnode = new MapDecl(this, true);
             int occurs = 0;
             if (Config != null)
             {

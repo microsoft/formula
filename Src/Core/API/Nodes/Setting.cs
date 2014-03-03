@@ -44,24 +44,24 @@
             Value = value;
         }
 
-        private Setting(Setting n)
+        private Setting(Setting n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Setting(this);
+            var cnode = new Setting(this, true);
             int occurs = 0;
             cnode.Key = CloneField<Id>(Key, replace, pos, ref occurs);
             cnode.Value = CloneField<Cnst>(Value, replace, pos, ref occurs);
             return cnode;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Setting(this);
+            var cnode = new Setting(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {

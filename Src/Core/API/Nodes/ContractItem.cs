@@ -62,11 +62,11 @@
             Specification = new ImmutableCollection<Node>(specification);
         }
 
-        private ContractItem(ContractItem n)
+        private ContractItem(ContractItem n, bool keepCompilerData)
             : base(n.Span)
         {
             ContractKind = n.ContractKind;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         public override bool TryGetKindAttribute(AttributeKind attribute, out object value)
@@ -91,9 +91,9 @@
             return pred.AttributePredicate == null ? true : pred.AttributePredicate(AttributeKind.ContractKind, ContractKind);
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new ContractItem(this);
+            var cnode = new ContractItem(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -110,7 +110,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new ContractItem(this);
+            var cnode = new ContractItem(this, true);
             int occurs = 0;
             if (Config != null)
             {

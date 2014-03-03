@@ -34,15 +34,15 @@
             Contents = new ImmutableCollection<Node>(contents);
         }
 
-        private Quote(Quote n)
+        private Quote(Quote n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Quote(this);
+            var cnode = new Quote(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -54,7 +54,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Quote(this);
+            var cnode = new Quote(this, true);
             int occurs = 0;
             cnode.Contents = new ImmutableCollection<Node>(CloneCollection<Node>(contents, replace, pos, ref occurs, out cnode.contents));
             return cnode;

@@ -29,15 +29,15 @@
             Components = new ImmutableCollection<Node>(components);
         }
 
-        private Union(Union n)
+        private Union(Union n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Union(this);
+            var cnode = new Union(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -49,7 +49,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Union(this);
+            var cnode = new Union(this, true);
             int occurs = 0;
             cnode.Components = new ImmutableCollection<Node>(CloneCollection<Node>(components, replace, pos, ref occurs, out cnode.components));
             return cnode;

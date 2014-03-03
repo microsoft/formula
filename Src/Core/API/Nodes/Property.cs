@@ -59,16 +59,16 @@
             return false;
         }
 
-        private Property(Property n)
+        private Property(Property n, bool keepCompilerData)
             : base(n.Span)
         {
             Name = n.Name;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Property(this);
+            var cnode = new Property(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -101,7 +101,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Property(this);
+            var cnode = new Property(this, true);
             int occurs = 0;
             if (Config != null)
             {

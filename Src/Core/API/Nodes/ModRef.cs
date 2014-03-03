@@ -46,14 +46,14 @@
             cachedHashCode = GetDetailedNodeKindHash();
         }
 
-        private ModRef(ModRef n)
+        private ModRef(ModRef n, bool keepCompilerData)
             : base(n.Span)
         {
             Name = n.Name;
             Rename = n.Rename;
             Location = n.Location;
             cachedHashCode = n.cachedHashCode;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         public override bool TryGetStringAttribute(AttributeKind attribute, out string value)
@@ -92,9 +92,9 @@
                    pred.AttributePredicate(AttributeKind.Location, Location);
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            return new ModRef(this);
+            return new ModRef(this, keepCompilerData);
         }
 
         internal override Node ShallowClone(Node replace, int pos)

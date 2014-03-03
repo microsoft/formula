@@ -69,11 +69,11 @@
             Steps = new ImmutableCollection<Step>(steps);
         }
 
-        private TSystem(TSystem n)
+        private TSystem(TSystem n, bool keepCompilerData)
             : base(n.Span)
         {
             Name = n.Name;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         public override bool TryGetStringAttribute(AttributeKind attribute, out string value)
@@ -98,9 +98,9 @@
             return pred.AttributePredicate == null ? true : pred.AttributePredicate(AttributeKind.Name, Name);
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new TSystem(this);
+            var cnode = new TSystem(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -115,7 +115,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new TSystem(this);
+            var cnode = new TSystem(this, true);
             var occurs = 0;
             cnode.Inputs = new ImmutableCollection<Param>(CloneCollection<Param>(inputs, replace, pos, ref occurs, out cnode.inputs));
             cnode.Outputs = new ImmutableCollection<Param>(CloneCollection<Param>(outputs, replace, pos, ref occurs, out cnode.outputs));

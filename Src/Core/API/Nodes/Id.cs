@@ -75,9 +75,9 @@
             }
 
             return pred.AttributePredicate == null ? true : pred.AttributePredicate(AttributeKind.Name, Name);
-        }    
+        }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
             return new Id(this);
         }

@@ -51,12 +51,12 @@
             cachedHashCode = GetDetailedNodeKindHash();
         }
 
-        private Range(Range n)
+        private Range(Range n, bool keepCompilerData)
             : base(n.Span)
         {
             Lower = n.Lower;
             Upper = n.Upper;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
             cachedHashCode = n.cachedHashCode;
         }
 
@@ -93,9 +93,9 @@
                    pred.AttributePredicate(AttributeKind.Upper, Upper);
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            return new Range(this);
+            return new Range(this, keepCompilerData);
         }
 
         internal override Node ShallowClone(Node replace, int pos)

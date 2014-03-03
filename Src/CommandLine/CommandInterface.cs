@@ -42,7 +42,8 @@
         private const string SaveMsg = "Saves the module modname into file.";
         private const string LSInfoMsg = "Lists environment objects. Use: ls [vars | progs | tasks]";
         private const string LoadMsg = "Loads and compiles a file that is not yet loaded. Use: load filename";
-        private const string UnloadMsg = "Unloads and an installed program and all dependent programs. Use: u prog";
+        private const string UnloadMsg = "Unloads and an installed program and all dependent programs. Use: unload prog";
+        private const string ReloadMsg = "Reloads and an installed program and all dependent programs. Use: reload prog";
         private const string PrintMsg = "Prints the installed program with the given name. Use: print progname";
         private const string DetailsMsg = "Prints details about the compiled module with the given name. Use: det modname";
         private const string TypesMsg = "Prints inferred variable types. Use: types modname";
@@ -159,9 +160,13 @@
             cmdMap.Add(ldCmd.Name, ldCmd);
             cmdMap.Add(ldCmd.ShortName, ldCmd);
 
-            var ulCmd = new Command("unload", "u", DoUnload, UnloadMsg);
+            var ulCmd = new Command("unload", "ul", DoUnload, UnloadMsg);
             cmdMap.Add(ulCmd.Name, ulCmd);
             cmdMap.Add(ulCmd.ShortName, ulCmd);
+
+            var rlCmd = new Command("reload", "rl", DoReload, ReloadMsg);
+            cmdMap.Add(rlCmd.Name, rlCmd);
+            cmdMap.Add(rlCmd.ShortName, rlCmd);
 
             var saveCmd = new Command("save", "sv", DoSave, SaveMsg);
             cmdMap.Add(saveCmd.Name, saveCmd);
@@ -1606,6 +1611,35 @@
             if (TryResolveProgramByName(s, out program))
             {
                 program.Print(sink.Writer, canceler.Token, env.Parameters);
+            }
+        }
+
+        private void DoReload(string s)
+        {
+            AST<API.Nodes.Program> program;
+            if (TryResolveProgramByName(s, out program))
+            {
+                InstallResult result;
+                if (!env.Reinstall(new ProgramName[] { program.Node.Name }, out result))
+                {
+                    sink.WriteMessageLine("Cannot perform operation; environment is busy", SeverityKind.Warning);
+                    return;
+                }
+
+                foreach (var kv in result.Touched)
+                {
+                    sink.WriteMessageLine(string.Format("({0}) {1}", kv.Status, kv.Program.Node.Name.ToString(env.Parameters)));
+                }
+
+                foreach (var f in result.Flags)
+                {
+                    sink.WriteMessageLine(
+                        string.Format("{0} ({1}, {2}): {3}",
+                        f.Item1.Node.Name.ToString(env.Parameters),
+                        f.Item2.Span.StartLine,
+                        f.Item2.Span.StartCol,
+                        f.Item2.Message), f.Item2.Severity);
+                }
             }
         }
 

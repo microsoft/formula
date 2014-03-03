@@ -45,12 +45,12 @@
             IsAny = isAny;
         }
 
-        private Field(Field n)
+        private Field(Field n, bool keepCompilerData)
             : base(n.Span)
         {
             Name = n.Name;
             IsAny = n.IsAny;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         public override bool TryGetStringAttribute(AttributeKind attribute, out string value)
@@ -93,9 +93,9 @@
                    pred.AttributePredicate(AttributeKind.IsAny, IsAny);
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Field(this);
+            var cnode = new Field(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -107,7 +107,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Field(this);
+            var cnode = new Field(this, true);
             int occurs = 0;
             cnode.Type = CloneField<Node>(Type, replace, pos, ref occurs);
             return cnode;

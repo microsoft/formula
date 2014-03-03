@@ -50,11 +50,11 @@
             Modules = new ImmutableCollection<Node>(modules);
         }
 
-        private Program(Program n)
+        private Program(Program n, bool keepCompilerData)
             : base(n.Span)
         {
             Name = n.Name;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         public override bool TryGetStringAttribute(AttributeKind attribute, out string value)
@@ -89,9 +89,9 @@
             throw new NotImplementedException();
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Program(this);
+            var cnode = new Program(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -104,7 +104,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Program(this);
+            var cnode = new Program(this, true);
             int occurs = 0;
             cnode.Config = CloneField<Config>(Config, replace, pos, ref occurs);
             cnode.Modules = new ImmutableCollection<Node>(CloneCollection<Node>(modules, replace, pos, ref occurs, out cnode.modules));

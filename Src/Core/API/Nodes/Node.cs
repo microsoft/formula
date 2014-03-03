@@ -278,7 +278,7 @@
         /// Returns the clone of this node, if clonedChildren are already clones
         /// of all the children.
         /// </summary>
-        internal abstract Node DeepClone(IEnumerable<Node> clonedChildren);
+        internal abstract Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData);
 
         /// <summary>
         /// Returns a shallow copy of this node where the ith child node is replaced

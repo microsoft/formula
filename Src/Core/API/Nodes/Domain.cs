@@ -87,12 +87,12 @@
             Conforms = new ImmutableCollection<ContractItem>(conforms);
         }
 
-        private Domain(Domain d)
+        private Domain(Domain d, bool keepCompilerData)
             : base(d.Span)
         {
             ComposeKind = d.ComposeKind;
             Name = d.Name;
-            CompilerData = d.CompilerData;
+            CompilerData = keepCompilerData ? d.CompilerData : null;
         }
 
         public override bool TryGetStringAttribute(AttributeKind attribute, out string value)
@@ -135,9 +135,9 @@
                    pred.AttributePredicate(AttributeKind.Name, Name);
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Domain(this);
+            var cnode = new Domain(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -153,7 +153,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Domain(this);
+            var cnode = new Domain(this, true);
             var occurs = 0;
             cnode.Compositions = new ImmutableCollection<ModRef>(CloneCollection<ModRef>(compositions, replace, pos, ref occurs, out cnode.compositions));
             cnode.Config = CloneField<Config>(Config, replace, pos, ref occurs);

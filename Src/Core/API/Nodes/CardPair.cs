@@ -41,10 +41,10 @@
             Cardinality = cardinality;
         }
 
-        private CardPair(CardPair n)
+        private CardPair(CardPair n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
             Cardinality = n.Cardinality;
         }
 
@@ -72,15 +72,15 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new CardPair(this);
+            var cnode = new CardPair(this, true);
             int occurs = 0;
             cnode.TypeId = CloneField<Id>(TypeId, replace, pos, ref occurs);
             return cnode;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new CardPair(this);
+            var cnode = new CardPair(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {

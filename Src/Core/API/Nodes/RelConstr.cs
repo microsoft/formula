@@ -58,11 +58,11 @@
             Arg2 = null;
         }
 
-        private RelConstr(RelConstr n)
+        private RelConstr(RelConstr n, bool keepCompilerData)
             : base(n.Span)
         {
             Op = n.Op;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         public override bool TryGetKindAttribute(AttributeKind attribute, out object value)
@@ -85,11 +85,11 @@
             }
 
             return pred.AttributePredicate == null ? true : pred.AttributePredicate(AttributeKind.Op, Op);
-        }        
+        }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new RelConstr(this);
+            var cnode = new RelConstr(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -110,7 +110,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new RelConstr(this);
+            var cnode = new RelConstr(this, true);
             int occurs = 0;
             cnode.Arg1 = CloneField<Node>(Arg1, replace, pos, ref occurs);
 

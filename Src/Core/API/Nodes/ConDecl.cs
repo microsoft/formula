@@ -64,13 +64,13 @@
             Fields = new ImmutableCollection<Field>(fields);
         }
 
-        private ConDecl(ConDecl n)
+        private ConDecl(ConDecl n, bool keepCompilerData)
             : base(n.Span)
         {
             IsNew = n.IsNew;
             IsSub = n.IsSub;
             Name = n.Name;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         public override bool TryGetBooleanAttribute(AttributeKind attribute, out bool value)
@@ -127,7 +127,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new ConDecl(this);
+            var cnode = new ConDecl(this, true);
             int occurs = 0;
             if (Config != null)
             {
@@ -138,9 +138,9 @@
             return cnode;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new ConDecl(this);
+            var cnode = new ConDecl(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {

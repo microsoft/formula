@@ -15,6 +15,12 @@
     {
         private Map<ProgramName, InstallStatus> touched = 
             new Map<ProgramName, InstallStatus>(ProgramName.Compare);
+
+        /// <summary>
+        /// Maintains the order in which files were touched.
+        /// </summary>
+        private LinkedList<InstallStatus> touchedOrder = new LinkedList<InstallStatus>();
+
         private List<Tuple<AST<Program>, Flag>> flags = new List<Tuple<AST<Program>, Flag>>();
 
         /// <summary>
@@ -33,7 +39,7 @@
         {
             get
             {
-                return touched.Values;
+                return touchedOrder;
             }
         }
 
@@ -63,11 +69,31 @@
             InstallStatus status;
             if (!touched.TryFindValue(p.Node.Name, out status))
             {
-                touched.Add(p.Node.Name, new InstallStatus(p, kind));
+                var inst = new InstallStatus(p, kind);
+                touched.Add(p.Node.Name, inst);
+                touchedOrder.AddLast(inst);
             }
             else if (status.Status == InstallKind.Failed || kind == InstallKind.Failed)
             {
                 status.Status = InstallKind.Failed;
+            }
+        }
+
+        internal void Union(InstallResult res)
+        {
+            Contract.Requires(res != null);
+
+            if (res == this)
+            {
+                return;
+            }
+
+            Succeeded = Succeeded && res.Succeeded;
+            flags.AddRange(res.flags);
+
+            foreach (var kv in res.touched)
+            {
+                AddTouched(kv.Value.Program, kv.Value.Status);
             }
         }
 
@@ -80,7 +106,9 @@
                 if (p.Node.Name == ProgramName.ApiErrorName && 
                     !touched.ContainsKey(ProgramName.ApiErrorName))
                 {
-                    touched.Add(ProgramName.ApiErrorName, new InstallStatus(p, InstallKind.Failed));
+                    var inst = new InstallStatus(p, InstallKind.Failed);
+                    touched.Add(ProgramName.ApiErrorName, inst);
+                    touchedOrder.AddLast(inst);
                 }
 
                 touched[p.Node.Name].Status = InstallKind.Failed;

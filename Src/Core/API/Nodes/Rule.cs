@@ -55,15 +55,15 @@
             Bodies = new ImmutableCollection<Body>(bodies);
         }
 
-        private Rule(Rule n)
+        private Rule(Rule n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Rule(this);
+            var cnode = new Rule(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -81,7 +81,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Rule(this);
+            var cnode = new Rule(this, true);
             int occurs = 0;
 
             if (Config != null)

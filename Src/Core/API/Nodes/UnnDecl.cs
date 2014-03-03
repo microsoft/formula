@@ -46,11 +46,11 @@
             Body = body;
         }
 
-        private UnnDecl(UnnDecl n)
+        private UnnDecl(UnnDecl n, bool keepCompilerData)
             : base(n.Span)
         {
             Name = n.Name;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         public override bool TryGetStringAttribute(AttributeKind attribute, out string value)
@@ -81,9 +81,9 @@
             Config = conf;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new UnnDecl(this);
+            var cnode = new UnnDecl(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -100,7 +100,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new UnnDecl(this);
+            var cnode = new UnnDecl(this, true);
             int occurs = 0;
             if (Config != null)
             {

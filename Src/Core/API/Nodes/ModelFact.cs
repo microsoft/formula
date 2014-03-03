@@ -44,15 +44,15 @@
             Match = match;
         }
 
-        private ModelFact(ModelFact n)
+        private ModelFact(ModelFact n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new ModelFact(this);
+            var cnode = new ModelFact(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -70,7 +70,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new ModelFact(this);
+            var cnode = new ModelFact(this, true);
             int occurs = 0;
             if (Config != null)
             {

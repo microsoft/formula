@@ -38,15 +38,15 @@
             Match = match;
         }
 
-        private Find(Find n)
+        private Find(Find n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Find(this);
+            var cnode = new Find(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -59,7 +59,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Find(this);
+            var cnode = new Find(this, true);
             int occurs = 0;
 
             if (Binding != null)

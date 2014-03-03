@@ -31,11 +31,11 @@
             cachedHashCode = GetDetailedNodeKindHash();
         }
 
-        private QuoteRun(QuoteRun n)
+        private QuoteRun(QuoteRun n, bool keepCompilerData)
             : base(n.Span)
         {
             Text = n.Text;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
             cachedHashCode = n.cachedHashCode;
         }
 
@@ -59,11 +59,11 @@
             }
 
             return pred.AttributePredicate == null ? true : pred.AttributePredicate(AttributeKind.Text, Text);
-        }  
+        }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            return new QuoteRun(this);
+            return new QuoteRun(this, keepCompilerData);
         }
 
         internal override Node ShallowClone(Node replace, int pos)

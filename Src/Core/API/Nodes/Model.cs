@@ -119,13 +119,13 @@
             Config = new Config(span);
         }
 
-        private Model(Model n)
+        private Model(Model n, bool keepCompilerData)
             : base(n.Span)
         {
             Name = n.Name;
             ComposeKind = n.ComposeKind;
             IsPartial = n.IsPartial;
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
         public override bool TryGetStringAttribute(AttributeKind attribute, out string value)
@@ -181,9 +181,9 @@
                    pred.AttributePredicate(AttributeKind.ComposeKind, ComposeKind);
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Model(this);
+            var cnode = new Model(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -199,7 +199,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Model(this);
+            var cnode = new Model(this, true);
             var occurs = 0;
             cnode.Domain = CloneField<ModRef>(Domain, replace, pos, ref occurs);
             cnode.Compositions = new ImmutableCollection<ModRef>(CloneCollection<ModRef>(includes, replace, pos, ref occurs, out cnode.includes));

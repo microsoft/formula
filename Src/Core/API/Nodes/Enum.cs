@@ -29,15 +29,15 @@
             Elements = new ImmutableCollection<Node>(elements);        
         }
 
-        private Enum(Enum n)
+        private Enum(Enum n, bool keepCompilerData)
             : base(n.Span)
         {
-            CompilerData = n.CompilerData;
+            CompilerData = keepCompilerData ? n.CompilerData : null;
         }
 
-        internal override Node DeepClone(IEnumerable<Node> clonedChildren)
+        internal override Node DeepClone(IEnumerable<Node> clonedChildren, bool keepCompilerData)
         {
-            var cnode = new Enum(this);
+            var cnode = new Enum(this, keepCompilerData);
             cnode.cachedHashCode = this.cachedHashCode;
             using (var cenum = clonedChildren.GetEnumerator())
             {
@@ -49,7 +49,7 @@
 
         internal override Node ShallowClone(Node replace, int pos)
         {
-            var cnode = new Enum(this);
+            var cnode = new Enum(this, true);
             int occurs = 0;
             cnode.Elements = new ImmutableCollection<Node>(CloneCollection<Node>(elements, replace, pos, ref occurs, out cnode.elements));
             return cnode;

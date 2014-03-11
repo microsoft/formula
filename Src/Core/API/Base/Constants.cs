@@ -81,6 +81,7 @@
         IsSubstring,
         LCM,
         LCMAll,
+        LstLength,
         Max,
         MaxAll,
         Min,
@@ -313,6 +314,8 @@
         public static readonly MessageString SubRuleUnsat = new MessageString("The sub constructor {0} is unsatisfiable.", 41);
 
         public static readonly MessageString SubRuleUntrig = new MessageString("The sub constructor {0} will never be triggered in this context.", 42);
+
+        public static readonly MessageString UninstallError = new MessageString("The file {0} could not be uninstalled because it was not installed.", 43);
 
         public struct MessageString
         {

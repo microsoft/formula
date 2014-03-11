@@ -7,6 +7,12 @@ OUT: verbose off
 OUT: 
 OUT: []> l tests.4ml
 OUT: (Failed) tests.4ml
+OUT: tests.4ml (45, 29): Argument 1 of function lstLength is badly typed.
+OUT: tests.4ml (52, 11): This constraint is unsatisfiable.
+OUT: tests.4ml (54, 33): This constraint is unsatisfiable.
+OUT: tests.4ml (56, 11): This constraint is unsatisfiable.
+OUT: tests.4ml (58, 53): This constraint is unsatisfiable.
+OUT: tests.4ml (60, 46): This constraint is unsatisfiable.
 OUT: tests.4ml (17, 23): This constraint is unsatisfiable.
 OUT: tests.4ml (19, 27): This constraint is unsatisfiable.
 OUT: tests.4ml (23, 26): This constraint is unsatisfiable.

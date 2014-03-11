@@ -15,6 +15,9 @@
 
     public sealed class Env
     {
+        private SpinLock guidLock = new SpinLock();
+        private int nextGUID = 0;
+
         private SpinLock isBusyLock = new SpinLock();
         private bool isBusy = false;
 
@@ -767,7 +770,7 @@
                 null,
                 redModel.Span);
 
-            var queryName = "_Query_" + Guid.NewGuid().ToString("D").Replace('-', '_');
+            var queryName = "_Query_" + GetGuid().ToString("D16").Replace('-', '_');
             var queryModel = Factory.Instance.MkModel(queryName, false, domRef, ComposeKind.Includes, span);
             var requires = Factory.Instance.MkContract(ContractKind.RequiresProp, span);
             foreach (var g in goals)
@@ -900,7 +903,7 @@
                 null,
                 redModel.Span);
 
-            var queryName = "_Query_" + Guid.NewGuid().ToString("D").Replace('-', '_');
+            var queryName = "_Query_" + GetGuid().ToString("D16").Replace('-', '_');
             var queryModel = Factory.Instance.MkModel(queryName, false, domRef, ComposeKind.Includes, span);
             var requires = Factory.Instance.MkContract(ContractKind.RequiresProp, span);
             foreach (var g in goals)
@@ -1036,8 +1039,11 @@
                 {
                     if (istat.Program.Node.Name.IsFileProgramName)
                     {
-                        LockedInstall(istat.Program.Node.Name.Uri.LocalPath, out instRes);
-                        result.Union(instRes);
+                        if (!programs.ContainsKey(istat.Program.Node.Name))
+                        {
+                            LockedInstall(istat.Program.Node.Name.Uri.LocalPath, out instRes);
+                            result.Union(instRes);
+                        }
                     }
                     else
                     {
@@ -1050,6 +1056,27 @@
         Unlock:
             ReleaseEnvLock();
             return true;
+        }
+
+        /// <summary>
+        /// Returns a Guid w.r.t. this environment
+        /// </summary>
+        /// <returns></returns>
+        internal int GetGuid()
+        {
+            bool gotLock = false;
+            try
+            {
+                guidLock.Enter(ref gotLock);
+                return nextGUID++;
+            }
+            finally
+            {
+                if (gotLock)
+                {
+                    guidLock.Exit();
+                }
+            }
         }
 
         private void LockedInstall(string filename, out InstallResult result)
@@ -1128,9 +1155,25 @@
             var delSet = new Set<ProgramName>(ProgramName.Compare);
             foreach (var del in progs)
             {
-                if (del != null && programs.ContainsKey(del))
+                if (del == null)
+                {
+                    continue;
+                }
+                else if (programs.ContainsKey(del))
                 {
                     delSet.Add(del);
+                }
+                else
+                {
+                    var dummy = Factory.Instance.MkProgram(del);
+                    result.AddTouched(dummy, InstallKind.Failed);
+                    result.AddFlag(
+                        dummy,
+                        new Flag(SeverityKind.Error,
+                                 default(Span),
+                                 Constants.UninstallError.ToString(del.ToString(Parameters)),
+                                 Constants.UninstallError.Code,
+                                 del));
                 }
             }
 

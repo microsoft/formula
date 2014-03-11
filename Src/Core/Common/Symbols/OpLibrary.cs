@@ -315,6 +315,14 @@
             return ValidateArity(ft, "minAll", BinSecCompr, flags);
         }
 
+        internal static bool ValidateUse_LstLength(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstLength);
+            return ValidateArity(ft, "lstLength", BinNoCompr, flags);
+        }
+
         internal static bool ValidateUse_RflIsMember(Node n, List<Flag> flags)
         {
             Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
@@ -521,6 +529,28 @@
             }
 
             return facts.TermIndex.IsSubtypeWidened(typeLft, typeRt) ? facts.TermIndex.TrueValue : facts.TermIndex.FalseValue;
+        }
+
+        internal static Term Evaluator_LstLength(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            Term listConSort;
+            if (!ToType(values[0].Binding, out listConSort))
+            {
+                return null;
+            }
+
+            BigInteger len = 0;
+            var listSymbol = ((UserSortSymb)listConSort.Symbol).DataSymbol;
+            var list = values[1].Binding;
+            while (list.Symbol == listSymbol)
+            {
+                ++len;
+                list = list.Args[1];
+            }
+
+            bool wasAdded;
+            return facts.TermIndex.MkCnst(new Rational(len, BigInteger.One), out wasAdded);
         }
 
         internal static Term Evaluator_RflGetArgType(Executer facts, Bindable[] values)
@@ -2168,6 +2198,16 @@
         public static Func<TermIndex, Term[], Term[]> TypeApprox_Ge_Down
         {
             get { return GeDownwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstLength_Up
+        {
+            get { return LstLengthUpwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstLength_Down
+        {
+            get { return LstLengthDownwardApprox.Instance.Approximate; }
         }
 
         public static Func<TermIndex, Term[], Term[]> TypeApprox_RflIsMember_Up
@@ -6763,7 +6803,108 @@
             private static Term[] Approx(TermIndex index, Term[] args)
             {
                 Contract.Requires(index != null && args != null && args.Length == 1);
+                if (index.ListTypeConstantsType == null)
+                {
+                    //// Then just return some value, which will be filtered by upward approx.
+                    return new Term[] { index.FalseValue, index.CanonicalAnyType, index.CanonicalAnyType };
+                }
+
                 return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType, index.CanonicalAnyType };
+            }
+        }
+
+        private class LstLengthUpwardApprox : GaloisApproxTable
+        {
+            private static readonly LstLengthUpwardApprox theInstance = new LstLengthUpwardApprox();
+            public static LstLengthUpwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstLengthUpwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 2);
+                Set<Term> types;
+                if (!GetTypeConstantTypes(args[0], index, out types, true))
+                {
+                    return null;
+                }
+
+                bool wasAdded;
+                if (args[0].Groundness == Groundness.Ground && args[1].Groundness == Groundness.Ground)
+                {
+                    BigInteger len = 0;
+                    var listSymb = ((UserSortSymb)types.GetSomeElement().Symbol).DataSymbol;
+                    var list = args[1];
+                    while (list.Symbol == listSymb)
+                    {
+                        ++len;
+                        list = list.Args[1];
+                    }
+
+                    var lenTerm = index.MkCnst(new Rational(len, BigInteger.One), out wasAdded);
+                    return new Term[] { index.MkApply(index.RangeSymbol, new Term[] { lenTerm, lenTerm }, out wasAdded) };
+                }
+                else if (types.Count == 1)
+                {
+                    if (index.IsSubtypeWidened(args[1], types.GetSomeElement()))
+                    {
+                        //// Must return a non-zero length
+                        return new Term[] { MkBaseSort(index, BaseSortKind.PosInteger) };
+                    }
+                    else if (index.IsSubtypeWidened(types.GetSomeElement(), args[1]))
+                    {
+                        //// Arg may also contain non-list values, otherwise previous branch would be taken
+                        return new Term[] { MkBaseSort(index, BaseSortKind.Natural) };
+                    }
+                    else
+                    {
+                        //// A list value is never provided
+                        return new Term[] { index.MkApply(index.RangeSymbol, new Term[] { index.ZeroValue, index.ZeroValue }, out wasAdded) };                        
+                    }
+                }
+                else
+                {
+                    Term intr;
+                    var listTypes = (new AppFreeCanUnn(types)).MkTypeTerm(index);
+                    if (index.MkIntersection(listTypes, index.MkDataWidenedType(args[1]), out intr))
+                    {
+                        return new Term[] { MkBaseSort(index, BaseSortKind.Natural) };
+                    }
+                    else
+                    {
+                        return new Term[] { index.MkApply(index.RangeSymbol, new Term[] { index.ZeroValue, index.ZeroValue }, out wasAdded) };                        
+                    }
+                }
+            }
+        }
+
+        private class LstLengthDownwardApprox : GaloisApproxTable
+        {
+            private static readonly LstLengthDownwardApprox theInstance = new LstLengthDownwardApprox();
+            public static LstLengthDownwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstLengthDownwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 1);
+                if (index.ListTypeConstantsType == null)
+                {
+                    //// Then just return some value, which will be filtered by upward approx.
+                    return new Term[] { index.FalseValue, index.CanonicalAnyType };
+                }
+
+                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType };
             }
         }
 

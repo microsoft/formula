@@ -42,8 +42,8 @@
         private const string SaveMsg = "Saves the module modname into file.";
         private const string LSInfoMsg = "Lists environment objects. Use: ls [vars | progs | tasks]";
         private const string LoadMsg = "Loads and compiles a file that is not yet loaded. Use: load filename";
-        private const string UnloadMsg = "Unloads and an installed program and all dependent programs. Use: unload prog";
-        private const string ReloadMsg = "Reloads and an installed program and all dependent programs. Use: reload prog";
+        private const string UnloadMsg = "Unloads and an installed program and all dependent programs. Use: unload [prog | *]";
+        private const string ReloadMsg = "Reloads and an installed program and all dependent programs. Use: reload [prog | *]";
         private const string PrintMsg = "Prints the installed program with the given name. Use: print progname";
         private const string DetailsMsg = "Prints details about the compiled module with the given name. Use: det modname";
         private const string TypesMsg = "Prints inferred variable types. Use: types modname";
@@ -68,6 +68,12 @@
 
         private SortedDictionary<string, AST<Node>> cmdVars =
             new SortedDictionary<string, AST<Node>>();
+
+        /// <summary>
+        /// The order in which programs were loaded with the load command.
+        /// </summary>
+        private LinkedList<ProgramName> loadOrder = new 
+            LinkedList<ProgramName>();
 
         private IMessageSink sink;
         private IChooser chooser;
@@ -1474,6 +1480,28 @@
                 return;
             }
 
+            try
+            {
+                var progName = new ProgramName(s);
+                bool isNewFile = true;
+                foreach (var file in loadOrder)
+                {
+                    if (file.Equals(progName))
+                    {
+                        isNewFile = false;
+                        break;
+                    }
+                }
+
+                if (isNewFile)
+                {
+                    loadOrder.AddLast(progName);
+                }
+            }
+            catch
+            {
+            }
+
             InstallResult result;
             env.Install(s, out result);
             foreach (var kv in result.Touched)
@@ -1617,7 +1645,31 @@
         private void DoReload(string s)
         {
             AST<API.Nodes.Program> program;
-            if (TryResolveProgramByName(s, out program))
+            if (s != null && s.Trim() == "*")
+            {
+                InstallResult result;
+                if (!env.Reinstall(loadOrder.ToArray(), out result))
+                {
+                    sink.WriteMessageLine("Cannot perform operation; environment is busy", SeverityKind.Warning);
+                    return;
+                }
+
+                foreach (var kv in result.Touched)
+                {
+                    sink.WriteMessageLine(string.Format("({0}) {1}", kv.Status, kv.Program.Node.Name.ToString(env.Parameters)));
+                }
+
+                foreach (var f in result.Flags)
+                {
+                    sink.WriteMessageLine(
+                        string.Format("{0} ({1}, {2}): {3}",
+                        f.Item1.Node.Name.ToString(env.Parameters),
+                        f.Item2.Span.StartLine,
+                        f.Item2.Span.StartCol,
+                        f.Item2.Message), f.Item2.Severity);
+                }
+            }
+            else if (TryResolveProgramByName(s, out program))
             {
                 InstallResult result;
                 if (!env.Reinstall(new ProgramName[] { program.Node.Name }, out result))
@@ -1646,9 +1698,49 @@
         private void DoUnload(string s)
         {
             AST<API.Nodes.Program> program;
-            if (TryResolveProgramByName(s, out program))
+            if (s != null && s.Trim() == "*")
             {
                 InstallResult result;
+                if (!env.Uninstall(loadOrder.ToArray(), out result))
+                {
+                    sink.WriteMessageLine("Cannot perform operation; environment is busy", SeverityKind.Warning);
+                    return;
+                }
+
+                loadOrder.Clear();
+                foreach (var kv in result.Touched)
+                {
+                    sink.WriteMessageLine(string.Format("({0}) {1}", kv.Status, kv.Program.Node.Name.ToString(env.Parameters)));
+                    //// kv.Program.Print(Console.Out, canceler.Token);
+                }
+
+                foreach (var f in result.Flags)
+                {
+                    sink.WriteMessageLine(
+                        string.Format("{0} ({1}, {2}): {3}",
+                        f.Item1.Node.Name.ToString(env.Parameters),
+                        f.Item2.Span.StartLine,
+                        f.Item2.Span.StartCol,
+                        f.Item2.Message), f.Item2.Severity);
+                }
+            }
+            else if (TryResolveProgramByName(s, out program))
+            {
+                InstallResult result;
+                var n = loadOrder.First;
+                while (n != null)
+                {
+                    if (n.Value.Equals(program.Node.Name))
+                    {
+                        loadOrder.Remove(n);
+                        break;
+                    }
+                    else
+                    {
+                        n = n.Next;
+                    }
+                }
+
                 if (!env.Uninstall(new ProgramName[] { program.Node.Name }, out result))
                 {
                     sink.WriteMessageLine("Cannot perform operation; environment is busy", SeverityKind.Warning);

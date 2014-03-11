@@ -186,6 +186,94 @@ OUT:      x: Real
 OUT:      y: Real
 OUT:      ~dc1: G(Real)
 OUT: 
+OUT: []> dt SatLists
+OUT: Reduced form
+OUT: domain SatLists
+OUT: {
+OUT:   G ::= (Any).
+OUT:   F ::= new (Integer, any F + { NIL }).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       G(x), i = lstLength(x, i).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       i = lstLength(#F, i), i <= 0.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       i = lstLength(#F, i), i : Natural.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       i = lstLength(#F, F(1, F(2, F(3, NIL)))), i >= 1.
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       G(x), lstLength(x, F(3, F(2, F(1, NIL)))) = lstLength(#F, F(1, F(2, F(3, NIL)))).
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:   Space   |     Name      | Arity | Kind  
+OUT: ----------|---------------|-------|-------
+OUT:           |    Boolean    |   0   |  unn  
+OUT:           |       F       |   2   |  con  
+OUT:           |     FALSE     |   0   | ncnst 
+OUT:           |       G       |   1   |  con  
+OUT:           |    Integer    |   0   |  unn  
+OUT:           |      NIL      |   0   | ncnst 
+OUT:           |    Natural    |   0   |  unn  
+OUT:           |  NegInteger   |   0   |  unn  
+OUT:           |  PosInteger   |   0   |  unn  
+OUT:           |     Real      |   0   |  unn  
+OUT:           |    String     |   0   |  unn  
+OUT:           |     TRUE      |   0   | ncnst 
+OUT:  SatLists |      Any      |   0   |  unn  
+OUT:  SatLists |   Constant    |   0   |  unn  
+OUT:  SatLists |     Data      |   0   |  unn  
+OUT:  SatLists |   conforms    |   0   | dcnst 
+OUT:  SatLists | notFunctional |   0   | dcnst 
+OUT:  SatLists | notInjective  |   0   | dcnst 
+OUT:  SatLists |  notInvTotal  |   0   | dcnst 
+OUT:  SatLists | notRelational |   0   | dcnst 
+OUT:  SatLists |   notTotal    |   0   | dcnst 
+OUT:  SatLists |       q       |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #F #F[0] #F[1] #G #G[0] #Integer #Natural #NegInteger #PosInteger #Real #String SatLists.#Any SatLists.#Constant SatLists.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 0 1 2 3 
+OUT: Strings: 
+OUT: Variables: i x 
+OUT: 
+OUT: []> typ SatLists
+OUT: + Type environment at (42, 4)
+OUT:   ~dc0: G({#F})
+OUT:   x: {#F}
+OUT:   i: {0..0}
+OUT:    + Type environment at (42, 9)
+OUT:      ~dc0: G({#F})
+OUT:      x: {#F}
+OUT:      i: {0..0}
+OUT: + Type environment at (44, 4)
+OUT:   i: {0..0}
+OUT:    + Type environment at (44, 11)
+OUT:      i: {0..0}
+OUT: + Type environment at (46, 4)
+OUT:   i: {0..0}
+OUT:    + Type environment at (46, 11)
+OUT:      i: {0..0}
+OUT: + Type environment at (48, 4)
+OUT:   i: {3..3}
+OUT:    + Type environment at (48, 11)
+OUT:      i: {3..3}
+OUT: + Type environment at (50, 4)
+OUT:   ~dc0: G({#F})
+OUT:   x: {#F}
+OUT:    + Type environment at (50, 9)
+OUT:      ~dc0: G({#F})
+OUT:      x: {#F}
+OUT: 
 OUT: []> x
 OUT: 
 EXIT: 0

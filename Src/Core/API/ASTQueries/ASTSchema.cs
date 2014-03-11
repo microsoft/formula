@@ -1181,6 +1181,8 @@
             Register(OpKind.Qtnt, "qtnt", OpStyleKind.Apply);
             Register(OpKind.Sub, "-", OpStyleKind.Infix);
 
+            Register(OpKind.LstLength, "lstLength", OpStyleKind.Apply);
+
             Register(OpKind.RflIsMember, "rflIsMember", OpStyleKind.Apply);
             Register(OpKind.RflIsSubtype, "rflIsSubtype", OpStyleKind.Apply);
             Register(OpKind.RflGetArgType, "rflGetArgType", OpStyleKind.Apply);

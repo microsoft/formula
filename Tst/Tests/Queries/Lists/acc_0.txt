@@ -1,0 +1,166 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> w on
+OUT: wait on
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Compiled) tests.4ml
+OUT: 
+OUT: []> qr Five GenLists.conforms
+OUT: Started query task with Id 0.
+OUT: 
+OUT: []> tr 0 *
+OUT: Listing all derived values...
+OUT:    GenLists.conforms
+OUT:    Five.ensures
+OUT:    Five.requires
+OUT:    _Query_0000000000000000.ensures
+OUT:    _Query_0000000000000000.requires
+OUT:    MkLists(5)
+OUT:    L(#F)
+OUT:    L(#G)
+OUT:    H(0)
+OUT:    H(1)
+OUT:    H(2)
+OUT:    Len(#G, H(0), 0)
+OUT:    Len(#G, H(1), 0)
+OUT:    Len(#G, H(2), 0)
+OUT:    Len(#F, H(1), 0)
+OUT:    Len(#F, H(0), 0)
+OUT:    Len(#F, H(2), 0)
+OUT:    F(5, NIL)
+OUT:    F(4, F(5, NIL))
+OUT:    Len(#F, F(5, NIL), 1)
+OUT:    Len(#G, F(5, NIL), 0)
+OUT:    F(3, F(4, F(5, NIL)))
+OUT:    Len(#F, F(4, F(5, NIL)), 2)
+OUT:    Len(#G, F(4, F(5, NIL)), 0)
+OUT:    F(2, F(3, F(4, F(5, NIL))))
+OUT:    Len(#F, F(3, F(4, F(5, NIL))), 3)
+OUT:    Len(#G, F(3, F(4, F(5, NIL))), 0)
+OUT:    F(1, F(2, F(3, F(4, F(5, NIL)))))
+OUT:    Len(#F, F(2, F(3, F(4, F(5, NIL)))), 4)
+OUT:    Len(#G, F(2, F(3, F(4, F(5, NIL)))), 0)
+OUT:    F(0, F(1, F(2, F(3, F(4, F(5, NIL))))))
+OUT:    Len(#F, F(1, F(2, F(3, F(4, F(5, NIL))))), 5)
+OUT:    Len(#G, F(1, F(2, F(3, F(4, F(5, NIL))))), 0)
+OUT:    G(5, NIL)
+OUT:    G(4, G(5, NIL))
+OUT:    Len(#F, G(5, NIL), 0)
+OUT:    Len(#G, G(5, NIL), 1)
+OUT:    G(3, G(4, G(5, NIL)))
+OUT:    Len(#F, G(4, G(5, NIL)), 0)
+OUT:    Len(#G, G(4, G(5, NIL)), 2)
+OUT:    G(2, G(3, G(4, G(5, NIL))))
+OUT:    Len(#F, G(3, G(4, G(5, NIL))), 0)
+OUT:    Len(#G, G(3, G(4, G(5, NIL))), 3)
+OUT:    G(1, G(2, G(3, G(4, G(5, NIL)))))
+OUT:    Len(#F, G(2, G(3, G(4, G(5, NIL)))), 0)
+OUT:    Len(#G, G(2, G(3, G(4, G(5, NIL)))), 4)
+OUT:    G(0, G(1, G(2, G(3, G(4, G(5, NIL))))))
+OUT:    Len(#F, G(1, G(2, G(3, G(4, G(5, NIL))))), 0)
+OUT:    Len(#G, G(1, G(2, G(3, G(4, G(5, NIL))))), 5)
+OUT:    Len(#F, F(0, F(1, F(2, F(3, F(4, F(5, NIL)))))), 6)
+OUT:    Len(#F, G(0, G(1, G(2, G(3, G(4, G(5, NIL)))))), 0)
+OUT:    Len(#G, F(0, F(1, F(2, F(3, F(4, F(5, NIL)))))), 0)
+OUT:    Len(#G, G(0, G(1, G(2, G(3, G(4, G(5, NIL)))))), 6)
+OUT: List complete
+OUT: 
+OUT: []> qr Ten GenLists.conforms
+OUT: Started query task with Id 1.
+OUT: 
+OUT: []> tr 1 *
+OUT: Listing all derived values...
+OUT:    GenLists.conforms
+OUT:    Ten.ensures
+OUT:    Ten.requires
+OUT:    _Query_0000000000000001.ensures
+OUT:    _Query_0000000000000001.requires
+OUT:    MkLists(10)
+OUT:    L(#F)
+OUT:    L(#G)
+OUT:    H(0)
+OUT:    H(1)
+OUT:    H(2)
+OUT:    Len(#G, H(0), 0)
+OUT:    Len(#G, H(1), 0)
+OUT:    Len(#G, H(2), 0)
+OUT:    Len(#F, H(1), 0)
+OUT:    Len(#F, H(0), 0)
+OUT:    Len(#F, H(2), 0)
+OUT:    F(10, NIL)
+OUT:    F(9, F(10, NIL))
+OUT:    Len(#F, F(10, NIL), 1)
+OUT:    Len(#G, F(10, NIL), 0)
+OUT:    F(8, F(9, F(10, NIL)))
+OUT:    Len(#F, F(9, F(10, NIL)), 2)
+OUT:    Len(#G, F(9, F(10, NIL)), 0)
+OUT:    F(7, F(8, F(9, F(10, NIL))))
+OUT:    Len(#F, F(8, F(9, F(10, NIL))), 3)
+OUT:    Len(#G, F(8, F(9, F(10, NIL))), 0)
+OUT:    F(6, F(7, F(8, F(9, F(10, NIL)))))
+OUT:    Len(#F, F(7, F(8, F(9, F(10, NIL)))), 4)
+OUT:    Len(#G, F(7, F(8, F(9, F(10, NIL)))), 0)
+OUT:    F(5, F(6, F(7, F(8, F(9, F(10, NIL))))))
+OUT:    Len(#F, F(6, F(7, F(8, F(9, F(10, NIL))))), 5)
+OUT:    Len(#G, F(6, F(7, F(8, F(9, F(10, NIL))))), 0)
+OUT:    F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL)))))))
+OUT:    Len(#F, F(5, F(6, F(7, F(8, F(9, F(10, NIL)))))), 6)
+OUT:    Len(#G, F(5, F(6, F(7, F(8, F(9, F(10, NIL)))))), 0)
+OUT:    F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL))))))))
+OUT:    Len(#F, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL))))))), 7)
+OUT:    Len(#G, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL))))))), 0)
+OUT:    F(2, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL)))))))))
+OUT:    Len(#F, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL)))))))), 8)
+OUT:    Len(#G, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL)))))))), 0)
+OUT:    F(1, F(2, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL))))))))))
+OUT:    Len(#F, F(2, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL))))))))), 9)
+OUT:    Len(#G, F(2, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL))))))))), 0)
+OUT:    F(0, F(1, F(2, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL)))))))))))
+OUT:    Len(#F, F(1, F(2, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL)))))))))), 10)
+OUT:    Len(#G, F(1, F(2, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL)))))))))), 0)
+OUT:    G(10, NIL)
+OUT:    G(9, G(10, NIL))
+OUT:    Len(#F, G(10, NIL), 0)
+OUT:    Len(#G, G(10, NIL), 1)
+OUT:    G(8, G(9, G(10, NIL)))
+OUT:    Len(#F, G(9, G(10, NIL)), 0)
+OUT:    Len(#G, G(9, G(10, NIL)), 2)
+OUT:    G(7, G(8, G(9, G(10, NIL))))
+OUT:    Len(#F, G(8, G(9, G(10, NIL))), 0)
+OUT:    Len(#G, G(8, G(9, G(10, NIL))), 3)
+OUT:    G(6, G(7, G(8, G(9, G(10, NIL)))))
+OUT:    Len(#F, G(7, G(8, G(9, G(10, NIL)))), 0)
+OUT:    Len(#G, G(7, G(8, G(9, G(10, NIL)))), 4)
+OUT:    G(5, G(6, G(7, G(8, G(9, G(10, NIL))))))
+OUT:    Len(#F, G(6, G(7, G(8, G(9, G(10, NIL))))), 0)
+OUT:    Len(#G, G(6, G(7, G(8, G(9, G(10, NIL))))), 5)
+OUT:    G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL)))))))
+OUT:    Len(#F, G(5, G(6, G(7, G(8, G(9, G(10, NIL)))))), 0)
+OUT:    Len(#G, G(5, G(6, G(7, G(8, G(9, G(10, NIL)))))), 6)
+OUT:    G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL))))))))
+OUT:    Len(#F, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL))))))), 0)
+OUT:    Len(#G, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL))))))), 7)
+OUT:    G(2, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL)))))))))
+OUT:    Len(#F, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL)))))))), 0)
+OUT:    Len(#G, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL)))))))), 8)
+OUT:    G(1, G(2, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL))))))))))
+OUT:    Len(#F, G(2, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL))))))))), 0)
+OUT:    Len(#G, G(2, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL))))))))), 9)
+OUT:    G(0, G(1, G(2, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL)))))))))))
+OUT:    Len(#F, G(1, G(2, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL)))))))))), 0)
+OUT:    Len(#G, G(1, G(2, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL)))))))))), 10)
+OUT:    Len(#F, F(0, F(1, F(2, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL))))))))))), 11)
+OUT:    Len(#F, G(0, G(1, G(2, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL))))))))))), 0)
+OUT:    Len(#G, F(0, F(1, F(2, F(3, F(4, F(5, F(6, F(7, F(8, F(9, F(10, NIL))))))))))), 0)
+OUT:    Len(#G, G(0, G(1, G(2, G(3, G(4, G(5, G(6, G(7, G(8, G(9, G(10, NIL))))))))))), 11)
+OUT: List complete
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 0

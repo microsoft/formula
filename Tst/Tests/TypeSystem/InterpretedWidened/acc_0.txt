@@ -59,6 +59,92 @@ OUT:      ~dc0: F1
 OUT:      x: {1..500000}
 OUT:      y: {1..50}
 OUT: 
+OUT: []> dt WidenedLists
+OUT: Reduced form
+OUT: domain WidenedLists
+OUT: {
+OUT:   G ::= (Any).
+OUT:   F ::= (Integer, F + { NIL }).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       G(x), x = F(_, NIL), y = lstLength(#F, x).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       G(x), x = F(0, _), y = lstLength(#F, x).
+OUT: 
+OUT:   q
+OUT:     :-
+OUT:       G(x), x = F(_, F(_, NIL)), y = lstLength(#F, x).
+OUT: }
+OUT: 
+OUT: Symbol table
+OUT:     Space     |     Name      | Arity | Kind  
+OUT: --------------|---------------|-------|-------
+OUT:               |    Boolean    |   0   |  unn  
+OUT:               |       F       |   2   |  con  
+OUT:               |     FALSE     |   0   | ncnst 
+OUT:               |       G       |   1   |  con  
+OUT:               |    Integer    |   0   |  unn  
+OUT:               |      NIL      |   0   | ncnst 
+OUT:               |    Natural    |   0   |  unn  
+OUT:               |  NegInteger   |   0   |  unn  
+OUT:               |  PosInteger   |   0   |  unn  
+OUT:               |     Real      |   0   |  unn  
+OUT:               |    String     |   0   |  unn  
+OUT:               |     TRUE      |   0   | ncnst 
+OUT:  WidenedLists |      Any      |   0   |  unn  
+OUT:  WidenedLists |   Constant    |   0   |  unn  
+OUT:  WidenedLists |     Data      |   0   |  unn  
+OUT:  WidenedLists |   conforms    |   0   | dcnst 
+OUT:  WidenedLists | notFunctional |   0   | dcnst 
+OUT:  WidenedLists | notInjective  |   0   | dcnst 
+OUT:  WidenedLists |  notInvTotal  |   0   | dcnst 
+OUT:  WidenedLists | notRelational |   0   | dcnst 
+OUT:  WidenedLists |   notTotal    |   0   | dcnst 
+OUT:  WidenedLists |       q       |   0   | dcnst 
+OUT: 
+OUT: Type constants:  #Boolean #F #F[0] #F[1] #G #G[0] #Integer #Natural #NegInteger #PosInteger #Real #String WidenedLists.#Any WidenedLists.#Constant WidenedLists.#Data
+OUT: Symbolic constants: 
+OUT: Rationals: 0 
+OUT: Strings: 
+OUT: Variables: x y 
+OUT: 
+OUT: []> typ WidenedLists
+OUT: + Type environment at (14, 4)
+OUT:   ~dc0: G(F(Integer, {NIL}))
+OUT:   x: F(Integer, {NIL})
+OUT:   ~dc1: Integer
+OUT:   y: PosInteger
+OUT:    + Type environment at (14, 9)
+OUT:      ~dc0: G(F(Integer, {NIL}))
+OUT:      x: F(Integer, {NIL})
+OUT:      ~dc1: Integer
+OUT:      y: PosInteger
+OUT: + Type environment at (17, 4)
+OUT:   ~dc0: G(F({0..0}, F + {NIL}))
+OUT:   x: F({0..0}, F + {NIL})
+OUT:   ~dc1: F + {NIL}
+OUT:   y: PosInteger
+OUT:    + Type environment at (17, 9)
+OUT:      ~dc0: G(F({0..0}, F + {NIL}))
+OUT:      x: F({0..0}, F + {NIL})
+OUT:      ~dc1: F + {NIL}
+OUT:      y: PosInteger
+OUT: + Type environment at (20, 4)
+OUT:   ~dc0: G(F(Integer, F(Integer, {NIL})))
+OUT:   x: F(Integer, F(Integer, {NIL}))
+OUT:   ~dc1: Integer
+OUT:   y: PosInteger
+OUT:   ~dc2: Integer
+OUT:    + Type environment at (20, 9)
+OUT:      ~dc0: G(F(Integer, F(Integer, {NIL})))
+OUT:      x: F(Integer, F(Integer, {NIL}))
+OUT:      ~dc1: Integer
+OUT:      y: PosInteger
+OUT:      ~dc2: Integer
+OUT: 
 OUT: []> x
 OUT: 
 EXIT: 0

@@ -4,3 +4,18 @@ domain Widened
 
     q0 :- F1(x, y), x = x + 2. //// Misses the error because of widening. 
 }
+
+domain WidenedLists
+{
+   G ::= (Any).
+   F ::= (Integer, F + { NIL }).
+      
+   //// Widened to PosInteger.
+   q :- G(x), x = F(_, NIL), y = lstLength(#F, x). 
+
+   //// Widened to PosInteger.
+   q :- G(x), x = F(0, _), y = lstLength(#F, x). 
+   
+   //// Widened to PosInteger.
+   q :- G(x), x = F(_, F(_, NIL)), y = lstLength(#F, x). 
+}

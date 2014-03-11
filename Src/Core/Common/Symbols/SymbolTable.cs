@@ -186,7 +186,7 @@
             string name;
             AST<ModRef> mr;
             Root = new Namespace(this);
-            var tempDom = "temp" + Guid.NewGuid().ToString("D").Replace('-', '_');            
+            var tempDom = "temp" + env.GetGuid().ToString("D16").Replace('-', '_');            
             var progName = new ProgramName(string.Format("{0}{1}.4ml", ProgramName.EnvironmentScheme, tempDom));
             var dom = Factory.Instance.MkDomain(tempDom, ComposeKind.Includes);
             importNamespaces = new string[imports.Length];
@@ -2650,6 +2650,14 @@
                 OpLibrary.TypeApprox_Sign_Up,
                 OpLibrary.TypeApprox_Sign_Down,
                 OpLibrary.Evaluator_Sign));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.LstLength,
+                2,
+                OpLibrary.ValidateUse_LstLength,
+                OpLibrary.TypeApprox_LstLength_Up,
+                OpLibrary.TypeApprox_LstLength_Down,
+                OpLibrary.Evaluator_LstLength));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.RflIsMember,

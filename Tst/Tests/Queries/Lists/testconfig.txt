@@ -1,0 +1,7 @@
+run: ..\..\..\..\Bld\Drops\Formula_Debug_x86\Formula.exe
+arg: -v: off -w: on -l: "tests.4ml" 
+arg: -qr: "Five GenLists.conforms" -tr: "0 *"
+arg: -qr: "Ten GenLists.conforms" -tr: "1 *"
+arg: -x
+acc: .\
+dsc: Rules testing various list functions

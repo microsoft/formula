@@ -1,0 +1,29 @@
+domain GenLists
+{
+   MkLists ::= new (Natural).
+   F ::= (Integer, F + { NIL }).
+   G ::= (Integer, G + { NIL }).
+   H ::= (Integer).
+   L ::= ({#F, #G}).
+   Len ::= ({#F, #G}, U, Natural).
+   U ::= F + G + H.
+   
+   L(#F), L(#G).
+   H(0), H(1), H(2).
+          
+   F(x, NIL), G(x, NIL) :- MkLists(x).
+   F(x', l) :- l is F(x, _), x' = x - 1, x' >= 0.      
+   G(x', l) :- l is G(x, _), x' = x - 1, x' >= 0.              
+   
+   Len(symbol, list, len) :- list is U, L(symbol), len = lstLength(symbol, list).
+}
+
+model Five of GenLists
+{
+  MkLists(5).
+}
+
+model Ten of GenLists
+{
+  MkLists(10).
+}

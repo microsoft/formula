@@ -713,6 +713,29 @@
             symbols.Add(symb);
         }
 
+        private static bool IsAllCapsName(string name)
+        {
+            if (string.IsNullOrEmpty(name))
+            {
+                return false;
+            }
+
+            bool hasLetter = false;
+            for (int i = 0; i < name.Length; ++i)
+            {
+                if (char.IsLetter(name, i))
+                {
+                    hasLetter = true;
+                    if (char.IsLower(name, i))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return hasLetter;
+        }
+
         private bool CheckTotality(UserSortSymb s, SizeExpr expr, int ndex, List<Flag> flags)
         {
             if (s.DataSymbol.Kind != SymbolKind.MapSymb || expr.Kind != SizeExprKind.Infinity)
@@ -1983,8 +2006,24 @@
                         return;
                     }
 
+                    var varSymbol = new UserCnstSymb(
+                        Root, 
+                        (AST<Id>)Factory.Instance.FromAbsPositions(ModuleData.Reduced.Root, path), 
+                        UserCnstSymbKind.Variable, 
+                        false);
+
+                    if (IsAllCapsName(varSymbol.Name))
+                    {
+                        flags.Add(
+                            new Flag(
+                                SeverityKind.Warning,
+                                x,
+                                Constants.DataCnstLikeVarWarning.ToString(varSymbol.Name),
+                                Constants.DataCnstLikeVarWarning.Code));
+                    }
+
                     result = Root.TryAddSymbol(
-                             new UserCnstSymb(Root, (AST<Id>)Factory.Instance.FromAbsPositions(ModuleData.Reduced.Root, path), UserCnstSymbKind.Variable, false),
+                             varSymbol,
                              IncSymbolCount,
                              flags) & result;
                 },
@@ -2040,6 +2079,16 @@
                         }
                         else if (!ModuleSpace.TryGetSymbol("%" + mf.Binding.Name, out modSymb))
                         {
+                            if (IsAllCapsName(mf.Binding.Name))
+                            {
+                                flags.Add(
+                                    new Flag(
+                                        SeverityKind.Warning,
+                                        mf.Binding,
+                                        Constants.DataCnstLikeSymbWarning.ToString(mf.Binding.Name),
+                                        Constants.DataCnstLikeSymbWarning.Code));
+                            }
+
                             ModuleSpace.AddModelConstant(mf.Binding, IncSymbolCount());
                         }
                     }
@@ -2077,6 +2126,16 @@
                                 else if (Root.ExistsSymbol("%" + modCnst.Name))
                                 {
                                     return;
+                                }
+
+                                if (IsAllCapsName(modCnst.Name))
+                                {
+                                    flags.Add(
+                                        new Flag(
+                                            SeverityKind.Warning,
+                                            modCnst,
+                                            Constants.DataCnstLikeSymbWarning.ToString(modCnst.Name),
+                                            Constants.DataCnstLikeSymbWarning.Code));
                                 }
 
                                 ModuleSpace.AddModelConstant(modCnst, IncSymbolCount());

@@ -317,6 +317,10 @@
 
         public static readonly MessageString UninstallError = new MessageString("The file {0} could not be uninstalled because it was not installed.", 43);
 
+        public static readonly MessageString DataCnstLikeVarWarning = new MessageString("The variable {0} is named as if it were a data constant. All-caps should be reserved for data constants.", 44);
+
+        public static readonly MessageString DataCnstLikeSymbWarning = new MessageString("The symbolic constant {0} is named as if it were a data constant. All-caps should be reserved for data constants.", 44);
+
         public struct MessageString
         {
             private string msg;

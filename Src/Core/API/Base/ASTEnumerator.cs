@@ -8,9 +8,6 @@
 
     using Nodes;
 
-    /// <summary>
-    /// TODO: Update summary.
-    /// </summary>
     internal class ASTEnumerator : IEnumerator<Node>
     {
         private Stack<IEnumerator<Node>> enumState = null;

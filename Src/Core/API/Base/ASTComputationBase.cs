@@ -9,9 +9,6 @@
 
     using Nodes;
 
-    /// <summary>
-    /// TODO: Update summary.
-    /// </summary>
     internal abstract class ASTComputationBase
     {
         protected ControlToken controlToken;

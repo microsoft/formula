@@ -194,6 +194,30 @@
         {
         }
 
+        /// <summary>
+        /// Returns a type estimate of F for F ::= sub (...).
+        /// </summary>
+        public Term MkTypeTerm(ConSymb subSymb)
+        {
+            Contract.Requires(IsSatisfiable && subSymb.Arity == NPatterns);
+            Term intr;
+            var index = pattern[0].Owner;
+            var typeArgs = new Term[pattern.Length];
+            for (int i = 0; i < pattern.Length; ++i)
+            {
+                if (!index.MkIntersection(pattern[i], matchingUnions[i].MkTypeTerm(index), out intr))
+                {
+                    Contract.Assert(false);
+                    continue;
+                }
+
+                typeArgs[i] = intr;
+            }
+
+            bool wasAdded;
+            return index.MkApply(subSymb, typeArgs, out wasAdded);
+        }
+
         public IEnumerable<Term[]> EnumerateMatches(Term t)
         {
             Contract.Requires(t != null && t.Groundness == Groundness.Ground);

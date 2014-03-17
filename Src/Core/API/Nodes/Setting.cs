@@ -7,9 +7,6 @@
     using System.Text;
     using Common;
 
-    /// <summary>
-    /// TODO: Update summary.
-    /// </summary>
     public sealed class Setting : Node
     {
         public override int ChildCount

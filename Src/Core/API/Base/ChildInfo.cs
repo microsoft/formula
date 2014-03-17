@@ -4,9 +4,6 @@
     using System.Collections.Generic;
     using Nodes;
 
-    /// <summary>
-    /// TODO: Update summary.
-    /// </summary>
     public struct ChildInfo
     {
         private Node node;

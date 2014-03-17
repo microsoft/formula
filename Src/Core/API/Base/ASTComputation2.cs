@@ -7,9 +7,7 @@
     using System.Text;
 
     using Nodes;
-    /// <summary>
-    /// TODO: Update summary.
-    /// </summary>
+
     internal class ASTComputation2<T> : ASTComputationBase
     {
         private Node startA;

@@ -447,6 +447,107 @@
             return index.MkApply(comprSymb, args, out wasAdded);
         }
 
+        internal void ProductivityCheck(List<Flag> flags)
+        {
+            var productions = new Map<ConSymb, Term[]>(Symbol.Compare);
+
+            Term[] types;
+            ConSymb headSymbol;
+            //// First, collect type estimates for all derived constructors.
+            foreach (var kv in rules)
+            {
+                if (kv.Value.Head.Symbol.Kind != SymbolKind.ConSymb)
+                {
+                    continue;
+                }
+
+                headSymbol = (ConSymb)kv.Value.Head.Symbol;
+                if (headSymbol.Name.Contains("Stmt2Text"))
+                {
+                    Console.WriteLine(kv.Value.HeadType.Debug_GetSmallTermString());
+                }
+
+                if (headSymbol.Name.StartsWith(SymbolTable.ManglePrefix) || headSymbol.IsAutoGen || headSymbol.IsNew)
+                {
+                    continue;
+                }
+
+                if (!productions.TryFindValue(headSymbol, out types))
+                {
+                    types = new Term[headSymbol.Arity];
+                    productions.Add(headSymbol, types);
+                }
+
+                SplitTypeEstimates(headSymbol, kv.Value.HeadType, types);
+            }
+
+            foreach (var kv in subRules)
+            {
+                foreach (var r in kv.Value.Item2)
+                {
+                    if (r.Head.Symbol.Kind != SymbolKind.ConSymb)
+                    {
+                        continue;
+                    }
+
+                    headSymbol = (ConSymb)r.Head.Symbol;
+                    if (headSymbol.Name.StartsWith(SymbolTable.ManglePrefix) || headSymbol.IsAutoGen || headSymbol.IsNew)
+                    {
+                        continue;
+                    }
+
+                    if (!productions.TryFindValue(headSymbol, out types))
+                    {
+                        types = new Term[headSymbol.Arity];
+                        productions.Add(headSymbol, types);
+                    }
+
+                    SplitTypeEstimates(headSymbol, r.HeadType, types);
+                }
+            }
+
+            /*
+            foreach (var kv in productions)
+            {
+                Console.WriteLine("{0} ->", kv.Key.PrintableName);
+                for (int i = 0; i < kv.Key.Arity; ++i)
+                {
+                    Console.WriteLine("\t{0}: {1}", i, kv.Value[i].Debug_GetSmallTermString());
+                }
+            }*/
+        }
+
+        private void SplitTypeEstimates(ConSymb estimatedSymbol, Term estimate, Term[] argEstimates)
+        {
+            bool wasAdded;
+            foreach (var t in estimate.Enumerate(x => x.Symbol == index.TypeUnionSymbol ? x.Args : null))
+            {
+                if (t.Symbol == estimatedSymbol.SortSymbol)
+                {
+                    for (int i = 0; i < estimatedSymbol.Arity; ++i)
+                    {
+                        argEstimates[i] = index.GetCanonicalTerm(estimatedSymbol, i);
+                    }
+
+                    return;
+                }
+                else if (t.Symbol == estimatedSymbol)
+                {
+                    for (int i = 0; i < estimatedSymbol.Arity; ++i)
+                    {
+                        if (argEstimates[i] == null)
+                        {
+                            argEstimates[i] = t.Args[i];
+                        }
+                        else
+                        {
+                            argEstimates[i] = index.MkCanonicalForm(index.MkApply(index.TypeUnionSymbol, new Term[] { argEstimates[i], t.Args[i] }, out wasAdded));
+                        }
+                    }
+                }
+            }
+        }
+
         private bool CompileSubRules(List<Flag> flags, Namespace n)
         {
             ConSymb con;
@@ -1366,7 +1467,7 @@
                 default(FindData),
                 TermIndex.EmptyArgs,
                 x => false,
-                Index.MkApply(symb.SortSymbol, TermIndex.EmptyArgs, out wasAdded),
+                matcher.MkTypeTerm(symb),
                 symb.Definitions.First().Node);
 
             matcherRules.Item2.AddLast(copyRule);

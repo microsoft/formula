@@ -2707,6 +2707,7 @@
 
             //// A stack of app terms that need to be saturated.
             var pending = new Stack<Term>();
+            var pended = new Set<Term>(Term.Compare);
 
             //// Step 0. Pend all the app terms.
             foreach (var c in components)
@@ -2718,6 +2719,7 @@
                 else
                 {
                     pending.Push(c);
+                    pended.Add(c);
                 }
             }
 
@@ -2787,13 +2789,15 @@
 
                         t1 = MkApply(pTerm.Symbol, args1, out wasAdded);
                         t2 = MkApply(pTerm.Symbol, args2, out wasAdded);
-                        if (!appTerms.ContainsKey(t1))
+                        if (!appTerms.ContainsKey(t1) && !pended.Contains(t1))
                         {
+                            pended.Add(t1);
                             pending.Push(t1);
                         }
 
-                        if (!appTerms.ContainsKey(t2))
+                        if (!appTerms.ContainsKey(t2) && !pended.Contains(t2))
                         {
+                            pended.Add(t2);
                             pending.Push(t2);
                         }
                     }
@@ -2840,8 +2844,9 @@
                     }
 
                     t3 = MkApply(pTerm.Symbol, args3, out wasAdded);
-                    if (!appTerms.ContainsKey(t3))
+                    if (!appTerms.ContainsKey(t3) && !pended.Contains(t3))
                     {
+                        pended.Add(t3);
                         pending.Push(t3);
                     }
                 }

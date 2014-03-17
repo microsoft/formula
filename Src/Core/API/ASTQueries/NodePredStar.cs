@@ -7,9 +7,6 @@
     using Nodes;
     using Common;
 
-    /// <summary>
-    /// TODO: Update summary.
-    /// </summary>
     public sealed class NodePredStar : NodePred
     {
         public override NodePredicateKind PredicateKind

@@ -8,9 +8,6 @@
     using Nodes;
     using Common;
 
-    /// <summary>
-    /// TODO: Update summary.
-    /// </summary>
     public class NodePredAtom : NodePred
     {
         public override NodePredicateKind PredicateKind

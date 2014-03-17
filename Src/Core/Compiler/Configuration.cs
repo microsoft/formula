@@ -45,6 +45,7 @@
             TopSettingValidators[Parse_ActiveParserSetting] = ValidateStringSetting;
             TopSettingValidators[Parse_ActiveRenderSetting] = ValidateStringSetting;
             TopSettingValidators[Solver_ActiveStrategySetting] = ValidateStringSetting;
+            TopSettingValidators[Compiler_ProductivityCheckSetting] = ValidateBoolSetting;
             TopSettingValidators[Solver_RealCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_IntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_NaturalCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
@@ -66,6 +67,7 @@
         internal const string DefaultsSetting = "defaults";
         internal const string Parse_ActiveParserSetting = "parse_ActiveParser";
         internal const string Parse_ActiveRenderSetting = "parse_ActiveRenderer";
+        internal const string Compiler_ProductivityCheckSetting = "compiler_ProductivityCheck";
         internal const string Solver_ActiveStrategySetting = "solver_ActiveStrategy";
         internal const string Solver_RealCostSetting = "solver_RealCost";
         internal const string Solver_IntegerCostSetting = "solver_IntegerCost";
@@ -1187,6 +1189,35 @@
                 return false;
             }
 
+            return true;
+        }
+
+        private static bool ValidateBoolSetting(Setting setting, List<Flag> flags)
+        {
+            if (setting.Value.CnstKind != CnstKind.String)
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    setting,
+                    Constants.BadSetting.ToString(setting.Key.Name, setting.Value.Raw, "Expected either \"TRUE\" or \"FALSE\""),
+                    Constants.BadSetting.Code);
+                flags.Add(flag);
+                return false;
+            }
+
+            var strVal = setting.Value.GetStringValue();
+            if (strVal != API.ASTQueries.ASTSchema.Instance.ConstNameTrue && 
+                strVal != API.ASTQueries.ASTSchema.Instance.ConstNameFalse)
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    setting,
+                    Constants.BadSetting.ToString(setting.Key.Name, setting.Value.Raw, "Expected either \"TRUE\" or \"FALSE\""),
+                    Constants.BadSetting.Code);
+                flags.Add(flag);
+                return false;
+            }
+           
             return true;
         }
 

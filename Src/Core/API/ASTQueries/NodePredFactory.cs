@@ -8,9 +8,6 @@
     using Nodes;
     using Common;
 
-    /// <summary>
-    /// TODO: Update summary.
-    /// </summary>
     public sealed class NodePredFactory
     {
         private static NodePredFactory theInstance = new NodePredFactory();

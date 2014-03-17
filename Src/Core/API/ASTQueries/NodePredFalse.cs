@@ -7,9 +7,6 @@
     using Nodes;
     using Common;
 
-    /// <summary>
-    /// TODO: Update summary.
-    /// </summary>
     public sealed class NodePredFalse : NodePredAtom
     {
         public override NodePredicateKind PredicateKind

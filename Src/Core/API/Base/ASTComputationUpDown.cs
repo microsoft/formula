@@ -8,9 +8,6 @@
 
     using Nodes;
 
-    /// <summary>
-    /// TODO: Update summary.
-    /// </summary>
     internal class ASTComputationUpDown<S, T> : ASTComputationBase
     {
         private Node start;

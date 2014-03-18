@@ -272,7 +272,7 @@
                     {
                         //// ruleTable.Debug_PrintRuleTable();
                         modData.PassedPhase(ModuleData.PhaseKind.Compiled, ruleTable);
-                        ruleTable.ProductivityCheck(null);
+                        //// ruleTable.ProductivityCheck(null);
                     }
                     else
                     {

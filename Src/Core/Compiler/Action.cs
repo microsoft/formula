@@ -371,7 +371,8 @@
                 }
                 else
                 {
-                    return new Tuple<Term, Term>(valTerm, Index.MkDataWidenedType(typTerm));
+                    //// return new Tuple<Term, Term>(valTerm, Index.MkDataWidenedType(typTerm));
+                    return new Tuple<Term, Term>(valTerm, typTerm);
                 }
             }
             else if (symb.IsDataConstructor)

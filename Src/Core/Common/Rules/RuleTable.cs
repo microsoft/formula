@@ -462,11 +462,6 @@
                 }
 
                 headSymbol = (ConSymb)kv.Value.Head.Symbol;
-                if (headSymbol.Name.Contains("Stmt2Text"))
-                {
-                    Console.WriteLine(kv.Value.HeadType.Debug_GetSmallTermString());
-                }
-
                 if (headSymbol.Name.StartsWith(SymbolTable.ManglePrefix) || headSymbol.IsAutoGen || headSymbol.IsNew)
                 {
                     continue;
@@ -505,16 +500,15 @@
                     SplitTypeEstimates(headSymbol, r.HeadType, types);
                 }
             }
-
-            /*
+            
             foreach (var kv in productions)
             {
                 Console.WriteLine("{0} ->", kv.Key.PrintableName);
                 for (int i = 0; i < kv.Key.Arity; ++i)
                 {
-                    Console.WriteLine("\t{0}: {1}", i, kv.Value[i].Debug_GetSmallTermString());
+                    Console.WriteLine("\tCAN {0}: {1}", i, index.MkCanonicalForm(kv.Value[i]).Debug_GetSmallTermString());
                 }
-            }*/
+            }
         }
 
         private void SplitTypeEstimates(ConSymb estimatedSymbol, Term estimate, Term[] argEstimates)
@@ -541,7 +535,7 @@
                         }
                         else
                         {
-                            argEstimates[i] = index.MkCanonicalForm(index.MkApply(index.TypeUnionSymbol, new Term[] { argEstimates[i], t.Args[i] }, out wasAdded));
+                            argEstimates[i] = index.MkApply(index.TypeUnionSymbol, new Term[] { argEstimates[i], t.Args[i] }, out wasAdded);
                         }
                     }
                 }

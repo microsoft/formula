@@ -2708,6 +2708,10 @@
             //// A stack of app terms that need to be saturated.
             var pending = new Stack<Term>();
             var pended = new Set<Term>(Term.Compare);
+           
+            //// Let t be a term t = f(t_1,...,t_n). Then argMap(f, [...,t_{i-1},t_{i+1},...]) is the union
+            //// of s s.t. t' = f(...,t_{i-1}, s, t_{i+1}, ...).
+            var argMap = new Map<UserSymbol, Map<Term[], Term>>(Symbol.Compare);
 
             //// Step 0. Pend all the app terms.
             foreach (var c in components)
@@ -2720,6 +2724,7 @@
                 {
                     pending.Push(c);
                     pended.Add(c);
+                    IndexForUnionRule(c, argMap);
                 }
             }
 
@@ -2793,12 +2798,14 @@
                         {
                             pended.Add(t1);
                             pending.Push(t1);
+                            IndexForUnionRule(t1, argMap);
                         }
 
                         if (!appTerms.ContainsKey(t2) && !pended.Contains(t2))
                         {
                             pended.Add(t2);
                             pending.Push(t2);
+                            IndexForUnionRule(t2, argMap);
                         }
                     }
 
@@ -2813,41 +2820,17 @@
                         Contract.Assert(k >= 0);
                         pData.Item2 = false;
                     }
+                }
 
-                    //// Apply union rule
-                    k = -1;
-                    for (i = 0; i < t.Symbol.Arity; ++i)
-                    {
-                        if (t.Args[i] != pTerm.Args[i])
-                        {
-                            if (k >= 0)
-                            {
-                                k = -1;
-                                break;
-                            }
-                            else
-                            {
-                                k = i;
-                            }
-                        }
-                    }
-
-                    if (k < 0)
-                    {
-                        continue;
-                    }
-
-                    var args3 = new Term[t.Symbol.Arity];
-                    for (i = 0; i < t.Symbol.Arity; ++i)
-                    {
-                        args3[i] = i == k ? MkCanUnn(t.Args[i], pTerm.Args[i]) : t.Args[i];
-                    }
-
-                    t3 = MkApply(pTerm.Symbol, args3, out wasAdded);
+                var unionTerms = LookupForUnionRule(pTerm, argMap);
+                for (i = 0; i < unionTerms.Length; ++i)
+                {
+                    t3 = unionTerms[i];
                     if (!appTerms.ContainsKey(t3) && !pended.Contains(t3))
                     {
                         pended.Add(t3);
                         pending.Push(t3);
+                        IndexForUnionRule(t3, argMap);
                     }
                 }
             }
@@ -2900,6 +2883,90 @@
             }
 
             return canForm;
+        }
+
+        private Term[] LookupForUnionRule(Term t, Map<UserSymbol, Map<Term[], Term>> argMap)
+        {
+            Contract.Requires(t != null && t.Symbol.IsDataConstructor);
+            bool wasAdded;
+            var symb = (UserSymbol)t.Symbol;
+            var fArgMap = argMap[symb];
+            var results = new Term[symb.Arity];
+            for (int i = 0; i < symb.Arity; ++i)
+            {
+                var args = new Term[symb.Arity];
+                var vector = new Term[symb.Arity];
+                vector[0] = MkCnst(new Rational(i), out wasAdded);
+                for (int j = 0; j < symb.Arity; ++j)
+                {
+                    if (j < i)
+                    {
+                        vector[j + 1] = t.Args[j];
+                    }
+                    else if (j > i)
+                    {
+                        vector[j] = t.Args[j];
+                    }
+
+                    if (j != i)
+                    {
+                        args[j] = t.Args[j];
+                    }
+                }
+
+                args[i] = fArgMap[vector];
+                results[i] = MkApply(symb, args, out wasAdded);
+            }
+
+            return results;
+        }
+
+        private void IndexForUnionRule(Term t, Map<UserSymbol, Map<Term[], Term>> argMap)
+        {
+            Contract.Requires(t != null && t.Symbol.IsDataConstructor);
+            Map<Term[], Term> fArgMap;
+            var symb = (UserSymbol)t.Symbol;
+            if (!argMap.TryFindValue(symb, out fArgMap))
+            {
+                fArgMap = new Map<Term[], Term>((x, y) => EnumerableMethods.LexCompare(x, y, Term.Compare));
+                argMap.Add(symb, fArgMap);
+            }
+
+            bool wasAdded;
+            Term type, newType;
+            for (int i = 0; i < symb.Arity; ++i)
+            {
+                var vector = new Term[symb.Arity];
+                vector[0] = MkCnst(new Rational(i), out wasAdded);
+                for (int j = 0; j < symb.Arity; ++j)
+                {
+                    if (j < i)
+                    {
+                        vector[j + 1] = t.Args[j];
+                    }
+                    else if (j > i)
+                    {
+                        vector[j] = t.Args[j];
+                    }
+                }
+
+                if (!fArgMap.TryFindValue(vector, out type))
+                {
+                    fArgMap.Add(vector, t.Args[i]);
+                }
+                else if (type == t.Args[i])
+                {
+                    continue;
+                }
+                else 
+                {
+                    newType = MkCanUnn(t.Args[i], type);
+                    if (newType != type)
+                    {
+                        fArgMap[vector] = newType;
+                    }
+                }
+            }
         }
 
         /// <summary>

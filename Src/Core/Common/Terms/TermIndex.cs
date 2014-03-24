@@ -2697,10 +2697,13 @@
             }
         }
 
-        private Term MkCanUnion(IEnumerable<Term> components)
+        /// <summary>
+        /// Makes a canonical union of a set of constructor applications, all with the same outer term.
+        /// </summary>
+        /// <param name="components"></param>
+        /// <returns></returns>
+        private void MkCanUnion(UserSymbol dataConSymb, IEnumerable<Term> components, Set<Term> maxTerms, Set<Term> fullyFolded)
         {
-            var noAppTerms = new Set<Term>(Term.Compare);
-
             //// The set of all terms with apps. Mapped to a
             //// tuple indicating if the term is maximal w.r.t. the set.
             var appTerms = new Map<Term, MutableTuple<Term, bool>>(Term.Compare);
@@ -2708,7 +2711,7 @@
             //// A stack of app terms that need to be saturated.
             var pending = new Stack<Term>();
             var pended = new Set<Term>(Term.Compare);
-           
+
             //// Let t be a term t = f(t_1,...,t_n). Then argMap(f, [...,t_{i-1},t_{i+1},...]) is the union
             //// of s s.t. t' = f(...,t_{i-1}, s, t_{i+1}, ...).
             var argMap = new Map<UserSymbol, Map<Term[], Term>>(Symbol.Compare);
@@ -2716,16 +2719,10 @@
             //// Step 0. Pend all the app terms.
             foreach (var c in components)
             {
-                if (!c.Symbol.IsDataConstructor)
-                {
-                    noAppTerms.Add(c);
-                }
-                else
-                {
-                    pending.Push(c);
-                    pended.Add(c);
-                    IndexForUnionRule(c, argMap);
-                }
+                Contract.Assert(c.Symbol == dataConSymb);
+                pending.Push(c);
+                pended.Add(c);
+                IndexForUnionRule(c, argMap);
             }
 
             //// Step 1. Saturate the appTerms according to the
@@ -2748,7 +2745,7 @@
                 foreach (var kv in appTerms)
                 {
                     t = kv.Key;
-                    if (t.Symbol != pTerm.Symbol || t == pTerm)
+                    if (t == pTerm)
                     {
                         continue;
                     }
@@ -2758,11 +2755,11 @@
                     //// Apply intersection rule
                     k = -1;
                     l = -1;
-                    for (i = 0; i < t.Symbol.Arity; ++i)
+                    for (i = 0; i < dataConSymb.Arity; ++i)
                     {
-                        var args1 = new Term[t.Symbol.Arity];
-                        var args2 = new Term[t.Symbol.Arity];
-                        for (j = 0; j < t.Symbol.Arity; ++j)
+                        var args1 = new Term[dataConSymb.Arity];
+                        var args2 = new Term[dataConSymb.Arity];
+                        for (j = 0; j < dataConSymb.Arity; ++j)
                         {
                             args1[j] = i == j ? MkCanIntr(t.Args[i], pTerm.Args[i]) : t.Args[j];
                             args2[j] = i == j ? MkCanIntr(t.Args[i], pTerm.Args[i]) : pTerm.Args[j];
@@ -2792,8 +2789,8 @@
                             continue;
                         }
 
-                        t1 = MkApply(pTerm.Symbol, args1, out wasAdded);
-                        t2 = MkApply(pTerm.Symbol, args2, out wasAdded);
+                        t1 = MkApply(dataConSymb, args1, out wasAdded);
+                        t2 = MkApply(dataConSymb, args2, out wasAdded);
                         if (!appTerms.ContainsKey(t1) && !pended.Contains(t1))
                         {
                             pended.Add(t1);
@@ -2836,8 +2833,10 @@
             }
 
             //// Step 2. Check if any maximal terms need to be folded.
-            //// If so, mark them as non-maximal and add their sorts to the noAppTerms set.
-            var maxTerms = new Set<Term>((x, y) => x.LexicographicCompare(y));
+            //// If so, mark them as non-maximal and add their sorts to the fullyFolded set.
+            var symbSort = MkApply(dataConSymb.Kind == SymbolKind.ConSymb ? ((ConSymb)dataConSymb).SortSymbol : ((MapSymb)dataConSymb).SortSymbol,
+                                   EmptyArgs,
+                                   out wasAdded);
             foreach (var v in appTerms.Values)
             {
                 if (!v.Item2)
@@ -2845,11 +2844,10 @@
                     continue;
                 }
 
-                var us = (UserSymbol)v.Item1.Symbol;
                 j = -1;
-                for (i = 0; i < us.Arity; ++i)
+                for (i = 0; i < dataConSymb.Arity; ++i)
                 {
-                    if (v.Item1.Args[i] != GetCanonicalTerm(us, i))
+                    if (v.Item1.Args[i] != GetCanonicalTerm(dataConSymb, i))
                     {
                         j = i;
                         break;
@@ -2859,22 +2857,62 @@
                 if (j < 0)
                 {
                     v.Item2 = false;
-                    noAppTerms.Add(MkApply(
-                        us.Kind == SymbolKind.ConSymb ? ((ConSymb)us).SortSymbol : ((MapSymb)us).SortSymbol,
-                        EmptyArgs,
-                        out wasAdded));
+                    fullyFolded.Add(symbSort);
+                    return;
                 }
                 else
                 {
                     maxTerms.Add(v.Item1);
                 }
             }
+        }
+
+        private Term MkCanUnion(IEnumerable<Term> components)
+        {
+            var appBins = new Map<UserSymbol, LinkedList<Term>>(Symbol.Compare);
+            var fullyFolded = new Set<Term>(Term.Compare);
+            var maxTerms = new Set<Term>((x, y) => x.LexicographicCompare(y));
+
+            //// Step 1. Organize the terms.
+            UserSymbol symb;
+            LinkedList<Term> appList;
+            foreach (var c in components)
+            {
+                if (!c.Symbol.IsDataConstructor)
+                {
+                    fullyFolded.Add(c);
+                }
+                else
+                {
+                    symb = (UserSymbol)c.Symbol;
+                    if (!appBins.TryFindValue(symb, out appList))
+                    {
+                        appList = new LinkedList<Term>();
+                        appBins.Add(symb, appList);
+                    }
+
+                    appList.AddLast(c);
+                }
+            }
+
+            //// Step 2. Canonize each app bin.
+            bool wasAdded;
+            foreach (var kv in appBins)
+            {
+                var symbSort = MkApply(kv.Key.Kind == SymbolKind.ConSymb ? ((ConSymb)kv.Key).SortSymbol : ((MapSymb)kv.Key).SortSymbol,
+                                       EmptyArgs,
+                                       out wasAdded);
+                if (!fullyFolded.Contains(symbSort))
+                {
+                    MkCanUnion(kv.Key, kv.Value, maxTerms, fullyFolded);
+                }
+            }
 
             //// Step 3. Sort the final result.
             Term canForm = null;
-            if (noAppTerms.Count > 0)
+            if (fullyFolded.Count > 0)
             {
-                canForm = new AppFreeCanUnn(noAppTerms).MkTypeTerm(this);
+                canForm = new AppFreeCanUnn(fullyFolded).MkTypeTerm(this);
             }
 
             foreach (var mt in maxTerms)

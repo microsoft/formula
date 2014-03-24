@@ -272,7 +272,24 @@
                     {
                         //// ruleTable.Debug_PrintRuleTable();
                         modData.PassedPhase(ModuleData.PhaseKind.Compiled, ruleTable);
-                        //// ruleTable.ProductivityCheck(null);
+                        Configuration conf = null;
+                        switch (modData.Source.AST.Node.NodeKind)
+                        {
+                            case NodeKind.Domain:
+                                conf = (Configuration)((Domain)modData.Source.AST.Node).Config.CompilerData;
+                                break;
+                            case NodeKind.Transform:
+                                conf = (Configuration)((Transform)modData.Source.AST.Node).Config.CompilerData;
+                                break;
+                            default:
+                                throw new NotImplementedException();
+                        }
+
+                        Cnst prodCheckSetting;
+                        if (conf.TryGetSetting(Configuration.Compiler_ProductivityCheckSetting, out prodCheckSetting))
+                        {
+                            ruleTable.ProductivityCheck(prodCheckSetting, flags);
+                        }
                     }
                     else
                     {

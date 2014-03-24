@@ -195,6 +195,23 @@
         }
 
         /// <summary>
+        /// Sets the value of an existing key, other throws an exception.
+        /// Can be called while enumerating over keys.
+        /// </summary>
+        public void SetExistingKey(S key, T value)
+        {
+            var n = FindNearestNode(key);
+            if (n == null || Compare(n, key) != 0)
+            {
+                throw new KeyNotFoundException();
+            }
+            else
+            {
+                n.Value = value;
+            }
+        }
+
+        /// <summary>
         /// Start sorted-order enumeration at the element k.
         /// </summary>
         /// <param name="key"></param>

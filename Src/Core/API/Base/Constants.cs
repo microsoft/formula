@@ -321,6 +321,14 @@
 
         public static readonly MessageString DataCnstLikeSymbWarning = new MessageString("The symbolic constant {0} is named as if it were a data constant. All-caps should be reserved for data constants.", 44);
 
+        public static readonly MessageString ProductivityError = new MessageString("Constructor {0} never produces values of type {1} at argument {2}", 45);
+
+        public static readonly MessageString ProductivityPartialError = new MessageString("Constructor {0} produces only some values of type {1} at argument {2}", 46);
+
+        public static readonly MessageString ProductivityPartialListError = new MessageString("Constructor {0} at {1} produces {2}", 46);
+
+        public static readonly MessageString ProductivityWarning = new MessageString("Rule may construct any value accepted by constructor {0} at argument {1}", 47);
+
         public struct MessageString
         {
             private string msg;

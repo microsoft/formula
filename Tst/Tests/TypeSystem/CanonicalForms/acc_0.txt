@@ -226,11 +226,11 @@ OUT:      ~sv4: G(G)
 OUT:      ~sv5: G
 OUT:      ~sv6: G + {NIL}
 OUT: + Type environment at (39, 4)
-OUT:   x: G(G(G(G(G(G(G(G)))) + G)))
+OUT:   x: G(G(G(G)))
 OUT:   ~dc0: G + {NIL}
-OUT:   ~sv0: G(G(G(G(G(G(G)))) + G))
-OUT:   ~sv1: G(G(G(G(G(G)))) + G)
-OUT:   ~sv2: G(G(G(G(G)))) + G
+OUT:   ~sv0: G(G(G))
+OUT:   ~sv1: G(G)
+OUT:   ~sv2: G
 OUT:   ~sv3: G(G(G(G)))
 OUT:   ~sv4: G(G(G))
 OUT:   ~sv5: G(G)

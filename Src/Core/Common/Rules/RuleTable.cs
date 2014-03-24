@@ -447,13 +447,148 @@
             return index.MkApply(comprSymb, args, out wasAdded);
         }
 
-        internal void ProductivityCheck(List<Flag> flags)
+        internal void ProductivityCheck(Cnst prodCheckSetting, List<Flag> flags)
         {
-            var productions = new Map<ConSymb, Term[]>(Symbol.Compare);
+            var settings = prodCheckSetting.GetStringValue().Split(',');
+            var targets = new Map<ConSymb, Map<int, Term>>(Symbol.Compare);
+            Map<int, Term> estimates;
+            ConSymb target;
+            int argIndex;
+            int indexPos;
+            string name, indexStr, cleaned;
+            UserSymbol resolve, other;
+            bool couldParse = true;
+            foreach (var s in settings)
+            {
+                cleaned = s.Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ').Trim();
+                indexPos = s.IndexOf('[');
+                if (indexPos >= 0)
+                {
+                    if (indexPos == 0 || indexPos == s.Length - 1)
+                    {
+                        flags.Add(new Flag(
+                            SeverityKind.Error,
+                            prodCheckSetting,
+                            Constants.BadSetting.ToString(
+                                Configuration.Compiler_ProductivityCheckSetting,
+                                cleaned,
+                                string.Format("{0} has a bad format; use F or F[index]", cleaned)),
+                           Constants.BadSetting.Code));
+                        couldParse = false;
+                        continue;
+                    }
 
-            Term[] types;
-            ConSymb headSymbol;
-            //// First, collect type estimates for all derived constructors.
+                    name = s.Substring(0, indexPos).Trim();
+                    indexStr = s.Substring(indexPos + 1).Trim();
+                    if (indexStr.Length <= 1 || 
+                        indexStr[indexStr.Length - 1] != ']' ||
+                        !int.TryParse(indexStr.Substring(0, indexStr.Length - 1).Trim(), out argIndex) ||
+                        argIndex < 0)
+                    {
+                        flags.Add(new Flag(
+                            SeverityKind.Error,
+                            prodCheckSetting,
+                            Constants.BadSetting.ToString(
+                                Configuration.Compiler_ProductivityCheckSetting,
+                                cleaned,
+                                string.Format("{0} has a bad format; use F or F[index]", cleaned)),
+                           Constants.BadSetting.Code));
+                        couldParse = false;
+                        continue;
+                    }
+                }
+                else
+                {
+                    name = s.Trim();
+                    argIndex = -1;
+                }
+
+                if (string.IsNullOrEmpty(name))
+                {
+                    continue;
+                }
+
+                resolve = index.SymbolTable.Resolve(name, out other);
+                if (resolve == null)
+                {
+                    flags.Add(new Flag(
+                        SeverityKind.Error,
+                        prodCheckSetting,
+                        Constants.BadSetting.ToString(
+                            Configuration.Compiler_ProductivityCheckSetting,
+                            cleaned,
+                            string.Format("There is no symbol called {0}", name)),
+                       Constants.BadSetting.Code));
+                    couldParse = false;
+                    continue;
+                }
+                else if (other == null && (resolve.Kind != SymbolKind.ConSymb || ((ConSymb)resolve).IsNew || resolve.IsAutoGen || resolve.Name.StartsWith(SymbolTable.ManglePrefix)))
+                {
+                    flags.Add(new Flag(
+                        SeverityKind.Error,
+                        prodCheckSetting,
+                        Constants.BadSetting.ToString(
+                            Configuration.Compiler_ProductivityCheckSetting,
+                            cleaned,
+                            string.Format("The symbol {0} is not a derived-kind constructor", resolve.FullName)),
+                       Constants.BadSetting.Code));
+                    couldParse = false;
+                    continue;
+                }
+                else if (other != null && resolve != null)
+                {
+                    flags.Add(new Flag(
+                        SeverityKind.Error,
+                        prodCheckSetting,
+                        Constants.BadSetting.ToString(
+                            Configuration.Compiler_ProductivityCheckSetting,
+                            cleaned,
+                            string.Format("The name {0} ambiguous; could be {1} or {2}", name, resolve.FullName, other.FullName)),
+                       Constants.BadSetting.Code));
+                    couldParse = false;
+                    continue;
+                }
+
+                target = (ConSymb)resolve;
+                if (argIndex >= target.Arity)
+                {
+                    flags.Add(new Flag(
+                        SeverityKind.Error,
+                        prodCheckSetting,
+                        Constants.BadSetting.ToString(
+                            Configuration.Compiler_ProductivityCheckSetting,
+                            cleaned,
+                            string.Format("The index {0} is too large for constructor {1}", argIndex, target.FullName)),
+                       Constants.BadSetting.Code));
+                    couldParse = false;
+                    continue;
+                }
+
+                if (!targets.TryFindValue(target, out estimates))
+                {
+                    estimates = new Map<int, Term>((x, y) => x - y);
+                    targets.Add(target, estimates);
+                }
+
+                if (argIndex < 0)
+                {
+                    for (int i = 0; i < target.Arity; ++i)
+                    {
+                        estimates[i] = null;
+                    }
+                }
+                else
+                {
+                    estimates[argIndex] = null;
+                }
+            }
+
+            if (!couldParse || targets.Count == 0)
+            {
+                return;
+            }
+
+            //// Collect type estimates for requested constructors.
             foreach (var kv in rules)
             {
                 if (kv.Value.Head.Symbol.Kind != SymbolKind.ConSymb)
@@ -461,19 +596,14 @@
                     continue;
                 }
 
-                headSymbol = (ConSymb)kv.Value.Head.Symbol;
-                if (headSymbol.Name.StartsWith(SymbolTable.ManglePrefix) || headSymbol.IsAutoGen || headSymbol.IsNew)
+                target = (ConSymb)kv.Value.Head.Symbol;
+                if (!targets.TryFindValue(target, out estimates))
                 {
                     continue;
                 }
 
-                if (!productions.TryFindValue(headSymbol, out types))
-                {
-                    types = new Term[headSymbol.Arity];
-                    productions.Add(headSymbol, types);
-                }
-
-                SplitTypeEstimates(headSymbol, kv.Value.HeadType, types);
+                Contract.Assert(estimates != null && estimates.Count > 0);
+                SplitTypeEstimates(kv.Value, target, kv.Value.HeadType, estimates, flags);
             }
 
             foreach (var kv in subRules)
@@ -485,59 +615,168 @@
                         continue;
                     }
 
-                    headSymbol = (ConSymb)r.Head.Symbol;
-                    if (headSymbol.Name.StartsWith(SymbolTable.ManglePrefix) || headSymbol.IsAutoGen || headSymbol.IsNew)
+                    target = (ConSymb)r.Head.Symbol;
+                    if (!targets.TryFindValue(target, out estimates))
                     {
                         continue;
                     }
 
-                    if (!productions.TryFindValue(headSymbol, out types))
-                    {
-                        types = new Term[headSymbol.Arity];
-                        productions.Add(headSymbol, types);
-                    }
-
-                    SplitTypeEstimates(headSymbol, r.HeadType, types);
+                    Contract.Assert(estimates != null && estimates.Count > 0);
+                    SplitTypeEstimates(r, target, r.HeadType, estimates, flags);
                 }
             }
-            
-            foreach (var kv in productions)
+
+            Term argType;
+            bool wasAdded;
+            foreach (var kv in targets)
             {
-                Console.WriteLine("{0} ->", kv.Key.PrintableName);
-                for (int i = 0; i < kv.Key.Arity; ++i)
+                target = kv.Key;
+                foreach (var kvp in kv.Value)
                 {
-                    Console.WriteLine("\tCAN {0}: {1}", i, index.MkCanonicalForm(kv.Value[i]).Debug_GetSmallTermString());
+                    var app = target.CanonicalForm[kvp.Key];
+                    foreach (var nr in app.NonRangeMembers)
+                    {
+                        argType = index.MkApply(nr, TermIndex.EmptyArgs, out wasAdded);
+                        CheckProduction(prodCheckSetting, target, kvp.Key, kvp.Value, argType, flags);
+                    }
+
+                    foreach (var rng in app.RangeMembers)
+                    {
+                        argType = index.MkApply(
+                            index.RangeSymbol, 
+                            new Term[] 
+                            {
+                                index.MkCnst(new Rational(rng.Key, System.Numerics.BigInteger.One), out wasAdded),
+                                index.MkCnst(new Rational(rng.Value, System.Numerics.BigInteger.One), out wasAdded),
+                            }, 
+                            out wasAdded);
+                        CheckProduction(prodCheckSetting, target, kvp.Key, kvp.Value, argType, flags);
+                    }
                 }
             }
         }
 
-        private void SplitTypeEstimates(ConSymb estimatedSymbol, Term estimate, Term[] argEstimates)
+        private void CheckProduction(Node blame, ConSymb symb, int ind, Term estimate, Term expected, List<Flag> flags)
+        {
+            string expectedStr;
+            Term intr, intrCan;
+            if (!index.MkIntersection(expected, estimate, out intr))
+            {
+                if (expected.Symbol == index.RangeSymbol)
+                {
+                    expectedStr = string.Format(
+                        "{{{0}..{1}}}", 
+                        expected.Args[0].Symbol.PrintableName, 
+                        expected.Args[1].Symbol.PrintableName);
+                }
+                else 
+                {
+                    expectedStr = expected.Symbol.PrintableName;
+                }
+
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    blame,
+                    Constants.ProductivityError.ToString(symb.FullName, expectedStr, ind),
+                    Constants.ProductivityError.Code));
+                return;
+            }
+
+            intrCan = index.MkCanonicalForm(intr);
+            if (expected != intrCan)
+            {
+                if (expected.Symbol == index.RangeSymbol)
+                {
+                    expectedStr = string.Format(
+                        "{{{0}..{1}}}",
+                        expected.Args[0].Symbol.PrintableName,
+                        expected.Args[1].Symbol.PrintableName);
+                }
+                else
+                {
+                    expectedStr = expected.Symbol.PrintableName;
+                }
+
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    blame,
+                    Constants.ProductivityPartialError.ToString(symb.FullName, expectedStr, ind),
+                    Constants.ProductivityPartialError.Code));
+
+                foreach (var t in intrCan.Enumerate(x => x.Symbol == index.TypeUnionSymbol ? x.Args : null))
+                {
+                    if (t.Symbol == index.TypeUnionSymbol)
+                    {
+                        continue;
+                    }
+
+                    flags.Add(new Flag(
+                        SeverityKind.Error,
+                        blame,
+                        Constants.ProductivityPartialListError.ToString(symb.FullName, ind, t.Debug_GetSmallTermString()),
+                        Constants.ProductivityPartialListError.Code));
+                }
+            }
+        }
+
+        private void SplitTypeEstimates(CoreRule srcRule, ConSymb estimatedSymbol, Term estimate, Map<int, Term> estimates, List<Flag> flags)
         {
             bool wasAdded;
+            Contract.Assert(srcRule.Node != null);
+
+            Term crntEstimate, thisCrntEstimate;
+            var thisEstimate = new Map<int, Term>((x, y) => x - y);
             foreach (var t in estimate.Enumerate(x => x.Symbol == index.TypeUnionSymbol ? x.Args : null))
             {
                 if (t.Symbol == estimatedSymbol.SortSymbol)
                 {
-                    for (int i = 0; i < estimatedSymbol.Arity; ++i)
+                    foreach (var ind in estimates.Keys)
                     {
-                        argEstimates[i] = index.GetCanonicalTerm(estimatedSymbol, i);
+                        estimates.SetExistingKey(ind, index.GetCanonicalTerm(estimatedSymbol, ind));
+                        thisEstimate[ind] = index.GetCanonicalTerm(estimatedSymbol, ind); 
                     }
 
                     return;
                 }
                 else if (t.Symbol == estimatedSymbol)
                 {
-                    for (int i = 0; i < estimatedSymbol.Arity; ++i)
+                    foreach (var ind in estimates.Keys)
                     {
-                        if (argEstimates[i] == null)
+                        crntEstimate = estimates[ind];
+                        if (crntEstimate == null)
                         {
-                            argEstimates[i] = t.Args[i];
+                            estimates.SetExistingKey(ind, t.Args[ind]);
                         }
                         else
                         {
-                            argEstimates[i] = index.MkApply(index.TypeUnionSymbol, new Term[] { argEstimates[i], t.Args[i] }, out wasAdded);
+                            estimates.SetExistingKey(
+                                ind,
+                                index.MkApply(index.TypeUnionSymbol, new Term[] { t.Args[ind], crntEstimate }, out wasAdded));
+                        }
+
+                        if (!thisEstimate.TryFindValue(ind, out thisCrntEstimate))
+                        {
+                            thisEstimate.Add(ind, t.Args[ind]);
+                        }
+                        else
+                        {
+                            thisEstimate.SetExistingKey(
+                                ind,
+                                index.MkApply(index.TypeUnionSymbol, new Term[] { t.Args[ind], thisCrntEstimate }, out wasAdded));
                         }
                     }
+                }
+            }
+
+            foreach (var kv in thisEstimate)
+            {
+                if (index.MkCanonicalForm(kv.Value) == index.GetCanonicalTerm(estimatedSymbol, kv.Key))
+                {
+                    flags.Add(new Flag(
+                        SeverityKind.Warning,
+                        srcRule.Node,
+                        Constants.ProductivityWarning.ToString(estimatedSymbol.FullName, kv.Key),
+                        Constants.ProductivityWarning.Code));
                 }
             }
         }

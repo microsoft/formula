@@ -45,7 +45,7 @@
             TopSettingValidators[Parse_ActiveParserSetting] = ValidateStringSetting;
             TopSettingValidators[Parse_ActiveRenderSetting] = ValidateStringSetting;
             TopSettingValidators[Solver_ActiveStrategySetting] = ValidateStringSetting;
-            TopSettingValidators[Compiler_ProductivityCheckSetting] = ValidateBoolSetting;
+            TopSettingValidators[Compiler_ProductivityCheckSetting] = ValidateStringSetting;
             TopSettingValidators[Solver_RealCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_IntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_NaturalCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);

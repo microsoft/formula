@@ -13,8 +13,8 @@ OUT: tests.4ml (25, 4): Argument 2 of function in1.Cons is badly typed. Cannot c
 OUT: tests.4ml (29, 4): Argument 1 of function Triple is badly typed. Cannot coerce values of type in2.Cons.
 OUT: tests.4ml (29, 4): Argument 2 of function Triple is badly typed. Cannot coerce values of type in1.Cons.
 OUT: tests.4ml (29, 4): Argument 3 of function Triple is badly typed. Cannot coerce values of type in1.Cons.
-OUT: tests.4ml (32, 4): Argument 1 of function in2._ is unsafe. Some values of type T1.q are not allowed here.
 OUT: tests.4ml (32, 4): Argument 1 of function in2._ is unsafe. Some values of type Triple are not allowed here.
+OUT: tests.4ml (32, 4): Argument 1 of function in2._ is unsafe. Some values of type T1.q are not allowed here.
 OUT: tests.4ml (35, 4): Argument 1 of function in2._ is badly typed. Cannot coerce values of type out.Cons.
 OUT: tests.4ml (38, 4): Argument 2 of function in1.Cons is badly typed. Cannot coerce values of type out.Cons.
 OUT: tests.4ml (41, 32): Argument 2 of function in1.Cons is badly typed. Cannot coerce values of type out.Cons.

@@ -5,6 +5,7 @@
     using System.Diagnostics.Contracts;
     using System.Linq;
     using System.Text;
+    using System.Text.RegularExpressions;
     using System.Threading;
 
     using API;
@@ -16,6 +17,15 @@
 
     public sealed class RuleTable
     {
+        private const string ProductivityCheckFuncGroup = "func";
+        private const string ProductivityCheckIndicesGroup = "indices";
+        private const string ProductivityCheckPattern = @"
+                ^\s*(?: (?<func> [a-zA-Z_0-9.]+) \s* 
+                     \[ \s*(?<indices> \d+\s* (?: ,\s*\d+\s*)*) \]\s*
+                (?: ,\s* (?<func> [a-zA-Z_0-9.]+) \s* 
+                     \[ \s*(?<indices> \d+\s* (?: ,\s*\d+\s*)*) \]\s*)*)?$
+            ";
+
         private const int SymbIndexFind = 0;
         private const int SymbIndexConj = 1;
         private const int SymbIndexConjR = 2;
@@ -449,65 +459,42 @@
 
         internal void ProductivityCheck(Cnst prodCheckSetting, List<Flag> flags)
         {
-            var settings = prodCheckSetting.GetStringValue().Split(',');
-            var targets = new Map<ConSymb, Map<int, Term>>(Symbol.Compare);
-            Map<int, Term> estimates;
-            ConSymb target;
-            int argIndex;
-            int indexPos;
-            string name, indexStr, cleaned;
-            UserSymbol resolve, other;
-            bool couldParse = true;
-            foreach (var s in settings)
+            var match = Regex.Match(
+                prodCheckSetting.GetStringValue(), 
+                ProductivityCheckPattern, 
+                System.Text.RegularExpressions.RegexOptions.IgnorePatternWhitespace | RegexOptions.Singleline);
+
+            if (!match.Success)
             {
-                cleaned = s.Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ').Trim();
-                indexPos = s.IndexOf('[');
-                if (indexPos >= 0)
-                {
-                    if (indexPos == 0 || indexPos == s.Length - 1)
-                    {
-                        flags.Add(new Flag(
-                            SeverityKind.Error,
-                            prodCheckSetting,
-                            Constants.BadSetting.ToString(
-                                Configuration.Compiler_ProductivityCheckSetting,
-                                cleaned,
-                                string.Format("{0} has a bad format; use F or F[index]", cleaned)),
-                           Constants.BadSetting.Code));
-                        couldParse = false;
-                        continue;
-                    }
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    prodCheckSetting,
+                    Constants.BadSetting.ToString(
+                        Configuration.Compiler_ProductivityCheckSetting,
+                        prodCheckSetting.GetStringValue(),
+                        "Bad format. For productivity checks use: F[x1,...,xn], ..."),
+                   Constants.BadSetting.Code));
+                return;
+            }
 
-                    name = s.Substring(0, indexPos).Trim();
-                    indexStr = s.Substring(indexPos + 1).Trim();
-                    if (indexStr.Length <= 1 || 
-                        indexStr[indexStr.Length - 1] != ']' ||
-                        !int.TryParse(indexStr.Substring(0, indexStr.Length - 1).Trim(), out argIndex) ||
-                        argIndex < 0)
-                    {
-                        flags.Add(new Flag(
-                            SeverityKind.Error,
-                            prodCheckSetting,
-                            Constants.BadSetting.ToString(
-                                Configuration.Compiler_ProductivityCheckSetting,
-                                cleaned,
-                                string.Format("{0} has a bad format; use F or F[index]", cleaned)),
-                           Constants.BadSetting.Code));
-                        couldParse = false;
-                        continue;
-                    }
-                }
-                else
-                {
-                    name = s.Trim();
-                    argIndex = -1;
-                }
+            var funcGroup = match.Groups[ProductivityCheckFuncGroup];
+            var indicesGroup = match.Groups[ProductivityCheckIndicesGroup];
+            Contract.Assert(funcGroup.Captures.Count == indicesGroup.Captures.Count);
+            if (funcGroup.Captures.Count == 0)
+            {
+                return;
+            }
 
-                if (string.IsNullOrEmpty(name))
-                {
-                    continue;
-                }
-
+            int ind;
+            string name;
+            ConSymb target;
+            UserSymbol resolve, other;
+            Map<int[], Term> indsToEst;
+            bool couldParse = true;
+            var targets = new Map<ConSymb, Map<int[], Term>>(Symbol.Compare);
+            for (int i = 0; i < funcGroup.Captures.Count; ++i)
+            {
+                name = funcGroup.Captures[i].Value.Trim();
                 resolve = index.SymbolTable.Resolve(name, out other);
                 if (resolve == null)
                 {
@@ -516,7 +503,7 @@
                         prodCheckSetting,
                         Constants.BadSetting.ToString(
                             Configuration.Compiler_ProductivityCheckSetting,
-                            cleaned,
+                            prodCheckSetting.GetStringValue(),
                             string.Format("There is no symbol called {0}", name)),
                        Constants.BadSetting.Code));
                     couldParse = false;
@@ -529,7 +516,7 @@
                         prodCheckSetting,
                         Constants.BadSetting.ToString(
                             Configuration.Compiler_ProductivityCheckSetting,
-                            cleaned,
+                            prodCheckSetting.GetStringValue(),
                             string.Format("The symbol {0} is not a derived-kind constructor", resolve.FullName)),
                        Constants.BadSetting.Code));
                     couldParse = false;
@@ -542,48 +529,45 @@
                         prodCheckSetting,
                         Constants.BadSetting.ToString(
                             Configuration.Compiler_ProductivityCheckSetting,
-                            cleaned,
+                            prodCheckSetting.GetStringValue(),
                             string.Format("The name {0} ambiguous; could be {1} or {2}", name, resolve.FullName, other.FullName)),
                        Constants.BadSetting.Code));
                     couldParse = false;
                     continue;
                 }
 
-                target = (ConSymb)resolve;
-                if (argIndex >= target.Arity)
+                var indStrs = indicesGroup.Captures[i].Value.Split(',');
+                var inds = new Set<int>((x, y) => x - y);
+                for (int j = 0; j < indStrs.Length; ++j)
                 {
-                    flags.Add(new Flag(
-                        SeverityKind.Error,
-                        prodCheckSetting,
-                        Constants.BadSetting.ToString(
-                            Configuration.Compiler_ProductivityCheckSetting,
-                            cleaned,
-                            string.Format("The index {0} is too large for constructor {1}", argIndex, target.FullName)),
-                       Constants.BadSetting.Code));
-                    couldParse = false;
-                    continue;
-                }
-
-                if (!targets.TryFindValue(target, out estimates))
-                {
-                    estimates = new Map<int, Term>((x, y) => x - y);
-                    targets.Add(target, estimates);
-                }
-
-                if (argIndex < 0)
-                {
-                    for (int i = 0; i < target.Arity; ++i)
+                    if (!int.TryParse(indStrs[j].Trim(), out ind) || ind < 0 || ind >= resolve.Arity)
                     {
-                        estimates[i] = null;
+                        flags.Add(new Flag(
+                            SeverityKind.Error,
+                            prodCheckSetting,
+                            Constants.BadSetting.ToString(
+                                Configuration.Compiler_ProductivityCheckSetting,
+                                prodCheckSetting.GetStringValue(),
+                                string.Format("{0} is a bad index for {1}", ind, resolve.FullName)),
+                           Constants.BadSetting.Code));
+                        couldParse = false;
+                        continue;
                     }
+
+                    inds.Add(ind);
                 }
-                else
+
+                target = (ConSymb)resolve;
+                if (!targets.TryFindValue(target, out indsToEst))
                 {
-                    estimates[argIndex] = null;
-                }
+                    indsToEst = new Map<int[], Term>((a1, a2) => EnumerableMethods.LexCompare<int>(a1, a2, (x, y) => x - y));
+                    targets.Add(target, indsToEst);
+                }               
+ 
+                indsToEst[inds.ToArray()] = null;
             }
 
-            if (!couldParse || targets.Count == 0)
+            if (!couldParse)
             {
                 return;
             }
@@ -597,13 +581,15 @@
                 }
 
                 target = (ConSymb)kv.Value.Head.Symbol;
-                if (!targets.TryFindValue(target, out estimates))
+                if (!targets.TryFindValue(target, out indsToEst))
                 {
                     continue;
                 }
 
-                Contract.Assert(estimates != null && estimates.Count > 0);
-                SplitTypeEstimates(kv.Value, target, kv.Value.HeadType, estimates, flags);
+                foreach (var ie in indsToEst)
+                {
+                    indsToEst.SetExistingKey(ie.Key, MkProductivityEstimate(kv.Value, target, ie.Key, ie.Value, kv.Value.HeadType, flags));
+                }
             }
 
             foreach (var kv in subRules)
@@ -616,168 +602,249 @@
                     }
 
                     target = (ConSymb)r.Head.Symbol;
-                    if (!targets.TryFindValue(target, out estimates))
+                    if (!targets.TryFindValue(target, out indsToEst))
                     {
                         continue;
                     }
 
-                    Contract.Assert(estimates != null && estimates.Count > 0);
-                    SplitTypeEstimates(r, target, r.HeadType, estimates, flags);
+                    foreach (var ie in indsToEst)
+                    {
+                        indsToEst.SetExistingKey(ie.Key, MkProductivityEstimate(r, target, ie.Key, ie.Value, r.HeadType, flags));
+                    }
                 }
             }
 
-            Term argType;
-            bool wasAdded;
+            Term[] state, choices;
             foreach (var kv in targets)
             {
-                target = kv.Key;
-                foreach (var kvp in kv.Value)
+                foreach (var ie in kv.Value)
                 {
-                    var app = target.CanonicalForm[kvp.Key];
-                    foreach (var nr in app.NonRangeMembers)
+                    state = choices = null;
+                    while (MoveProductionState(kv.Key, ie.Key, ref state, ref choices))
                     {
-                        argType = index.MkApply(nr, TermIndex.EmptyArgs, out wasAdded);
-                        CheckProduction(prodCheckSetting, target, kvp.Key, kvp.Value, argType, flags);
-                    }
-
-                    foreach (var rng in app.RangeMembers)
-                    {
-                        argType = index.MkApply(
-                            index.RangeSymbol, 
-                            new Term[] 
-                            {
-                                index.MkCnst(new Rational(rng.Key, System.Numerics.BigInteger.One), out wasAdded),
-                                index.MkCnst(new Rational(rng.Value, System.Numerics.BigInteger.One), out wasAdded),
-                            }, 
-                            out wasAdded);
-                        CheckProduction(prodCheckSetting, target, kvp.Key, kvp.Value, argType, flags);
+                        CheckProductivity(prodCheckSetting, kv.Key, ie.Key, choices, ie.Value, flags);
                     }
                 }
             }
         }
 
-        private void CheckProduction(Node blame, ConSymb symb, int ind, Term estimate, Term expected, List<Flag> flags)
+        private bool MoveProductionState(ConSymb symb, int[] indices, ref Term[] state, ref Term[] choices)
         {
-            string expectedStr;
-            Term intr, intrCan;
-            if (!index.MkIntersection(expected, estimate, out intr))
+            Term targ;
+            if (state == null)
             {
-                if (expected.Symbol == index.RangeSymbol)
+                state = new Term[indices.Length];
+                choices = new Term[indices.Length];
+                for (int i = 0; i < indices.Length; ++i)
                 {
-                    expectedStr = string.Format(
-                        "{{{0}..{1}}}", 
-                        expected.Args[0].Symbol.PrintableName, 
-                        expected.Args[1].Symbol.PrintableName);
-                }
-                else 
-                {
-                    expectedStr = expected.Symbol.PrintableName;
+                    targ = index.GetCanonicalTerm(symb, indices[i]);
+                    if (targ.Symbol != index.TypeUnionSymbol)
+                    {
+                        choices[i] = targ;
+                        state[i] = null;
+                    }
+                    else
+                    {
+                        Contract.Assert(targ.Args[0].Symbol != index.TypeUnionSymbol);
+                        choices[i] = targ.Args[0];
+                        state[i] = targ.Args[1];
+                    }
                 }
 
+                return true;
+            }
+
+            for (int i = 0; i < indices.Length; ++i)
+            {
+                if (state[i] == null)
+                {
+                    if (i < indices.Length - 1)
+                    {
+                        targ = index.GetCanonicalTerm(symb, indices[i]);
+                        if (targ.Symbol != index.TypeUnionSymbol)
+                        {
+                            choices[i] = targ;
+                            state[i] = null;
+                        }
+                        else
+                        {
+                            Contract.Assert(targ.Args[0].Symbol != index.TypeUnionSymbol);
+                            choices[i] = targ.Args[0];
+                            state[i] = targ.Args[1];
+                        }
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                else if (state[i].Symbol != index.TypeUnionSymbol)
+                {
+                    choices[i] = state[i];
+                    state[i] = null;
+                    return true;
+                }
+                else
+                {
+                    Contract.Assert(state[i].Args[0].Symbol != index.TypeUnionSymbol);
+                    choices[i] = state[i].Args[0];
+                    state[i] = state[i].Args[1];
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void CheckProductivity(Node blame, ConSymb symb, int[] indices, Term[] choices, Term estimate, List<Flag> flags)
+        {
+            var targs = new Term[symb.Arity];
+            for (int i = 0; i < targs.Length; ++i)
+            {
+                targs[i] = index.GetCanonicalTerm(symb, i);
+            }
+
+            for (int i = 0; i < choices.Length; ++i)
+            {
+                targs[indices[i]] = choices[i];
+            }
+
+            bool wasAdded;
+            string expectedStr;
+            var reqType = index.MkApply(symb, targs, out wasAdded);
+            Term intr, intrCan;
+            if (!index.MkIntersection(reqType, estimate, out intr))
+            {
+                expectedStr = string.Format("{0}[{1} : {2}", symb.FullName, indices[0], choices[0].Debug_GetSmallTermString());
+                for (int i = 1; i < choices.Length; ++i)
+                {
+                    expectedStr += string.Format(", {0} : {1}", indices[i], choices[i].Debug_GetSmallTermString());
+                }
+
+                expectedStr += "]";
                 flags.Add(new Flag(
                     SeverityKind.Error,
                     blame,
-                    Constants.ProductivityError.ToString(symb.FullName, expectedStr, ind),
+                    Constants.ProductivityError.ToString(expectedStr),
                     Constants.ProductivityError.Code));
                 return;
             }
 
             intrCan = index.MkCanonicalForm(intr);
-            if (expected != intrCan)
+            if (intrCan == index.MkCanonicalForm(reqType))
             {
-                if (expected.Symbol == index.RangeSymbol)
-                {
-                    expectedStr = string.Format(
-                        "{{{0}..{1}}}",
-                        expected.Args[0].Symbol.PrintableName,
-                        expected.Args[1].Symbol.PrintableName);
-                }
-                else
-                {
-                    expectedStr = expected.Symbol.PrintableName;
-                }
-
-                flags.Add(new Flag(
-                    SeverityKind.Error,
-                    blame,
-                    Constants.ProductivityPartialError.ToString(symb.FullName, expectedStr, ind),
-                    Constants.ProductivityPartialError.Code));
-
-                foreach (var t in intrCan.Enumerate(x => x.Symbol == index.TypeUnionSymbol ? x.Args : null))
-                {
-                    if (t.Symbol == index.TypeUnionSymbol)
-                    {
-                        continue;
-                    }
-
-                    flags.Add(new Flag(
-                        SeverityKind.Error,
-                        blame,
-                        Constants.ProductivityPartialListError.ToString(symb.FullName, ind, t.Debug_GetSmallTermString()),
-                        Constants.ProductivityPartialListError.Code));
-                }
-            }
-        }
-
-        private void SplitTypeEstimates(CoreRule srcRule, ConSymb estimatedSymbol, Term estimate, Map<int, Term> estimates, List<Flag> flags)
-        {
-            bool wasAdded;
-            Contract.Assert(srcRule.Node != null);
-
-            Term crntEstimate, thisCrntEstimate;
-            var thisEstimate = new Map<int, Term>((x, y) => x - y);
-            foreach (var t in estimate.Enumerate(x => x.Symbol == index.TypeUnionSymbol ? x.Args : null))
-            {
-                if (t.Symbol == estimatedSymbol.SortSymbol)
-                {
-                    foreach (var ind in estimates.Keys)
-                    {
-                        estimates.SetExistingKey(ind, index.GetCanonicalTerm(estimatedSymbol, ind));
-                        thisEstimate[ind] = index.GetCanonicalTerm(estimatedSymbol, ind); 
-                    }
-
-                    return;
-                }
-                else if (t.Symbol == estimatedSymbol)
-                {
-                    foreach (var ind in estimates.Keys)
-                    {
-                        crntEstimate = estimates[ind];
-                        if (crntEstimate == null)
-                        {
-                            estimates.SetExistingKey(ind, t.Args[ind]);
-                        }
-                        else
-                        {
-                            estimates.SetExistingKey(
-                                ind,
-                                index.MkApply(index.TypeUnionSymbol, new Term[] { t.Args[ind], crntEstimate }, out wasAdded));
-                        }
-
-                        if (!thisEstimate.TryFindValue(ind, out thisCrntEstimate))
-                        {
-                            thisEstimate.Add(ind, t.Args[ind]);
-                        }
-                        else
-                        {
-                            thisEstimate.SetExistingKey(
-                                ind,
-                                index.MkApply(index.TypeUnionSymbol, new Term[] { t.Args[ind], thisCrntEstimate }, out wasAdded));
-                        }
-                    }
-                }
+                return;
             }
 
-            foreach (var kv in thisEstimate)
+            expectedStr = string.Format("{0}[{1} : {2}", symb.FullName, indices[0], choices[0].Debug_GetSmallTermString());
+            for (int i = 1; i < choices.Length; ++i)
             {
-                if (index.MkCanonicalForm(kv.Value) == index.GetCanonicalTerm(estimatedSymbol, kv.Key))
+                expectedStr += string.Format(", {0} : {1}", indices[i], choices[i].Debug_GetSmallTermString());
+            }
+
+            expectedStr += "]";
+            int cases = 0;
+            foreach (var t in intrCan.Enumerate(x => x.Symbol == index.TypeUnionSymbol ? x.Args : null))
+            {
+                if (t.Symbol == index.TypeUnionSymbol)
+                {
+                    continue;
+                }
+
+                ++cases;
+            }
+
+            flags.Add(new Flag(
+                SeverityKind.Error,
+                blame,
+                Constants.ProductivityPartialError.ToString(expectedStr, cases),
+                Constants.ProductivityPartialError.Code));
+
+            cases = 0;
+            foreach (var t in intrCan.Enumerate(x => x.Symbol == index.TypeUnionSymbol ? x.Args : null))
+            {
+                if (t.Symbol == index.TypeUnionSymbol)
+                {
+                    continue;
+                }
+
+                for (int i = 0; i < indices.Length; ++i)
                 {
                     flags.Add(new Flag(
                         SeverityKind.Warning,
-                        srcRule.Node,
-                        Constants.ProductivityWarning.ToString(estimatedSymbol.FullName, kv.Key),
-                        Constants.ProductivityWarning.Code));
+                        blame,
+                        Constants.ProductivityCaseWarning.ToString(cases, symb.FullName, indices[i], t.Args[indices[i]].Debug_GetSmallTermString()),
+                        Constants.ProductivityCaseWarning.Code));
                 }
+
+                ++cases;
+            }
+        }
+
+        private Term MkProductivityEstimate(CoreRule srcRule, ConSymb estimatedSymbol, int[] indices, Term crntEstimate, Term ruleEstimate, List<Flag> flags)
+        {
+            Contract.Assert(srcRule.Node != null);
+            bool wasAdded;
+            Term thisEstimate = null;
+            foreach (var t in ruleEstimate.Enumerate(x => x.Symbol == index.TypeUnionSymbol ? x.Args : null))
+            {
+                if (t.Symbol == estimatedSymbol.SortSymbol)
+                {
+                    thisEstimate = t;
+                    break;
+                }
+                else if (t.Symbol == estimatedSymbol)
+                {
+                    var targs = new Term[estimatedSymbol.Arity];
+                    for (int i = 0; i < targs.Length; ++i)
+                    {
+                        targs[i] = index.GetCanonicalTerm(estimatedSymbol, i);
+                    }
+
+                    foreach (var ind in indices)
+                    {
+                        targs[ind] = t.Args[ind];
+                    }
+
+                    if (thisEstimate == null)
+                    {
+                        thisEstimate = index.MkApply(estimatedSymbol, targs, out wasAdded);
+                    }
+                    else
+                    {
+                        thisEstimate = index.MkApply(
+                            index.TypeUnionSymbol,
+                            new Term[] { index.MkApply(estimatedSymbol, targs, out wasAdded), thisEstimate },
+                            out wasAdded);
+                    }
+                }
+            }
+
+            Contract.Assert(thisEstimate != null);
+            var conSort = index.MkApply(estimatedSymbol.SortSymbol, TermIndex.EmptyArgs, out wasAdded);
+            if (index.MkCanonicalForm(thisEstimate) == conSort)
+            {
+                var indStr = "[" + indices[0].ToString();
+                for (int i = 1; i < indices.Length; ++i)
+                {
+                    indStr += ", " + indices[i].ToString();
+                }
+
+                indStr += "]";
+                flags.Add(new Flag(
+                    SeverityKind.Warning,
+                    srcRule.Node,
+                    Constants.ProductivityWarning.ToString(estimatedSymbol.FullName, indStr),
+                    Constants.ProductivityWarning.Code));
+            }
+            
+            if (crntEstimate == null)
+            {
+                return thisEstimate;
+            }
+            else
+            {
+                return index.MkApply(index.TypeUnionSymbol, new Term[] { thisEstimate, crntEstimate }, out wasAdded);
             }
         }
 

@@ -41,6 +41,12 @@
             Matcher = matcher;
         }
 
+        public override CoreRule OptInlinePartialRule(CoreRule eliminator, out bool succeeded)
+        {
+            succeeded = false;
+            return this;
+        }
+
         public override void Debug_PrintRule()
         {
             Console.WriteLine("ID: {0}, Stratum: {1}", RuleId, stratum < 0 ? "?" : stratum.ToString());

@@ -281,6 +281,74 @@
             return cloneRule;
         }
 
+        /// <summary>
+        /// Performs the following substitution:
+        /// This rule: 
+        /// h :- F(t), [H(t'),] body.
+        /// 
+        /// Inliner:
+        /// F(x1,...,xn) :- [G(s),] body'. (inliner has no more than one find and x_i's are distinct.) 
+        /// 
+        /// Produces:
+        /// h :- [G(s)[x/t],], body, body'[x/t]. (other variables from inliner are renamed.)
+        /// 
+        /// Or returns this rule if inlining cannot be applied.
+        /// </summary>
+        /// <param name="eliminator"></param>
+        /// <returns></returns>
+        public virtual CoreRule OptInlinePartialRule(CoreRule inliner, out bool succeeded)
+        {
+            //// The inliner is expected to be a partial rule with at most one find.
+            if (!inliner.Head.Symbol.IsReservedOperation || !inliner.Find2.IsNull)
+            {
+                succeeded = false;
+                return this;
+            }
+
+            Term pattern;
+            var head = inliner.Head;
+            Map<Term, Term> inliner1 = null;
+            if (!Find1.IsNull && (pattern = Find1.Pattern).Symbol == inliner.Head.Symbol)
+            {
+                inliner1 = new Map<Term,Term>(Term.Compare);
+                for (int i = 0; i < head.Args.Length; ++i)
+                {
+                    if (!head.Args[i].Symbol.IsVariable || inliner1.ContainsKey(head.Args[i]))
+                    {
+                        succeeded = false;
+                        return this;
+                    }
+
+                    inliner1.Add(head.Args[i], pattern.Args[i]);
+                }
+            }
+
+            Map<Term, Term> inliner2 = null;
+            if (!Find2.IsNull && (pattern = Find2.Pattern).Symbol == inliner.Head.Symbol)
+            {
+                inliner2 = new Map<Term, Term>(Term.Compare);
+                for (int i = 0; i < head.Args.Length; ++i)
+                {
+                    if (!head.Args[i].Symbol.IsVariable || inliner2.ContainsKey(head.Args[i]))
+                    {
+                        succeeded = false;
+                        return this;
+                    }
+
+                    inliner2.Add(head.Args[i], pattern.Args[i]);
+                }
+            }
+
+            //// If no find matches the inliner, then fail.
+            if (inliner1 == null && inliner2 == null)
+            {
+                succeeded = false;
+                return this;
+            }
+
+            throw new NotImplementedException();
+        }
+
         public virtual void Execute(
             Term binding, 
             int findNumber, 
@@ -566,6 +634,59 @@
             {
                 yield return index.MkClone(c, renaming, symbolTransfer);
             }
+        }
+
+        private Term Substitute(Term t, Map<Term, Term> substitution, string varPrefix)
+        {
+            int i;
+            Term sub;
+            bool wasAdded;
+            return t.Compute<Term>(
+                (x, s) => x.Groundness != Groundness.Ground ? x.Args : null,
+                (x, ch, s) =>
+                {
+                    if (x.Groundness == Groundness.Ground)
+                    {
+                        return x;
+                    }
+                    else if (x.Symbol.IsVariable)
+                    {
+                        if (!substitution.TryFindValue(x, out sub))
+                        {
+                            sub = Index.MkVar(string.Format("{0}{1}", varPrefix, ((UserSymbol)x.Symbol).Name), true, out wasAdded);
+                            substitution.Add(x, sub);
+                        }
+
+                        return sub;
+                    }
+
+                    i = 0;
+                    foreach (var tp in ch)
+                    {
+                        if (tp != x.Args[i])
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            ++i;
+                        }
+                    }
+
+                    if (i == x.Args.Length)
+                    {
+                        return x;
+                    }
+
+                    var args = new Term[x.Args.Length];
+                    i = 0;
+                    foreach (var tp in ch)
+                    {
+                        args[i++] = tp; 
+                    }
+
+                    return Index.MkApply(x.Symbol, args, out wasAdded);
+                });
         }
 
         private void UndoPropagation(int bindingLevel)

@@ -77,6 +77,19 @@
             nr.AddRequest(np, role);
         }
 
+        public bool TryGetNode(S resource, out IDependencyNode node)
+        {
+            Node internalNode;
+            if (!resourceMap.TryFindValue(resource, out internalNode))
+            {
+                node = null;
+                return false;
+            }
+
+            node = internalNode;
+            return true;
+        }
+
         public void Debug_PrintCollection(
             Func<S, string> toStringRes, 
             Func<T, string> toStringRole,

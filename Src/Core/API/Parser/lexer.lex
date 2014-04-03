@@ -148,7 +148,7 @@ SId             [\%]{BId}([\.]{BId})*
 ({BId}[\.])*({BId}|{TId}|{SId})            { return GetIdToken(yytext);   }
 [\-+]?[0-9]+                               { return (int)Tokens.DIGITS;   }
 [\-+]?[0-9]+[\.][0-9]+                     { return (int)Tokens.REAL;     }
-[\-+]?[0-9]+[\/][\-+]?[0-9]*[1-9]          { return (int)Tokens.FRAC;     }
+[\-+]?[0-9]+[\/][\-+]?[0]*[1-9][0-9]*    { return (int)Tokens.FRAC;     }
 
 [\|]                                       { return (int)Tokens.PIPE; }
 "::="                                      { return (int)Tokens.TYPEDEF; }

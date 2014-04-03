@@ -90,6 +90,11 @@
         private Map<Term, UserSymbol> comprMap = new Map<Term, UserSymbol>(Term.Compare);
         private Map<UserSymbol, Term> invComprMap = new Map<UserSymbol, Term>(Symbol.Compare);
 
+        /// <summary>
+        /// Will be non-null if compilation succeeds to stratification step.
+        /// </summary>
+        private DependencyCollection<CoreRule, bool> stratificationGraph = null;
+
         internal IEnumerable<CoreRule> Rules
         {
             get
@@ -172,6 +177,51 @@
             var result = clone.Stratify(new List<Flag>(), default(CancellationToken));
             Contract.Assert(result);
             return clone;
+        }
+
+        internal void Optimize()
+        {
+            Contract.Assert(stratificationGraph != null);
+            UserSymbol symb;
+            CoreRule r;
+            var inlines = new Map<Symbol, CoreRule>(Symbol.Compare);           
+            foreach (var kv in partialRules)
+            {
+                r = kv.Value;
+                symb = (UserSymbol)r.Head.Symbol;
+                if (!r.Find2.IsNull || IsComprehensionSymbol(symb))
+                {
+                    continue;
+                }
+
+                if (inlines.ContainsKey(r.Head.Symbol))
+                {
+                    inlines[r.Head.Symbol] = null;
+                }
+                else
+                {
+                    inlines[r.Head.Symbol] = r;
+                }
+            }
+
+            DependencyCollection<CoreRule, bool>.IDependencyNode node;
+            foreach (var kv in inlines)
+            {
+                if (kv.Value == null || 
+                    !stratificationGraph.TryGetNode(kv.Value, out node) ||
+                    node.Provides.Count == 0)
+                {
+                    continue;
+                }
+
+                Console.WriteLine("Inlinable");
+                kv.Value.Debug_PrintRule();
+                foreach (var end in node.Provides)
+                {
+                    Console.WriteLine("Apply inline to");
+                    end.Target.Resource.Debug_PrintRule();
+                }
+            }
         }
 
         internal bool Compile(List<Flag> flags, CancellationToken cancel)
@@ -1445,6 +1495,7 @@
                 }
             }
 
+            stratificationGraph = deps;
             //// Third, check for dependency cycles that are not stratified.
             //// Debug_PrintRuleTable();
             //// deps.Debug_PrintCollection(x => x.RuleId.ToString(), x => x ? "STRAT" : "", true);

@@ -123,13 +123,13 @@ OUT:      x: F(Integer, {NIL})
 OUT:      ~dc1: Integer
 OUT:      y: PosInteger
 OUT: + Type environment at (17, 4)
-OUT:   ~dc0: G(F({0..0}, F + {NIL}))
-OUT:   x: F({0..0}, F + {NIL})
+OUT:   ~dc0: G(F({0}, F + {NIL}))
+OUT:   x: F({0}, F + {NIL})
 OUT:   ~dc1: F + {NIL}
 OUT:   y: PosInteger
 OUT:    + Type environment at (17, 9)
-OUT:      ~dc0: G(F({0..0}, F + {NIL}))
-OUT:      x: F({0..0}, F + {NIL})
+OUT:      ~dc0: G(F({0}, F + {NIL}))
+OUT:      x: F({0}, F + {NIL})
 OUT:      ~dc1: F + {NIL}
 OUT:      y: PosInteger
 OUT: + Type environment at (20, 4)

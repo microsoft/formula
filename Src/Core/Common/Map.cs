@@ -6,6 +6,9 @@
     using System.Diagnostics.Contracts;
     using System.Threading;
 
+    /// <summary>
+    /// A map backed by a red-black tree. Thread-safe only for reads.
+    /// </summary>
     public class Map<S, T> : IEnumerable<KeyValuePair<S, T>>
     {
         private Comparison<S> comparer;

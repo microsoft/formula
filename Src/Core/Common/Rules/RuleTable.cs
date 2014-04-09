@@ -179,12 +179,19 @@
             return clone;
         }
 
-        internal void Optimize()
+        internal Set<CoreRule> Optimize()
         {
             Contract.Assert(stratificationGraph != null);
             UserSymbol symb;
             CoreRule r;
             var inlines = new Map<Symbol, CoreRule>(Symbol.Compare);           
+            var optimizedSet = new Set<CoreRule>(CoreRule.Compare);
+            foreach (var rp in Rules)
+            {
+                optimizedSet.Add(rp);
+            }
+
+            int initSize = optimizedSet.Count;
             foreach (var kv in partialRules)
             {
                 r = kv.Value;
@@ -204,6 +211,8 @@
                 }
             }
 
+            bool succeeded;
+            CoreRule inliner, inlinee, inlined;
             DependencyCollection<CoreRule, bool>.IDependencyNode node;
             foreach (var kv in inlines)
             {
@@ -214,14 +223,28 @@
                     continue;
                 }
 
-                Console.WriteLine("Inlinable");
-                kv.Value.Debug_PrintRule();
+                succeeded = optimizedSet.Contains(kv.Value, out inliner);
+                Contract.Assert(succeeded);
                 foreach (var end in node.Provides)
                 {
-                    Console.WriteLine("Apply inline to");
-                    end.Target.Resource.Debug_PrintRule();
+                    if (!optimizedSet.Contains(end.Target.Resource, out inlinee))
+                    {
+                        continue;
+                    }
+
+                    inlined = inlinee.OptInlinePartialRule(inliner, out succeeded);
+                    if (inlined != inlinee)
+                    {
+                        inlined.Stratum = inlinee.Stratum;
+                        optimizedSet.Remove(inlinee);
+                        optimizedSet.Add(inlined);
+                    }
                 }
+
+                optimizedSet.Remove(inliner);
             }
+
+            return optimizedSet;
         }
 
         internal bool Compile(List<Flag> flags, CancellationToken cancel)
@@ -765,10 +788,10 @@
             Term intr, intrCan;
             if (!index.MkIntersection(reqType, estimate, out intr))
             {
-                expectedStr = string.Format("{0}[{1} : {2}", symb.FullName, indices[0], choices[0].Debug_GetSmallTermString());
+                expectedStr = string.Format("{0}[{1} : {2}", symb.FullName, indices[0], choices[0].PrintTypeTerm());
                 for (int i = 1; i < choices.Length; ++i)
                 {
-                    expectedStr += string.Format(", {0} : {1}", indices[i], choices[i].Debug_GetSmallTermString());
+                    expectedStr += string.Format(", {0} : {1}", indices[i], choices[i].PrintTypeTerm());
                 }
 
                 expectedStr += "]";
@@ -786,10 +809,10 @@
                 return;
             }
 
-            expectedStr = string.Format("{0}[{1} : {2}", symb.FullName, indices[0], choices[0].Debug_GetSmallTermString());
+            expectedStr = string.Format("{0}[{1} : {2}", symb.FullName, indices[0], choices[0].PrintTypeTerm());
             for (int i = 1; i < choices.Length; ++i)
             {
-                expectedStr += string.Format(", {0} : {1}", indices[i], choices[i].Debug_GetSmallTermString());
+                expectedStr += string.Format(", {0} : {1}", indices[i], choices[i].PrintTypeTerm());
             }
 
             expectedStr += "]";
@@ -823,7 +846,7 @@
                     flags.Add(new Flag(
                         SeverityKind.Warning,
                         blame,
-                        Constants.ProductivityCaseWarning.ToString(cases, symb.FullName, indices[i], t.Args[indices[i]].Debug_GetSmallTermString()),
+                        Constants.ProductivityCaseWarning.ToString(cases, symb.FullName, indices[i], t.Args[indices[i]].PrintTypeTerm()),
                         Constants.ProductivityCaseWarning.Code));
                 }
 

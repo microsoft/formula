@@ -270,7 +270,6 @@
                     var ruleTable = new RuleTable(modData);
                     if (ruleTable.Compile(flags, cancel))
                     {
-                        //// ruleTable.Optimize();
                         modData.PassedPhase(ModuleData.PhaseKind.Compiled, ruleTable);
                         Configuration conf = null;
                         switch (modData.Source.AST.Node.NodeKind)

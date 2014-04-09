@@ -3,6 +3,7 @@
     using System;
     using System.Collections.Generic;
     using System.Diagnostics.Contracts;
+    using System.IO;
 
     using API;
 
@@ -162,6 +163,29 @@
             {
                 return 0;
             }
+        }
+
+        /// <summary>
+        /// Expects this to be a type term. If not an InvalidOperationException will be thrown.
+        /// </summary>
+        public void PrintTypeTerm(
+                    TextWriter wr, 
+                    System.Threading.CancellationToken cancel = default(System.Threading.CancellationToken),
+                    EnvParams envParams = null)
+        {
+            TermPrinting.PrintTypeTerm(this, wr, cancel, envParams);
+        }
+
+        /// <summary>
+        /// Expects this to be a type term. If not an InvalidOperationException will be thrown.
+        /// </summary>
+        public string PrintTypeTerm(
+                    System.Threading.CancellationToken cancel = default(System.Threading.CancellationToken),
+                    EnvParams envParams = null)
+        {
+            var sw = new StringWriter();
+            TermPrinting.PrintTypeTerm(this, sw, cancel, envParams);
+            return sw.ToString();
         }
 
         public int LexicographicCompare(Term t)

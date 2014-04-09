@@ -47,6 +47,19 @@
             return true;
         }
 
+        public bool TryGetStatistics(int id, out ExecuterStatistics stats)
+        {
+            TaskData data;
+            if (!tasks.TryGetValue(id, out data))
+            {
+                stats = null;
+                return false;
+            }
+
+            stats = data.Statistics;
+            return true;
+        }
+
         public int StartTask(Task<QueryResult> task, ExecuterStatistics stats, CancellationTokenSource canceller)
         {
             Contract.Requires(task != null && stats != null && canceller != null);

@@ -19,8 +19,6 @@
         private static char PatternVarBoundPrefix = '^';
         private static char PatternVarUnboundPrefix = '*';
 
-        private ExecuterStatistics stats;
-        
         /// <summary>
         /// Maps a renaming to the fact set under that renaming.
         /// </summary>
@@ -78,6 +76,12 @@
             private set;
         }
 
+        public ExecuterStatistics Statistics
+        {
+            get;
+            private set;
+        }
+
         /// <summary>
         /// Contains the fixpoint if executer terminated without cancellation.
         /// </summary>
@@ -100,7 +104,7 @@
             Rules = factSet.Rules;
             factSets = new Map<string, FactSet>(string.Compare);
             factSets.Add(string.Empty, factSet);
-            this.stats = stats;
+            this.Statistics = stats;
             InitializeExecuter(factSet.GetSymbCnstValue);
         }
 
@@ -122,7 +126,7 @@
             TermIndex = rules.Index;
             Rules = rules;
             factSets = modelInputs;
-            this.stats = stats;
+            this.Statistics = stats;
             var name = ((Transform)rules.ModuleData.Reduced.Node).Name;
 
             bool wasAdded;
@@ -158,6 +162,11 @@
             LinkedList<CoreRule> untrigList;
             for (int i = 0; i < Rules.StratificationDepth; ++i)
             {
+                if (Statistics != null)
+                {
+                    Statistics.CurrentStratum = i;
+                }
+
                 //// At each stratum all rules must be pended for all possible bindings.
                 if (untrigRules.TryFindValue(i, out untrigList))
                 {
@@ -529,7 +538,15 @@
 
         private void InitializeExecuter(Func<Term, Term> symbCnstGetter, IEnumerable<Term> otherSymbCnsts = null)
         {
-            foreach (var r in Rules.Rules)
+            var optRules = Rules.Optimize();
+            if (Statistics != null)
+            {
+                Statistics.SetRules(optRules);
+                //// TODO: Future optimizations may eliminate some strata.
+                Statistics.NStrata = Rules.StratificationDepth;
+            }
+
+            foreach (var r in optRules)
             {
                 foreach (var s in r.ComprehensionSymbols)
                 {
@@ -605,6 +622,10 @@
                 {
                     dervs = new Set<Derivation>(Derivation.Compare);
                     facts.Add(t, dervs);
+                    if (Statistics != null)
+                    {
+                        Statistics.RecFxpAdd(facts.Count);
+                    }
                 }
 
                 foreach (var d in drs)
@@ -615,6 +636,10 @@
             else if (!facts.TryFindValue(t, out dervs))
             {
                 facts.Add(t, null);
+                if (Statistics != null)
+                {
+                    Statistics.RecFxpAdd(facts.Count);
+                }
             }
 
             LinkedList<SubIndex> subindices;

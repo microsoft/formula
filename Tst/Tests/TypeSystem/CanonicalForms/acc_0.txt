@@ -155,8 +155,8 @@ OUT:    + Type environment at (22, 12)
 OUT:      x: NegInteger
 OUT:      ~dc0: F(NegInteger)
 OUT:    + Type environment at (23, 12)
-OUT:      x: {0..0}
-OUT:      ~dc0: F({0..0})
+OUT:      x: {0}
+OUT:      ~dc0: F({0})
 OUT: + Type environment at (25, 4)
 OUT:   x: G + {NIL}
 OUT:   y: G
@@ -252,29 +252,29 @@ OUT:      ~sv4: G(G(G))
 OUT:      ~sv5: G(G)
 OUT:      ~sv6: G
 OUT: + Type environment at (42, 4)
-OUT:   x: R({0..0}, {0..0})
+OUT:   x: R({0}, {0})
 OUT:    + Type environment at (42, 12)
-OUT:      x: R({0..0}, {0..0})
+OUT:      x: R({0}, {0})
 OUT: + Type environment at (44, 4)
-OUT:   x: R({1..1}, {0..1}) + R({0..1}, {1..1})
+OUT:   x: R({1}, {0..1}) + R({0..1}, {1})
 OUT:    + Type environment at (44, 12)
-OUT:      x: R({0..0}, {1..1})
+OUT:      x: R({0}, {1})
 OUT:    + Type environment at (44, 26)
-OUT:      x: R({1..1}, {0..0})
+OUT:      x: R({1}, {0})
 OUT:    + Type environment at (44, 40)
-OUT:      x: R({1..1}, {1..1})
+OUT:      x: R({1}, {1})
 OUT: + Type environment at (46, 4)
 OUT:   x: R
 OUT:    + Type environment at (46, 12)
-OUT:      x: R({0..0}, {1..1})
+OUT:      x: R({0}, {1})
 OUT:    + Type environment at (46, 26)
-OUT:      x: R({1..1}, {0..0})
+OUT:      x: R({1}, {0})
 OUT:    + Type environment at (46, 40)
-OUT:      x: R({1..1}, {1..1})
+OUT:      x: R({1}, {1})
 OUT:    + Type environment at (46, 54)
-OUT:      x: R({0..0}, {0..0})
+OUT:      x: R({0}, {0})
 OUT: + Type environment at (48, 4)
-OUT:   x: R'({TRUE}, {FALSE} + {TRUE}) + R'({FALSE} + {TRUE}, {TRUE})
+OUT:   x: R'({TRUE}, {FALSE, TRUE}) + R'({FALSE, TRUE}, {TRUE})
 OUT:    + Type environment at (48, 12)
 OUT:      x: R'({TRUE}, {FALSE})
 OUT:    + Type environment at (48, 34)
@@ -292,23 +292,23 @@ OUT:      x: R'({TRUE}, {TRUE})
 OUT:    + Type environment at (51, 34)
 OUT:      x: R'({FALSE}, {FALSE})
 OUT: + Type environment at (53, 4)
-OUT:   x: R'({TRUE}, {FALSE} + {TRUE}) + R'({FALSE} + {TRUE}, {TRUE})
-OUT:   y: {FALSE} + {TRUE}
+OUT:   x: R'({TRUE}, {FALSE, TRUE}) + R'({FALSE, TRUE}, {TRUE})
+OUT:   y: {FALSE, TRUE}
 OUT:    + Type environment at (53, 12)
-OUT:      x: R'({TRUE}, {FALSE} + {TRUE})
-OUT:      y: {FALSE} + {TRUE}
+OUT:      x: R'({TRUE}, {FALSE, TRUE})
+OUT:      y: {FALSE, TRUE}
 OUT:    + Type environment at (54, 12)
-OUT:      x: R'({FALSE} + {TRUE}, {TRUE})
-OUT:      y: {FALSE} + {TRUE}
+OUT:      x: R'({FALSE, TRUE}, {TRUE})
+OUT:      y: {FALSE, TRUE}
 OUT: + Type environment at (56, 4)
 OUT:   x: R'
-OUT:   y: {FALSE} + {TRUE}
+OUT:   y: {FALSE, TRUE}
 OUT:    + Type environment at (56, 12)
-OUT:      x: R'({TRUE}, {FALSE} + {TRUE})
-OUT:      y: {FALSE} + {TRUE}
+OUT:      x: R'({TRUE}, {FALSE, TRUE})
+OUT:      y: {FALSE, TRUE}
 OUT:    + Type environment at (57, 12)
-OUT:      x: R'({FALSE} + {TRUE}, {TRUE})
-OUT:      y: {FALSE} + {TRUE}
+OUT:      x: R'({FALSE, TRUE}, {TRUE})
+OUT:      y: {FALSE, TRUE}
 OUT:    + Type environment at (58, 12)
 OUT:      x: R'({FALSE}, {FALSE})
 OUT: 

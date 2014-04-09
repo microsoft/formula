@@ -84,19 +84,35 @@
         /// Enumerates all values that were derived by the query operation.
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<AST<Node>> EnumerateDerivations()
+        public IEnumerable<AST<Node>> EnumerateDerivations(bool sort = false)
         {
-            Symbol s;
-            foreach (var kv in exe.Fixpoint)
+            IEnumerable<Term> fixpoint;
+            if (sort)
             {
-                s = kv.Key.Symbol;
+                var sorted = new Set<Term>(exe.TermIndex.LexicographicCompare);
+                foreach (var kv in exe.Fixpoint)
+                {
+                    sorted.Add(kv.Key);
+                }
+
+                fixpoint = sorted;
+            }
+            else
+            {
+                fixpoint = exe.Fixpoint.Keys;
+            }
+
+            Symbol s;
+            foreach (var t in fixpoint)
+            {
+                s = t.Symbol;
                 if ((s.Kind == SymbolKind.UserCnstSymb || s.Kind == SymbolKind.ConSymb || s.Kind == SymbolKind.MapSymb) &&
                     ((UserSymbol)s).Name.StartsWith(SymbolTable.ManglePrefix))
                 {
                     continue;
                 }
 
-                yield return Factory.Instance.ToAST(kv.Key);
+                yield return Factory.Instance.ToAST(t);
             }
         }
 

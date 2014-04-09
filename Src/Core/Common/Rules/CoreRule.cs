@@ -299,7 +299,7 @@
         public virtual CoreRule OptInlinePartialRule(CoreRule inliner, out bool succeeded)
         {
             //// The inliner is expected to be a partial rule with at most one find.
-            if (!inliner.Head.Symbol.IsReservedOperation || !inliner.Find2.IsNull)
+            if (!inliner.Find2.IsNull)
             {
                 succeeded = false;
                 return this;
@@ -346,7 +346,77 @@
                 return this;
             }
 
-            throw new NotImplementedException();
+            string varPrefix;
+            var inlinedFind1 = Find1;
+            var inlinedFind2 = Find2;
+            var inlinedConstrs = new Set<Term>(Term.Compare, Constraints);
+            if (inliner1 != null)
+            {
+                varPrefix = string.Format("~inl~{0}~1", inliner.RuleId);
+                foreach (var c in inliner.Constraints)
+                {
+                    inlinedConstrs.Add(Substitute(c, inliner1, varPrefix));
+                }
+
+                if (!inliner.Find1.IsNull)
+                {
+                    inlinedFind1 = new FindData(
+                        Substitute(inliner.Find1.Binding, inliner1, varPrefix),
+                        Substitute(inliner.Find1.Pattern, inliner1, varPrefix),
+                        Substitute(inliner.Find1.Type, inliner1, varPrefix));
+                }
+                else
+                {
+                    inlinedFind1 = new FindData();
+                }
+            }
+
+            if (inliner2 != null)
+            {
+                varPrefix = string.Format("~inl~{0}~2", inliner.RuleId);
+                foreach (var c in inliner.Constraints)
+                {
+                    inlinedConstrs.Add(Substitute(c, inliner2, varPrefix));
+                }
+
+                if (!inliner.Find1.IsNull)
+                {
+                    inlinedFind2 = new FindData(
+                        Substitute(inliner.Find1.Binding, inliner2, varPrefix),
+                        Substitute(inliner.Find1.Pattern, inliner2, varPrefix),
+                        Substitute(inliner.Find1.Type, inliner2, varPrefix));
+                }
+                else
+                {
+                    inlinedFind2 = new FindData();
+                }
+            }
+
+            succeeded = true;
+            if (inlinedFind1.IsNull && !inlinedFind2.IsNull)
+            {
+                return new CoreRule(
+                    RuleId,
+                    Head,
+                    inlinedFind2,
+                    inlinedFind1,
+                    inlinedConstrs,
+                    x => (ComprehensionSymbols.Contains(x) || inliner.ComprehensionSymbols.Contains(x)),
+                    HeadType,
+                    Node);
+            }
+            else
+            {
+                return new CoreRule(
+                    RuleId,
+                    Head,
+                    inlinedFind1,
+                    inlinedFind2,
+                    inlinedConstrs,
+                    x => (ComprehensionSymbols.Contains(x) || inliner.ComprehensionSymbols.Contains(x)),
+                    HeadType,
+                    Node);
+            }
         }
 
         public virtual void Execute(
@@ -356,6 +426,13 @@
             bool keepDerivations,
             Map<Term, Set<Derivation>> pending)
         {
+            ActivationStatistics astats = null;
+            if (index.Statistics != null)
+            {
+                astats = index.Statistics.GetActivations(this);
+                astats.BeginActivation();
+            }
+
             if (initStatus == InitStatusKind.Uninit)
             {
                 initStatus = Initialize(index) ? InitStatusKind.Success : InitStatusKind.Fail;
@@ -363,17 +440,28 @@
 
             if (initStatus == InitStatusKind.Fail)
             {
+                if (astats != null)
+                {
+                    astats.IncFailCount();
+                    astats.EndActivation();
+                }
+
                 return;
             }
 
             //// Debug_PrintRule();
-
             //// Case 1. There are no finds.
             ConstraintNode headNode = nodes[Head];
             if (Find1.IsNull && Find2.IsNull)
             {
                 Contract.Assert(headNode.Binding != null);
                 Pend(keepDerivations, index, pending, headNode.Binding, Index.FalseValue, Index.FalseValue);
+                if (astats != null)
+                {
+                    astats.IncPendCount();
+                    astats.EndActivation();
+                }
+
                 return;
             }
 
@@ -395,6 +483,12 @@
 
             if (!ApplyMatch(index, matcher, binding, ConstraintNode.BLFirst))
             {
+                if (astats != null)
+                {
+                    astats.IncFailCount();
+                    astats.EndActivation();
+                }
+
                 //// Console.WriteLine("binding failed");
                 return;
             }
@@ -412,6 +506,12 @@
                     findNumber == 1 ? binding : Index.FalseValue);
 
                 UndoPropagation(ConstraintNode.BLFirst);
+                if (astats != null)
+                {
+                    astats.IncPendCount();
+                    astats.EndActivation();
+                }
+
                 return;
             }
 
@@ -474,15 +574,25 @@
                         findNumber == 1 ? binding : tp);
 
                     UndoPropagation(ConstraintNode.BLSecond);
+                    if (astats != null)
+                    {
+                        astats.IncPendCount();
+                    }
                 }
-                /*
                 else
                 {
-                    Console.WriteLine("binding failed");
-                }*/
+                    if (astats != null)
+                    {
+                        astats.IncFailCount();
+                    }
+                }
             }
 
             UndoPropagation(ConstraintNode.BLFirst);
+            if (astats != null)
+            {
+                astats.EndActivation();
+            }
         }
 
         public static int Compare(CoreRule r1, CoreRule r2)
@@ -638,6 +748,8 @@
 
         private Term Substitute(Term t, Map<Term, Term> substitution, string varPrefix)
         {
+            Contract.Requires(t != null && substitution != null && varPrefix != null);
+
             int i;
             Term sub;
             bool wasAdded;

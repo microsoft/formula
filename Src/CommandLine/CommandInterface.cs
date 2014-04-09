@@ -53,6 +53,7 @@
         private const string QueryMsg = "Start a query task. Use: query model goals";
         private const string SolveMsg = "Start a solve task. Use: solve partial_model max_sols goals";
         private const string ApplyMsg = "Start an apply task. Use: apply transformstep";
+        private const string StatsMsg = "Prints task statistics. Use: stats task_id";
         private const string GenDataMsg = "Generate C# data model. Use: generate modname";
         private const string TruthMsg = "Test if a ground term is derivable under a model/apply. Use: truth task_id [ground_term | *]";
         private const string ProofMsg = "Enumerate proofs that a ground term is derivable under a model/apply. Use: proof task_id [ground_term]";
@@ -221,6 +222,10 @@
             var applyCmd = new Command("apply", "ap", DoApply, ApplyMsg);
             cmdMap.Add(applyCmd.Name, applyCmd);
             cmdMap.Add(applyCmd.ShortName, applyCmd);
+
+            var statsCmd = new Command("stats", "st", DoStats, StatsMsg);
+            cmdMap.Add(statsCmd.Name, statsCmd);
+            cmdMap.Add(statsCmd.ShortName, statsCmd);
 
             var generateCmd = new Command("generate", "gn", DoGenerate, GenDataMsg);
             cmdMap.Add(generateCmd.Name, generateCmd);
@@ -408,6 +413,58 @@
             }
         }
 
+        private void DoStats(string s)
+        {
+            var cmdParts = s.Split(cmdSplitChars, 1, StringSplitOptions.RemoveEmptyEntries);
+            if (cmdParts.Length == 0)
+            {
+                sink.WriteMessageLine(StatsMsg, SeverityKind.Warning);
+                return;
+            }
+
+            int taskId;
+            if (!int.TryParse(cmdParts[0], out taskId))
+            {
+                sink.WriteMessageLine(string.Format("{0} is not a task id", cmdParts[0]), SeverityKind.Warning);
+                return;
+            }
+
+            Common.Rules.ExecuterStatistics stats;
+            if (!taskManager.TryGetStatistics(taskId, out stats))
+            {
+                sink.WriteMessageLine(string.Format("{0} is not a task id", cmdParts[0]), SeverityKind.Warning);
+                return;
+            }
+            else if (stats == null)
+            {
+                sink.WriteMessageLine(string.Format("task {0} is not recording execution statistics", cmdParts[0]), SeverityKind.Warning);
+                return;
+            }
+
+            sink.WriteMessageLine("** Execution statistics");
+            sink.WriteMessageLine(string.Format("Number of rules       : {0}", stats.NRules));
+            sink.WriteMessageLine(string.Format("Number of strata      : {0}", stats.NStrata));
+            sink.WriteMessageLine(string.Format("Current stratum       : {0}", stats.CurrentStratum));
+            sink.WriteMessageLine(string.Format("Current fixpoint size : {0}", stats.CurrentFixpointSize));
+            var activations = stats.Activations;
+            if (activations == null)
+            {
+                sink.WriteMessageLine("Activations currently unknown.");
+                return;
+            }
+
+            foreach (var a in activations)
+            {
+                if (a.TotalActivations == 0)
+                {
+                    continue;
+                }
+
+                a.PrintRule(null);
+                sink.WriteMessageLine(string.Format("Rule: {0}, Acts: {1}, TotalPend: {2}, TotalFail: {3}", a.RuleId, a.TotalActivations, a.TotalPends, a.TotalFailures));
+            }
+        }
+
         private void DoTruth(string s)
         {
             var cmdParts = s.Split(cmdSplitChars, 2, StringSplitOptions.RemoveEmptyEntries);
@@ -445,7 +502,7 @@
                 if (goal.Trim() == "*")
                 {
                     sink.WriteMessageLine("Listing all derived values...", SeverityKind.Info);
-                    foreach (var a in result.EnumerateDerivations())
+                    foreach (var a in result.EnumerateDerivations(true))
                     {
                         sink.WriteMessage("   ");
                         a.Print(sink.Writer);
@@ -474,7 +531,7 @@
                 if (goal.Trim() == "*")
                 {                    
                     sink.WriteMessageLine("Listing all derived values...", SeverityKind.Info);
-                    foreach (var a in result.EnumerateDerivations())
+                    foreach (var a in result.EnumerateDerivations(true))
                     {
                         sink.WriteMessage("   ");
                         a.Print(sink.Writer);
@@ -1223,7 +1280,7 @@
                 }
 
                 sink.WriteMessage(string.Format("{0}{1}: ", indentStr, t.Symbol.PrintableName));
-                PrintType(type);
+                type.PrintTypeTerm(sink.Writer);
                 sink.WriteMessageLine("");
             }
 
@@ -2247,43 +2304,6 @@
                     cmdLock.Exit();
                 }
             }
-        }
-
-        private void PrintType(Term t)
-        {
-            Contract.Requires(t != null && t.Groundness != Groundness.Variable);
-            var terminators = new Stack<string>();
-            terminators.Push(string.Empty);
-            t.Compute<Unit>(
-                (x, s) =>
-                {
-                    if (x.Symbol.IsDataConstructor)
-                    {
-                        sink.Writer.Write(x.Symbol.PrintableName);
-                        sink.Writer.Write("(");
-                    }
-
-                    return ExpandTypeTerm(x, terminators);
-                },
-                (x, ch, s) =>
-                {
-                    var terminator = terminators.Pop();
-                    if (x.Symbol.IsNonVarConstant)
-                    {
-                        sink.Writer.Write(string.Format("{{{0}}}", x.Symbol.PrintableName));
-                    }
-                    else if (x.Symbol.IsRange)
-                    {
-                        sink.Writer.Write(string.Format("{{{0}..{1}}}", x.Args[0].Symbol.PrintableName, x.Args[1].Symbol.PrintableName));
-                    }
-                    else if (x.Symbol.Arity == 0)
-                    {
-                        sink.Writer.Write(x.Symbol.PrintableName);
-                    }
-
-                    sink.Writer.Write(terminator);
-                    return default(Unit);
-                });
         }
 
         private IEnumerable<Term> ExpandTypeTerm(Term t, Stack<string> terminators)

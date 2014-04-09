@@ -130,51 +130,51 @@ OUT:      x: {-348978933..0}
 OUT:      y: {500000..3245345435}
 OUT:      z: PosInteger
 OUT: + Type environment at (20, 5)
-OUT:   ~dc0: F3({-348978933..0}, {500000..3245345435} + {blue}, PosInteger)
+OUT:   ~dc0: F3({-348978933..0}, {500000..3245345435, blue}, PosInteger)
 OUT:   x: {-348978933..0}
-OUT:   y: {500000..3245345435} + {blue}
+OUT:   y: {500000..3245345435, blue}
 OUT:   z: PosInteger
 OUT:    + Type environment at (20, 11)
-OUT:      ~dc0: F3({-348978933..0}, {500000..3245345435} + {blue}, PosInteger)
+OUT:      ~dc0: F3({-348978933..0}, {500000..3245345435, blue}, PosInteger)
 OUT:      x: {-348978933..0}
-OUT:      y: {500000..3245345435} + {blue}
+OUT:      y: {500000..3245345435, blue}
 OUT:      z: PosInteger
 OUT: + Type environment at (22, 5)
-OUT:   x1: {2..2}
-OUT:   x2: {2..2}
-OUT:   x3: {1..1}
-OUT:   x4: {1..1}
+OUT:   x1: {2}
+OUT:   x2: {2}
+OUT:   x3: {1}
+OUT:   x4: {1}
 OUT:   x5: {1/2}
 OUT:    + Type environment at (22, 14)
-OUT:      x1: {2..2}
-OUT:      x2: {2..2}
-OUT:      x3: {1..1}
-OUT:      x4: {1..1}
+OUT:      x1: {2}
+OUT:      x2: {2}
+OUT:      x3: {1}
+OUT:      x4: {1}
 OUT:      x5: {1/2}
 OUT: + Type environment at (28, 4)
-OUT:   ~dc0: F3({-348978933..-1}, {500000..3245345435} + {blue}, PosInteger)
+OUT:   ~dc0: F3({-348978933..-1}, {500000..3245345435, blue}, PosInteger)
 OUT:   x: {-348978933..-1}
-OUT:   y: {500000..3245345435} + {blue}
+OUT:   y: {500000..3245345435, blue}
 OUT:   z: PosInteger
 OUT:    + Type environment at (28, 10)
-OUT:      ~dc0: F3({-348978933..-1}, {500000..3245345435} + {blue}, PosInteger)
+OUT:      ~dc0: F3({-348978933..-1}, {500000..3245345435, blue}, PosInteger)
 OUT:      x: {-348978933..-1}
-OUT:      y: {500000..3245345435} + {blue}
+OUT:      y: {500000..3245345435, blue}
 OUT:      z: PosInteger
 OUT: + Type environment at (30, 4)
 OUT:   x: A
 OUT:    + Type environment at (30, 12)
 OUT:      x: A
 OUT: + Type environment at (32, 4)
-OUT:   ~dc0: G({FALSE} + {TRUE})
-OUT:   x: {FALSE} + {TRUE}
-OUT:   y: {FALSE} + {TRUE}
-OUT:   ~dc1: G({FALSE} + {TRUE})
+OUT:   ~dc0: G({FALSE, TRUE})
+OUT:   x: {FALSE, TRUE}
+OUT:   y: {FALSE, TRUE}
+OUT:   ~dc1: G({FALSE, TRUE})
 OUT:    + Type environment at (32, 10)
-OUT:      ~dc0: G({FALSE} + {TRUE})
-OUT:      x: {FALSE} + {TRUE}
-OUT:      y: {FALSE} + {TRUE}
-OUT:      ~dc1: G({FALSE} + {TRUE})
+OUT:      ~dc0: G({FALSE, TRUE})
+OUT:      x: {FALSE, TRUE}
+OUT:      y: {FALSE, TRUE}
+OUT:      ~dc1: G({FALSE, TRUE})
 OUT: + Type environment at (34, 4)
 OUT:   ~dc0: G(Real)
 OUT:   x: Real
@@ -250,23 +250,23 @@ OUT: []> typ SatLists
 OUT: + Type environment at (42, 4)
 OUT:   ~dc0: G({#F})
 OUT:   x: {#F}
-OUT:   i: {0..0}
+OUT:   i: {0}
 OUT:    + Type environment at (42, 9)
 OUT:      ~dc0: G({#F})
 OUT:      x: {#F}
-OUT:      i: {0..0}
+OUT:      i: {0}
 OUT: + Type environment at (44, 4)
-OUT:   i: {0..0}
+OUT:   i: {0}
 OUT:    + Type environment at (44, 11)
-OUT:      i: {0..0}
+OUT:      i: {0}
 OUT: + Type environment at (46, 4)
-OUT:   i: {0..0}
+OUT:   i: {0}
 OUT:    + Type environment at (46, 11)
-OUT:      i: {0..0}
+OUT:      i: {0}
 OUT: + Type environment at (48, 4)
-OUT:   i: {3..3}
+OUT:   i: {3}
 OUT:    + Type environment at (48, 11)
-OUT:      i: {3..3}
+OUT:      i: {3}
 OUT: + Type environment at (50, 4)
 OUT:   ~dc0: G({#F})
 OUT:   x: {#F}

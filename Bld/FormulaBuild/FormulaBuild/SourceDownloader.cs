@@ -25,8 +25,8 @@
         private const string CscName = "csc.exe";
         private const string MSbuildName = "msbuild.exe";
         private const string VsixInstallerName = "Common7\\IDE\\vsixinstaller.exe";
-        private const string RegVS32SubKey = "SOFTWARE\\Microsoft\\VisualStudio\\{0}.0";
-        private const string RegVS64SubKey = "SOFTWARE\\Wow6432Node\\Microsoft\\VisualStudio\\{0}.0";
+        private const string RegVS32SubKey = "SOFTWARE\\Microsoft\\VisualStudio\\{0}.0\\Setup\\VS";
+        private const string RegVS64SubKey = "SOFTWARE\\Wow6432Node\\Microsoft\\VisualStudio\\{0}.0\\Setup\\VS";
         private const string VCVarsAll = "VC\\vcvarsall.bat";
 
         private static readonly string[] FrameworkLocs = new string[]
@@ -42,7 +42,7 @@
 
         private static readonly Tuple<string, string, string, string>[] Versions = new Tuple<string, string, string, string>[] 
         {
-            new Tuple<string, string, string, string>("z3", "33f941aaec11bf7ef754d5779e581ba4a26b3018", "..\\..\\..\\..\\..\\Ext\\Z3\\z3_.zip", "..\\..\\..\\..\\..\\Ext\\Z3\\z3_\\"),
+            new Tuple<string, string, string, string>("z3", "52b54f395b88926703ed390b04ea7767bbadacd3", "..\\..\\..\\..\\..\\Ext\\Z3\\z3_.zip", "..\\..\\..\\..\\..\\Ext\\Z3\\z3_\\"),
             new Tuple<string, string, string, string>("gppg", "84257", "..\\..\\..\\..\\..\\Ext\\GPPG\\gppg_.zip", "..\\..\\..\\..\\..\\Ext\\GPPG\\gppg_\\"),
             new Tuple<string, string, string, string>("gplex", "84980", "..\\..\\..\\..\\..\\Ext\\GPLEX\\gplex_.zip", "..\\..\\..\\..\\..\\Ext\\GPLEX\\gplex_\\")
         };
@@ -265,18 +265,16 @@
 
                 string installDir = null;
                 //// Try to get version 12
-                /*
                 if (installDir == null)
                 {
                     using (var key = Registry.LocalMachine.OpenSubKey(string.Format(subKey, 12)))
                     {
                         if (key != null)
                         {
-                            installDir = key.GetValue("ShellFolder") as string;
+                            installDir = key.GetValue("ProductDir") as string;
                         }
                     }
                 }
-                */
 
                 //// Try to get version 11
                 if (installDir == null)
@@ -285,7 +283,7 @@
                     {
                         if (key != null)
                         {
-                            installDir = key.GetValue("ShellFolder") as string;
+                            installDir = key.GetValue("ProductDir") as string;
                         }
                     }
                 }

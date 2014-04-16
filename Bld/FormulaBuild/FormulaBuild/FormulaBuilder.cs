@@ -27,15 +27,16 @@
         /// (1) true if can only be built with 32-bit version of MsBuild (e.g. VS extensions)
         /// (2) the relative location of the project file
         /// (3) the platform on which it should be built
+        /// (4) If true then must be built; otherwise warning if build fails.
         /// </summary>
-        private static readonly Tuple<bool, string, string>[] Projects = new Tuple<bool, string, string>[]
+        private static readonly Tuple<bool, string, string, bool>[] Projects = new Tuple<bool, string, string, bool>[]
         {
-            new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\CommandLine\\CommandLine.csproj", PlatformX86),
-            new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\CommandLine\\CommandLinex64.csproj", PlatformX64),
-            new Tuple<bool, string, string>(true, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGenerator\\FormulaCodeGenerator.csproj", PlatformX86),
-            new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTask.csproj", PlatformX86),    
-            new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTaskx64.csproj", PlatformX64),    
-            new Tuple<bool, string, string>(false, "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\FormulaToTex.csproj", PlatformAny)
+            new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\CommandLine\\CommandLine.csproj", PlatformX86, true),
+            new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\CommandLine\\CommandLinex64.csproj", PlatformX64, true),
+            new Tuple<bool, string, string, bool>(true, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGenerator\\FormulaCodeGenerator.csproj", PlatformX86, false),
+            new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTask.csproj", PlatformX86, true),    
+            new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTaskx64.csproj", PlatformX64, true),    
+            new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\FormulaToTex.csproj", PlatformAny, true)
         };
 
         private static readonly Tuple<string, string>[] DebugMoveMap = new Tuple<string, string>[]
@@ -171,7 +172,7 @@
             foreach (var proj in Projects)
             {
                 Program.WriteInfo("Building {0}: Config = {1}, Platform = {2}", proj.Item2, config, proj.Item3);
-                result = BuildCSProj(proj.Item1 ? msbuild32 : msbuild, proj.Item2, config, proj.Item3) && result;
+                result = BuildCSProj(proj.Item1 ? msbuild32 : msbuild, proj.Item2, config, proj.Item3, proj.Item4) && result;
             }
 
             if (!result)
@@ -179,8 +180,8 @@
                 return false;
             }
 
-            result = DoMove(isBldDebug ? DebugMoveMap : ReleaseMoveMap) &&
-                     InstallVsix(isBldDebug ? CodeGeneratorDebug : CodeGeneratorRelease) && result;
+            result = DoMove(isBldDebug ? DebugMoveMap : ReleaseMoveMap) && result;
+            InstallVsix(isBldDebug ? CodeGeneratorDebug : CodeGeneratorRelease);
             return result;
         }
 
@@ -228,14 +229,14 @@
                 var vsix = new FileInfo(Path.Combine(runningLoc.Directory.FullName, vsixName));
                 if (!vsix.Exists)
                 {
-                    Program.WriteError("Could not install vsix; file {0} does not exist.", vsix.FullName);
+                    Program.WriteWarning("Could not install vsix; file {0} does not exist.", vsix.FullName);
                     return false;
                 }
 
                 FileInfo installer;
                 if (!SourceDownloader.GetVsixInstaller(out installer))
                 {
-                    Program.WriteError("Could not install vsix; unable to find vsix installer.");
+                    Program.WriteWarning("Could not install vsix; unable to find vsix installer.");
                     return false;
                 }
 
@@ -246,7 +247,7 @@
 
                 if (!RunInstaller(installer, string.Format("/q \"{0}\"", vsix.FullName)))
                 {
-                    Program.WriteError("Could not install vsix extension {0}", vsix.FullName);
+                    Program.WriteWarning("Could not install vsix extension {0}", vsix.FullName);
                     return false;
                 }
 
@@ -254,7 +255,7 @@
             }
             catch (Exception e)
             {
-                Program.WriteError("Could not install vsix {0} - {1}", vsixName, e.Message);
+                Program.WriteWarning("Could not install vsix {0} - {1}", vsixName, e.Message);
                 return false;
             }
         }
@@ -288,14 +289,23 @@
             }
         }
 
-        private static bool BuildCSProj(FileInfo msbuild, string projFileName, string config, string platform)
+        private static bool BuildCSProj(FileInfo msbuild, string projFileName, string config, string platform, bool isRequired)
         {
             try
             {
                 FileInfo projFile;
                 if (!SourceDownloader.GetBuildRelFile(projFileName, out projFile) || !projFile.Exists)
                 {
-                    Program.WriteError("Could not find project file {0}", projFileName);
+                    if (isRequired)
+                    {
+                        Program.WriteError("Could not find project file {0}", projFileName);
+                        return false;
+                    }
+                    else
+                    {
+                        Program.WriteWarning("Could not find project file {0}", projFileName);
+                        return true;
+                    }
                 }
 
                 var psi = new ProcessStartInfo();
@@ -316,12 +326,20 @@
                 process.WaitForExit();
 
                 Program.WriteInfo("EXIT: {0}", process.ExitCode);
-                return process.ExitCode == 0;
+                return process.ExitCode == 0 || !isRequired;
             }
             catch (Exception e)
             {
-                Program.WriteError("Failed to build project {0} - {1}", projFileName, e.Message);
-                return false;
+                if (isRequired)
+                {
+                    Program.WriteError("Failed to build project {0} - {1}", projFileName, e.Message);
+                    return false;
+                }
+                else
+                {
+                    Program.WriteWarning("Failed to build project {0} - {1}", projFileName, e.Message);
+                    return true;
+                }
             }
         }
 

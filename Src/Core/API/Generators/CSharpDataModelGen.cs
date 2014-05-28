@@ -497,6 +497,12 @@
             if (options.IsThreadSafeCode)
             {
                 WriteLine("protected SpinLock rwLock = new SpinLock();", indent);
+                WriteLine("Span span = default(Span);", indent);
+                WriteLine("public Span Span { get { return Get<Span>(() => span); } set { Set(() => { span = value; }); } }", indent);
+            }
+            else
+            {
+                WriteLine("public Span Span { get; set; }", indent);
             }
 
             WriteLine("public abstract int Arity { get; }", indent);
@@ -792,16 +798,20 @@
         {
             foreach (var s in n.Symbols)
             {
-                if (s.Kind != SymbolKind.ConSymb && s.Kind != SymbolKind.MapSymb)
+                if (s.Kind == SymbolKind.ConSymb || s.Kind == SymbolKind.MapSymb)
                 {
-                    continue;
-                }
-                else if (options.IsNewTypesOnly && s.Kind == SymbolKind.ConSymb && !((ConSymb)s).IsNew)
-                {
-                    continue;
-                }
+                    if (options.IsNewTypesOnly && s.Kind == SymbolKind.ConSymb && !((ConSymb)s).IsNew)
+                    {
+                        continue;
+                    }
 
-                PrintConstructor((UserSymbol)s, indent);
+                    PrintConstructor((UserSymbol)s, indent);
+                }
+                else if (s.Kind == SymbolKind.UnnSymb)
+                {
+                    OpenInterface(GetUnionTypeName(s, false), ref indent, new string[] { typeof(ICSharpTerm).Name });
+                    CloseBlock(ref indent);
+                }
             }
         }
 
@@ -1154,30 +1164,61 @@
 
         private void BuildInheritsMaps(Namespace n)
         {
-            UserSymbol us;
+            UserSortSymb uss;
             foreach (var s in n.Symbols)
             {
-                if (s.Kind != SymbolKind.ConSymb && s.Kind != SymbolKind.MapSymb)
+                if (s.Kind == SymbolKind.ConSymb || s.Kind == SymbolKind.MapSymb)
                 {
-                    continue;
-                }
-                else if (options.IsNewTypesOnly && s.Kind == SymbolKind.ConSymb && !((ConSymb)s).IsNew)
-                {
-                    continue;
-                }
-
-                us = (UserSymbol)s;
-                for (int i = 0; i < us.Arity; ++i)
-                {
-                    var argType = GetIArgTypeName(us, i);
-                    foreach (var e in us.CanonicalForm[i].NonRangeMembers)
+                    if (options.IsNewTypesOnly && s.Kind == SymbolKind.ConSymb && !((ConSymb)s).IsNew)
                     {
-                        AddInherits(e, argType);
+                        continue;
                     }
 
-                    if (!us.CanonicalForm[i].RangeMembers.IsEmpty<KeyValuePair<BigInteger, BigInteger>>())
+                    for (int i = 0; i < s.Arity; ++i)
                     {
-                        AddInherits(theRealSymbol, argType);
+                        var argType = GetIArgTypeName(s, i);
+                        foreach (var e in s.CanonicalForm[i].NonRangeMembers)
+                        {
+                            AddInherits(e, argType);
+                        }
+
+                        if (!s.CanonicalForm[i].RangeMembers.IsEmpty<KeyValuePair<BigInteger, BigInteger>>())
+                        {
+                            AddInherits(theRealSymbol, argType);
+                        }
+                    }
+                }
+                else if (s.Kind == SymbolKind.UnnSymb)
+                {
+                    var unionType = GetUnionTypeName(s);
+                    foreach (var e in s.CanonicalForm[0].NonRangeMembers)
+                    {
+                        if (e.Kind == SymbolKind.UserSortSymb)
+                        {
+                            uss = (UserSortSymb)e;
+                            if (options.IsNewTypesOnly && 
+                                uss.DataSymbol.Kind == SymbolKind.ConSymb &&
+                                !((ConSymb)uss.DataSymbol).IsNew)
+                            {
+                                continue;
+                            }
+
+                            AddInherits(uss.DataSymbol, unionType);
+                        }
+                        else 
+                        {
+                            if (options.IsNewTypesOnly && e.Kind == SymbolKind.UserCnstSymb && !e.IsNewConstant)
+                            {
+                                continue;
+                            }
+
+                            AddInherits(e, unionType);
+                        }
+                    }
+
+                    if (!s.CanonicalForm[0].RangeMembers.IsEmpty<KeyValuePair<BigInteger, BigInteger>>())
+                    {
+                        AddInherits(theRealSymbol, unionType);
                     }
                 }
             }
@@ -1269,6 +1310,23 @@
             else
             {
                 return "IArgType" + "_" + EscapeIdentifier(s.Name) + "__" + arg.ToString();
+            }
+        }
+
+        private string GetUnionTypeName(UserSymbol s, bool qualified = true)
+        {
+            Contract.Requires(s != null && s.Kind == SymbolKind.UnnSymb);
+
+            if (qualified)
+            {
+                return EscapeIdentifier(options.Classname) +
+                        RootSuffix + "." +
+                        (string.IsNullOrEmpty(s.Namespace.FullName) ? "" : (EscapeIdentifier(s.Namespace.FullName) + ".")) +
+                        EscapeIdentifier(s.Name);
+            }
+            else
+            {
+                return EscapeIdentifier(s.Name);
             }
         }
 
@@ -1518,10 +1576,13 @@
 
                         break;
                     case '#':
-                        outId += "TYPECONST_";
+                        //// outId += "TYPECONST_";
                         break;
                     case '[':
                         outId += "_NDEX_";
+                        break;
+                    case '~':
+                        outId += "_CG_";
                         break;
                     case ']':
                         break;

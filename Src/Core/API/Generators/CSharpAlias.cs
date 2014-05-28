@@ -20,6 +20,12 @@
             get { throw new InvalidOperationException(); } 
         }
 
+        public Span Span
+        {
+            get;
+            set;
+        }
+
         public CSharpAlias(string alias)
         {
             Symbol = alias;

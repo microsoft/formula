@@ -11,5 +11,6 @@
         int Arity { get; }
         object Symbol { get; }
         ICSharpTerm this[int index] { get; }
+        Span Span { get; set; }
     }
 }

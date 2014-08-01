@@ -524,7 +524,7 @@
                 CloseBlock(ref indent, false);
                 CloseBlock(ref indent);
 
-                OpenFunction("protected void Set", ref indent, new string[] { "Action setter" });
+                OpenFunction("protected void Set", ref indent, new string[] { "System.Action setter" });
                 WriteLine("bool gotLock = false;", indent);
                 OpenTry(ref indent);
                 WriteLine("rwLock.Enter(ref gotLock);", indent);

@@ -660,7 +660,7 @@
             var proofTreeStack = new Stack<ProofTree>();
             var proofStateStack = new Stack<MutableTuple<ProofState, int>>();
 
-            proofTreeStack.Push(new ProofTree(goal, root.CurrentSubProofs[0].Derivation.Rule.Node));
+            proofTreeStack.Push(new ProofTree(goal, root.CurrentSubProofs[0].Derivation.Rule, factSets));
             proofStateStack.Push(new MutableTuple<ProofState, int>(root.CurrentSubProofs[0], -1));
 
             ProofTree treeTop;
@@ -688,16 +688,8 @@
                     binding = stateTop.Item1.GetBinding(stateTop.Item2, out bindingVar);
                     if (!bindingVar.Symbol.IsReservedOperation)
                     {
-                        if (stateTop.Item1.CurrentSubProofs[stateTop.Item2].Derivation.Rule == null)
-                        {
-                            proofTreeStack.Push(
-                                new ProofTree(binding, Factory.Instance.MkId("?", new Span(0, 0, 0, 0)).Node));
-                        }
-                        else
-                        {
-                            proofTreeStack.Push(
-                                new ProofTree(binding, stateTop.Item1.CurrentSubProofs[stateTop.Item2].Derivation.Rule.Node));
-                        }
+                        proofTreeStack.Push(
+                            new ProofTree(binding, stateTop.Item1.CurrentSubProofs[stateTop.Item2].Derivation.Rule, factSets));
                     }
 
                     proofStateStack.Push(new MutableTuple<ProofState, int>(stateTop.Item1.CurrentSubProofs[stateTop.Item2], -1));

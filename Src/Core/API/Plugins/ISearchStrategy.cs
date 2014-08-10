@@ -13,9 +13,17 @@
     public interface ISearchStrategy
     {
         /// <summary>
+        /// A description of this strategy.
+        /// </summary>
+        string Description
+        {
+            get;
+        }
+
+        /// <summary>
         /// Some settings for this plugin.
         /// </summary>
-        IEnumerable<Tuple<string, CnstKind>> SuggestedSettings
+        IEnumerable<Tuple<string, CnstKind, string>> SuggestedSettings
         {
             get;
         }
@@ -23,7 +31,7 @@
         /// <summary>
         /// Creates an instance of this strategy. Specifies the module where the instance
         /// is attached, and the collection and instance names used to register this strategy.
-        /// For example: [ collectionName.instanceName = "parser at parser.dll" ]
+        /// For example: [ collectionName.instanceName = "strategy at strategy.dll" ]
         /// </summary>
         ISearchStrategy CreateInstance(AST<Node> module, string collectionName, string instanceName);
 

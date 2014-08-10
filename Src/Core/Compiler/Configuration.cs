@@ -17,6 +17,9 @@
 
     public sealed class Configuration
     {
+        private static Tuple<string, Type, string>[] colDescrs;
+        private static Tuple<string, CnstKind, string>[] settingDescrs;
+
         private static NodePred[] queryMyConfig = new NodePred[] 
         {
             NodePredFactory.Instance.MkPredicate(NodeKind.AnyNodeKind),
@@ -39,6 +42,29 @@
 
         private static Map<string, Func<Setting, List<Flag>, bool>> TopSettingValidators;
 
+        /// <summary>
+        /// Names for the various collections
+        /// </summary>
+        public const string ParsersCollectionName = "parsers";
+        public const string ModulesCollectionName = "modules";
+        public const string StrategiesCollectionName = "strategies";
+
+        /// <summary>
+        /// Names for the various predefined settings
+        /// </summary>
+        public const string DefaultsSetting = "defaults";
+        public const string Parse_ActiveParserSetting = "parse_ActiveParser";
+        public const string Parse_ActiveRenderSetting = "parse_ActiveRenderer";
+        public const string Compiler_ProductivityCheckSetting = "compiler_ProductivityCheck";
+        public const string Solver_ActiveStrategySetting = "solver_ActiveStrategy";
+        public const string Solver_RealCostSetting = "solver_RealCost";
+        public const string Solver_IntegerCostSetting = "solver_IntegerCost";
+        public const string Solver_NaturalCostSetting = "solver_NaturalCost";
+        public const string Solver_NegIntegerCostSetting = "solver_NegIntegerCost";
+        public const string Solver_PosIntegerCostSetting = "solver_PosIntegerCost";
+        public const string Solver_StringCostSetting = "solver_StringCost";
+        public const string Proofs_KeepLineNumbersSetting = "proofs_KeepLineNumbers";
+
         static Configuration()
         {
             TopSettingValidators = new Map<string, Func<Setting, List<Flag>, bool>>(string.CompareOrdinal);
@@ -46,35 +72,99 @@
             TopSettingValidators[Parse_ActiveRenderSetting] = ValidateStringSetting;
             TopSettingValidators[Solver_ActiveStrategySetting] = ValidateStringSetting;
             TopSettingValidators[Compiler_ProductivityCheckSetting] = ValidateStringSetting;
+            TopSettingValidators[Proofs_KeepLineNumbersSetting] = ValidateBoolSetting;
             TopSettingValidators[Solver_RealCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_IntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_NaturalCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_NegIntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_PosIntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_StringCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
+
+            colDescrs = new Tuple<string, Type, string>[]
+            {
+                new Tuple<string, Type, string>(
+                    ModulesCollectionName, 
+                    typeof(AST<Node>),
+                    string.Format("A map from names to modules. Use {0}.name = \"name at place.4ml\".", ModulesCollectionName)),
+
+                new Tuple<string, Type, string>(
+                    ParsersCollectionName,
+                    typeof(IQuoteParser),
+                    string.Format("A map from names to parsers. Use {0}.name = \"parserClass at implementation.dll\".", ParsersCollectionName)),
+
+                new Tuple<string, Type, string>(
+                    StrategiesCollectionName, 
+                    typeof(ISearchStrategy),
+                    string.Format("A map from names to search strategies. Use {0}.name = \"strategyClass at implementation.dll\".", StrategiesCollectionName))
+            };
+
+            Array.Sort(colDescrs, (x, y) => string.Compare(x.Item1, y.Item1));
+
+            settingDescrs = new Tuple<string, CnstKind, string>[]
+            {
+                new Tuple<string, CnstKind, string>(
+                    DefaultsSetting,
+                    CnstKind.String,
+                    string.Format("Use {0} = \"file.4ml\" to inherit all settings at the file scope of file.4ml.", DefaultsSetting)),
+
+                new Tuple<string, CnstKind, string>(
+                    Parse_ActiveParserSetting,
+                    CnstKind.String,
+                    string.Format("Use {0} = \"name\" to use {1}.name as the active quotation parser.", Parse_ActiveParserSetting, ParsersCollectionName)),
+
+                new Tuple<string, CnstKind, string>(
+                    Parse_ActiveRenderSetting,
+                    CnstKind.String,
+                    string.Format("Use {0} = \"name\" to use {1}.name as the active quotation render.", Parse_ActiveRenderSetting, ParsersCollectionName)),
+
+                new Tuple<string, CnstKind, string>(
+                    Compiler_ProductivityCheckSetting,
+                    CnstKind.String,
+                    string.Format("Use {0} = \"F[i, j, ...], ...\" such that F ::= (T_1, ..., T_n). Checks if rules can produce a value F(..., v_i, ..., v_j, ...) for every v_i : T_i, v_j : T_j.", Compiler_ProductivityCheckSetting)),
+
+                new Tuple<string, CnstKind, string>(
+                    Solver_ActiveStrategySetting,
+                    CnstKind.String,
+                    string.Format("Use {0} = \"name\" to use {1}.name as the active search strategy.", Solver_ActiveStrategySetting, StrategiesCollectionName)),
+
+                new Tuple<string, CnstKind, string>(
+                    Solver_RealCostSetting,
+                    CnstKind.Numeric,
+                    string.Format("Use {0} = n such that 0 <= n <= {1} to increase the cost of encoding symbolic constants as reals.", Solver_RealCostSetting, int.MaxValue)),
+
+                new Tuple<string, CnstKind, string>(
+                    Solver_IntegerCostSetting,
+                    CnstKind.Numeric,
+                    string.Format("Use {0} = n such that 0 <= n <= {1} to increase the cost of encoding symbolic constants as integers.", Solver_IntegerCostSetting, int.MaxValue)),
+
+                new Tuple<string, CnstKind, string>(
+                    Solver_NaturalCostSetting,
+                    CnstKind.Numeric,
+                    string.Format("Use {0} = n such that 0 <= n <= {1} to increase the cost of encoding symbolic constants as naturals.", Solver_NaturalCostSetting, int.MaxValue)),
+
+                new Tuple<string, CnstKind, string>(
+                    Solver_NegIntegerCostSetting,
+                    CnstKind.Numeric,
+                    string.Format("Use {0} = n such that 0 <= n <= {1} to increase the cost of encoding symbolic constants as negative integers.", Solver_NegIntegerCostSetting, int.MaxValue)),
+
+                new Tuple<string, CnstKind, string>(
+                    Solver_PosIntegerCostSetting,
+                    CnstKind.Numeric,
+                    string.Format("Use {0} = n such that 0 <= n <= {1} to increase the cost of encoding symbolic constants as positive integers.", Solver_PosIntegerCostSetting, int.MaxValue)),
+
+                new Tuple<string, CnstKind, string>(
+                    Solver_StringCostSetting,
+                    CnstKind.Numeric,
+                    string.Format("Use {0} = n such that 0 <= n <= {1} to increase the cost of encoding symbolic constants as strings.", Solver_StringCostSetting, int.MaxValue)),
+
+                new Tuple<string, CnstKind, string>(
+                    Proofs_KeepLineNumbersSetting,
+                    CnstKind.String,
+                    string.Format("Use {0} = \"TRUE\" (\"FALSE\") to so proofs can (not) locate the line numbers of the model facts they require.", Proofs_KeepLineNumbersSetting)),
+            };
+
+            Array.Sort(settingDescrs, (x, y) => string.Compare(x.Item1, y.Item1));
         }
-
-        /// <summary>
-        /// Names for the various collections
-        /// </summary>
-        internal const string ParsersCollectionName = "parsers";
-        internal const string ModulesCollectionName = "modules";
-        internal const string StrategiesCollectionName = "strategies";
-
-        /// <summary>
-        /// Names for the various predefined settings
-        /// </summary>
-        internal const string DefaultsSetting = "defaults";
-        internal const string Parse_ActiveParserSetting = "parse_ActiveParser";
-        internal const string Parse_ActiveRenderSetting = "parse_ActiveRenderer";
-        internal const string Compiler_ProductivityCheckSetting = "compiler_ProductivityCheck";
-        internal const string Solver_ActiveStrategySetting = "solver_ActiveStrategy";
-        internal const string Solver_RealCostSetting = "solver_RealCost";
-        internal const string Solver_IntegerCostSetting = "solver_IntegerCost";
-        internal const string Solver_NaturalCostSetting = "solver_NaturalCost";
-        internal const string Solver_NegIntegerCostSetting = "solver_NegIntegerCost";
-        internal const string Solver_PosIntegerCostSetting = "solver_PosIntegerCost";
-        internal const string Solver_StringCostSetting = "solver_StringCost";
 
         /// <summary>
         /// These are configurations there were inherited either lexically, or by using the
@@ -123,6 +213,16 @@
             new Map<string, Map<string, PluginSettings>>(string.CompareOrdinal);
 
         private EnvParams envParams;
+
+        public static IEnumerable<Tuple<string, Type, string>> CollectionDescriptions
+        {
+            get { return colDescrs; }
+        }
+
+        public static IEnumerable<Tuple<string, CnstKind, string>> SettingsDescriptions
+        {
+            get { return settingDescrs; }
+        }
 
         public AST<Node> AttachedAST
         {

@@ -11,7 +11,7 @@
     using Common.Terms;
     using Compiler;
 
-    public class OATStrategy : ISearchStrategy
+    public sealed class OATStrategy : ISearchStrategy
     {
         private static readonly OATStrategy theFactoryInstance = new OATStrategy();
 
@@ -58,13 +58,21 @@
             private set;
         }
 
-        public IEnumerable<Tuple<string, CnstKind>> SuggestedSettings
+        public string Description
         {
             get
             {
-                yield return new Tuple<string, CnstKind>(LimitSettingName, CnstKind.Numeric);
-                yield return new Tuple<string, CnstKind>(SolsPerIncSettingName, CnstKind.Numeric);
-                yield return new Tuple<string, CnstKind>(DOFsSettingName, CnstKind.String);
+                return "One-at-a-time (OAT) strategy: Increment each DOF independently, solve, and then raise all DOFs by one, and repeat.";
+            }
+        }
+
+        public IEnumerable<Tuple<string, CnstKind, string>> SuggestedSettings
+        {
+            get
+            {
+                yield return new Tuple<string, CnstKind, string>(LimitSettingName, CnstKind.Numeric, "The maximum number of DOFs that will be added to any constructor");
+                yield return new Tuple<string, CnstKind, string>(SolsPerIncSettingName, CnstKind.Numeric, "The maximum number of solutions to enumerate per DOF configuration");
+                yield return new Tuple<string, CnstKind, string>(DOFsSettingName, CnstKind.String, "A comma-separated list of type names indicating DOFs. Only new-kind constructors are used. If not specified, every new-kind constructor is a DOF.");
             }
         }
 

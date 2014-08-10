@@ -59,6 +59,7 @@
         private const string ProofMsg = "Enumerate proofs that a ground term is derivable under a model/apply. Use: proof task_id [ground_term]";
         private const string ExtractMsg = "Extract and install a result. Use: extract (app_id | solv_id n) output_name [render_class render_dll]";
         private const string DelVarMsg = "Deleted variable '{0}'";
+        private const string ConfigHelpMsg = "Provides help about module configurations and settings";
 
         private SpinLock cmdLock = new SpinLock();
         private bool isCmdLocked = false;
@@ -234,6 +235,10 @@
             var extractCmd = new Command("extract", "ex", DoExtract, ExtractMsg);
             cmdMap.Add(extractCmd.Name, extractCmd);
             cmdMap.Add(extractCmd.ShortName, extractCmd);
+
+            var configHelpCmd = new Command("confhelp", "ch", DoConfigHelp, ConfigHelpMsg);
+            cmdMap.Add(configHelpCmd.Name, configHelpCmd);
+            cmdMap.Add(configHelpCmd.ShortName, configHelpCmd);
 
             taskManager = new TaskManager();
         }
@@ -759,7 +764,9 @@
             foreach (var p in proofs)
             {
                 p.Debug_PrintTree();
-                sink.WriteMessageLine("");
+
+                sink.WriteMessageLine("Finding locators...");
+                p.GetLocator();
 
                 sink.WriteMessageLine("Press 0 to stop, or 1 to continue", SeverityKind.Info);
                 while (!chooser.GetChoice(out choice) || (int)choice > 1)
@@ -1819,6 +1826,85 @@
                         f.Item2.Span.StartCol,
                         f.Item2.Message), f.Item2.Severity);
                 }
+            }
+        }
+
+        private void DoConfigHelp(string s)
+        {
+            sink.WriteMessageLine("Use collections to bind plugins to names.");
+            foreach (var descr in Compiler.Configuration.CollectionDescriptions)
+            {
+                sink.WriteMessageLine(string.Format("   {0} (members implement {1})", descr.Item1, descr.Item2.Name));
+                sink.WriteMessageLine(string.Format("      {0}", descr.Item3), SeverityKind.Info);
+                sink.WriteMessageLine(string.Empty);
+            }
+
+            sink.WriteMessageLine(string.Empty);
+            sink.WriteMessageLine("Use settings to control the behavior of various commands.");
+            foreach (var descr in Compiler.Configuration.SettingsDescriptions)
+            {
+                sink.WriteMessageLine(string.Format("   {0} ({1})", descr.Item1, descr.Item2.ToString().ToLowerInvariant()));
+                sink.WriteMessageLine(string.Format("      {0}", descr.Item3), SeverityKind.Info);
+                sink.WriteMessageLine(string.Empty);
+            }
+
+            try
+            {
+                foreach (var assmb in AppDomain.CurrentDomain.GetAssemblies())
+                {
+                    foreach (var t in assmb.GetExportedTypes())
+                    {
+                        if (t.IsAbstract || !t.IsClass)
+                        {
+                            continue;
+                        }
+                        
+                        foreach (var col in Compiler.Configuration.CollectionDescriptions)
+                        {
+                            if (col.Item1 != Compiler.Configuration.ModulesCollectionName && col.Item2.IsAssignableFrom(t))
+                            {
+                                sink.WriteMessageLine(string.Empty);
+                                sink.WriteMessageLine(string.Format("{0} interface {1} ({2})", col.Item1, t.FullName, assmb.Location));
+                                var con = t.GetConstructor(System.Type.EmptyTypes);
+                                if (con == null)
+                                {
+                                    continue;
+                                }
+
+                                var inst = con.Invoke(null);
+                                var descrProp = t.GetProperty("Description");
+                                if (descrProp == null || !(typeof(string).IsAssignableFrom(descrProp.PropertyType)))
+                                {
+                                    continue;
+                                }
+
+                                sink.WriteMessageLine(string.Format("   {0}", descrProp.GetGetMethod().Invoke(inst, null)), SeverityKind.Info);
+                                sink.WriteMessageLine(string.Empty);
+
+                                var settingsProp = t.GetProperty("SuggestedSettings");
+                                if (settingsProp == null || !(typeof(IEnumerable<Tuple<string, CnstKind, string>>).IsAssignableFrom(settingsProp.PropertyType)))
+                                {
+                                    continue;
+                                }
+
+                                var settings = (IEnumerable<Tuple<string, CnstKind, string>>)settingsProp.GetGetMethod().Invoke(inst, null);
+                                foreach (var sdescr in settings)
+                                {
+                                    sink.WriteMessageLine(string.Format("   {0} ({1})", sdescr.Item1, sdescr.Item2.ToString().ToLowerInvariant()));
+                                    sink.WriteMessageLine(string.Format("      {0}", sdescr.Item3), SeverityKind.Info);
+                                    sink.WriteMessageLine(string.Empty);
+                                }
+
+                                sink.WriteMessageLine(string.Empty);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                sink.WriteMessageLine(string.Format("Could not examine plugins - {0}", e.Message), SeverityKind.Warning);
             }
         }
 

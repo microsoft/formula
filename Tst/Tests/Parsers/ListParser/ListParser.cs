@@ -19,7 +19,7 @@
     {
         private enum ParserState { None, Nat, Id };
 
-        private static readonly Tuple<string, CnstKind>[] noSettings = new Tuple<string, CnstKind>[0];
+        private static readonly Tuple<string, CnstKind, string>[] noSettings = new Tuple<string, CnstKind, string>[0];
         private static readonly AST<Domain> listDomain;
         private const string consName = "Cons";
         private const string nilName = "NIL";
@@ -60,7 +60,12 @@
             get { return listDomain; }
         }
 
-        public IEnumerable<Tuple<string, CnstKind>> SuggestedSettings
+        public string Description
+        {
+            get { return "Implements a sample parser for lists"; }
+        }
+
+        public IEnumerable<Tuple<string, CnstKind, string>> SuggestedSettings
         {
             get { return noSettings; }
         }

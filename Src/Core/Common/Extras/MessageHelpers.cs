@@ -20,7 +20,7 @@
                 GetCodeLocationString(offDef2, envParams));
         }
 
-        internal static string GetCodeLocationString(this object obj, EnvParams envParams)
+        internal static string GetCodeLocationString(this object obj, EnvParams envParams, ProgramName progName = null)
         {
             if (obj is Location)
             {
@@ -36,12 +36,31 @@
             {
                 span = ((AST<Node>)obj).Node.Span;
             }
+            else if (obj is Tuple<ProgramName, Node>)
+            {
+                var tup = (Tuple<ProgramName, Node>)obj;
+                return GetCodeLocationString(tup.Item2, envParams, tup.Item1);
+            }
             else
             {
-                return ("(?,?)");
+                if (progName == null)
+                {
+                    return ("(?,?)");
+                }
+                else
+                {
+                    return (progName.ToString(envParams) + " (?,?)");                    
+                }
             }
 
-            return string.Format("({0}, {1})", span.StartLine, span.StartCol);
+            if (progName == null)
+            {
+                return string.Format("({0}, {1})", span.StartLine, span.StartCol);
+            }
+            else
+            {
+                return string.Format("{0} ({1}, {2})", progName.ToString(envParams), span.StartLine, span.StartCol);
+            }
         }
 
         internal static string Debug_GetSmallTermString(this Terms.Term t)

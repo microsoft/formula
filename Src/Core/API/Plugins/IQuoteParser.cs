@@ -10,6 +10,14 @@
     public interface IQuoteParser
     {
         /// <summary>
+        /// A description of this parser.
+        /// </summary>
+        string Description
+        {
+            get;
+        }
+
+        /// <summary>
         /// The string that should be used to prefix the Id of an unquote.
         /// </summary>
         string UnquotePrefix
@@ -28,7 +36,7 @@
         /// <summary>
         /// Some settings for this plugin.
         /// </summary>
-        IEnumerable<Tuple<string, CnstKind>> SuggestedSettings
+        IEnumerable<Tuple<string, CnstKind, string>> SuggestedSettings
         {
             get;
         }

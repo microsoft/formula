@@ -404,11 +404,12 @@
                 return false;
             }
 
-            loc = new Locator(location.Item2, location.Item2.Span, location.Item1, this);
+            var node = location.Item2.NodeKind == NodeKind.ModelFact ? ((ModelFact)location.Item2).Match : location.Item2;
+            loc = new Locator(node.Span, location.Item1, node, location.Item1, this);
             return true;
         }
 
-        public bool TryGetLocator(Node node, UserCnstSymb symb, out Locator loc)
+        public bool TryGetLocator(Span nodeSpan, ProgramName nodeProgram, UserCnstSymb symb, out Locator loc)
         {
             Contract.Requires(symb != null && symb.IsSymbolicConstant);
             var localSymb = Index.SymbolTable.Resolve(symb);
@@ -421,7 +422,7 @@
             }
 
             var location = aliasDataMap[localSymb].DefNode;
-            loc = new Locator(location.Item2, node.Span, location.Item1, this);
+            loc = new Locator(nodeSpan, nodeProgram, location.Item2, location.Item1, this);
             return true;
         }
 

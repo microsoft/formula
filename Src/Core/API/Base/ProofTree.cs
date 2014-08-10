@@ -87,13 +87,26 @@
                         loc.Arity);
                     for (int i = 0; i < loc.Arity; ++i)
                     {
+                        var loc_i = loc[i];
                         Console.WriteLine(
                             "   [{4}]: {0} ({1}, {2}): Arity {3}",
-                            loc[i].Program,
-                            loc[i].Span.StartLine,
-                            loc[i].Span.StartCol,
-                            loc[i].Arity,
+                            loc_i.Program,
+                            loc_i.Span.StartLine,
+                            loc_i.Span.StartCol,
+                            loc_i.Arity,
                             i);
+
+                        for (int j = 0; j < loc_i.Arity; ++j)
+                        {
+                            var loc_j = loc_i[j];
+                            Console.WriteLine(
+                                "      [{4}]: {0} ({1}, {2}): Arity {3}",
+                                loc_j.Program,
+                                loc_j.Span.StartLine,
+                                loc_j.Span.StartCol,
+                                loc_j.Arity,
+                                j);
+                        }
                     }
                 }
 

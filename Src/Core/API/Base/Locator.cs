@@ -28,9 +28,10 @@
 
         /// <summary>
         /// If null, then this locator and its sublocators are specified
-        /// by Node in ProgramName from FactSet.
+        /// by Node in ProgramName from FactSet. The ProgramName in location
+        /// may differ if this locator is an expanded symbolic constant.
         /// </summary>
-        private Tuple<Node, FactSet> location;
+        private Tuple<Node, ProgramName, FactSet> location;
 
         /// <summary>
         /// The maximum distance from this term to a subterm that appeared in some input model.
@@ -95,7 +96,7 @@
                     int i = 0;
                     foreach (var a in ft.Args)
                     {
-                        args[i] = ExpandLocation(a, Program, location.Item2);
+                        args[i] = ExpandLocation(a, location.Item2, location.Item3);
                         ++i;
                     }
 
@@ -154,9 +155,10 @@
         /// if this is the location of a symbolic constant. In this case, the span will locate the
         /// symbolic constant, whereas node will locate its expansion into a term.
         /// </summary>
-        internal Locator(Node node, Span span, ProgramName program, FactSet source)
+        internal Locator(Span span, ProgramName program, Node node, ProgramName nodeProgram, FactSet source)
         {
-            Contract.Requires(node != null && program != null && source != null);
+            Contract.Requires(node != null && program != null && source != null && nodeProgram != null);
+
             if (node.NodeKind == NodeKind.ModelFact)
             {
                 node = ((ModelFact)node).Match;
@@ -165,11 +167,11 @@
             Program = program;
             Span = span;
             SyntheticDistance = 0;
-            location = new Tuple<Node, FactSet>(node, source);
+            location = new Tuple<Node, ProgramName, FactSet>(node, nodeProgram, source);
             args = null;
         }
 
-        private static Locator ExpandLocation(Node node, ProgramName program, FactSet source)
+        private static Locator ExpandLocation(Node node, ProgramName nodeProgram, FactSet source)
         {
             if (node.NodeKind == NodeKind.Id && node.CompilerData is UserCnstSymb)
             {
@@ -177,13 +179,13 @@
                 if (cnst.IsSymbolicConstant)
                 {
                     Locator loc;
-                    var result = source.TryGetLocator(node, cnst, out loc);
+                    var result = source.TryGetLocator(node.Span, nodeProgram, cnst, out loc);
                     Contract.Assert(result);
                     return loc;
                 }
             }
 
-            return new Locator(node, node.Span, program, source);
+            return new Locator(node.Span, nodeProgram, node, nodeProgram, source);
         }
     }
 }

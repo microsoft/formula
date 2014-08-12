@@ -595,6 +595,16 @@
             }
         }
 
+        public Set<Locator> ComputeLocators(
+            Term conclusion,
+            Term findMatch1, 
+            Set<Location> match1Locators,
+            Term findMatch2,
+            Set<Location> match2Locators)
+        {
+            throw new NotImplementedException();
+        }
+
         public static int Compare(CoreRule r1, CoreRule r2)
         {
             return r1.RuleId - r2.RuleId;

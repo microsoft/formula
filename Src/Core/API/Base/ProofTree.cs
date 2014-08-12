@@ -61,10 +61,12 @@
 
         public void GetLocator()
         {
-            GetLocator(this);
+            var locs = new Set<Locator>(Locator.Compare);
+            GetLocator(this, locs);
+            Console.WriteLine("Found {0} locators", locs.Count);
         }
 
-        private static void GetLocator(ProofTree tree)
+        private static void GetLocator(ProofTree tree, Set<Locator> locators)
         {
             if (tree.CoreRule == null)
             {
@@ -77,6 +79,8 @@
                 Locator loc;
                 if (facts.TryGetLocator(tree.Conclusion, out loc))
                 {
+                    locators.Add(loc);
+
                     Console.WriteLine("Found locator for term:");
                     Console.WriteLine(tree.Conclusion.Debug_GetSmallTermString());
                     Console.WriteLine(
@@ -115,7 +119,7 @@
 
             foreach (var prem in tree.premises.Values)
             {
-                GetLocator(prem);
+                GetLocator(prem, locators);
             }
         }
        

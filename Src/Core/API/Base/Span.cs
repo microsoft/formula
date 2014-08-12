@@ -49,29 +49,24 @@
 
         public static int Compare(Span s, Span t)
         {
-            if (s.Equals(t))
+            if (s.startLine != t.startLine)
             {
-                return 0;
-            }
-            else if (s.startLine != t.startLine)
-            {
-                return s.startLine - t.startLine;
+                return s.startLine < t.startLine ? -1 : 1;
             }
             else if (s.startCol != t.startCol)
             {
-                return s.startCol - t.startCol;
+                return s.startCol < t.startCol ? -1 : 1;
             }
             else if (s.endLine != t.endLine)
             {
-                return s.endLine - t.endLine;
+                return s.endLine < t.endLine ? -1 : 1;
             }
             else if (s.endCol != t.endCol)
             {
-                return s.endCol - t.endCol;
+                return s.endCol < t.endCol ? -1 : 1;
             }
 
-            throw new Impossible();
+            return 0;
         }
-
     }
 }

@@ -49,6 +49,15 @@
             private set;
         }
 
+        /// <summary>
+        /// The program where this rule occured. Can be null if partial rule.
+        /// </summary>
+        public ProgramName ProgramName
+        {
+            get;
+            private set;
+        }
+
         public Term Head
         {
             get;
@@ -137,7 +146,8 @@
             IEnumerable<Term> constrs, 
             Predicate<Symbol> isCompr,
             Term headType = null, 
-            Node node = null)
+            Node node = null,
+            ProgramName programName = null)
         {
             Contract.Requires(head != null && constrs != null);
             Index = head.Owner;
@@ -147,6 +157,7 @@
             Find1 = f1;
             Find2 = f2;
             Node = node;
+            ProgramName = programName;
             ComprehensionSymbols = new Set<Symbol>(Symbol.Compare);
 
             initConstrs = new Set<Term>(Term.Compare, constrs);
@@ -275,7 +286,8 @@
                 CloneConstraints(index, symbolTransfer, renaming),
                 isCompr,
                 index.MkClone(HeadType, renaming, symbolTransfer),
-                Node);
+                Node,
+                ProgramName);
 
             cloneRule.IsClone = true;
             return cloneRule;
@@ -403,7 +415,8 @@
                     inlinedConstrs,
                     x => (ComprehensionSymbols.Contains(x) || inliner.ComprehensionSymbols.Contains(x)),
                     HeadType,
-                    Node);
+                    Node,
+                    ProgramName);
             }
             else
             {
@@ -415,7 +428,8 @@
                     inlinedConstrs,
                     x => (ComprehensionSymbols.Contains(x) || inliner.ComprehensionSymbols.Contains(x)),
                     HeadType,
-                    Node);
+                    Node,
+                    ProgramName);
             }
         }
 
@@ -593,16 +607,6 @@
             {
                 astats.EndActivation();
             }
-        }
-
-        public Set<Locator> ComputeLocators(
-            Term conclusion,
-            Term findMatch1, 
-            Set<Location> match1Locators,
-            Term findMatch2,
-            Set<Location> match2Locators)
-        {
-            throw new NotImplementedException();
         }
 
         public static int Compare(CoreRule r1, CoreRule r2)

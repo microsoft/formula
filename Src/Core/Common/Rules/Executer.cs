@@ -664,28 +664,26 @@
             proofStateStack.Push(new MutableTuple<ProofState, int>(root.CurrentSubProofs[0], -1));
 
             ProofTree treeTop;
-            Term binding, bindingVar;
+            Term binding, bindingVar, boundPattern;
             MutableTuple<ProofState, int> stateTop;
             while (proofStateStack.Count > 0)
             {
                 stateTop = proofStateStack.Peek();
                 if (stateTop.Item2 >= 0)
                 {
-                    if (stateTop.Item1.GetBinding(stateTop.Item2, out bindingVar) != null &&
+                    if (stateTop.Item1.GetBinding(stateTop.Item2, out bindingVar, out boundPattern) != null &&
                         !bindingVar.Symbol.IsReservedOperation)
                     {
                         Contract.Assert(bindingVar.Symbol.IsVariable);
                         treeTop = proofTreeStack.Pop();
-                        proofTreeStack.Peek().AddSubproof(
-                            ((UserSymbol)bindingVar.Symbol).Name,
-                            treeTop);
+                        proofTreeStack.Peek().AddSubproof(bindingVar, boundPattern, treeTop);
                     }
                 }
 
                 stateTop.Item2++;
                 if (stateTop.Item2 < stateTop.Item1.NSubgoals)
                 {
-                    binding = stateTop.Item1.GetBinding(stateTop.Item2, out bindingVar);
+                    binding = stateTop.Item1.GetBinding(stateTop.Item2, out bindingVar, out boundPattern);
                     if (!bindingVar.Symbol.IsReservedOperation)
                     {
                         proofTreeStack.Push(
@@ -964,7 +962,7 @@
                 crntSubProofs[0] = null;
             }
 
-            public Term GetBinding(int index, out Term bindingVar)
+            public Term GetBinding(int index, out Term bindingVar, out Term boundPattern)
             {
                 Contract.Requires(Derivation != null);
                 Contract.Requires(index >= 0 && index < CurrentSubProofs.Length);
@@ -974,17 +972,20 @@
                     if (Derivation.Binding1 != Derivation.Binding1.Owner.FalseValue)
                     {
                         bindingVar = Derivation.Rule.Find1.Binding;
+                        boundPattern = Derivation.Rule.Find1.Pattern;
                         return Derivation.Binding1;
                     }
                     else
                     {
                         bindingVar = Derivation.Rule.Find2.Binding;
+                        boundPattern = Derivation.Rule.Find2.Pattern;
                         return Derivation.Binding2;
                     }
                 }
                 else
                 {
                     bindingVar = Derivation.Rule.Find2.Binding;
+                    boundPattern = Derivation.Rule.Find2.Pattern;
                     return Derivation.Binding2;
                 }
             }

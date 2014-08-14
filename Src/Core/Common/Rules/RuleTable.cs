@@ -363,7 +363,8 @@
                         new Set<Term>(Term.Compare), 
                         IsComprehensionSymbol,
                         headType, 
-                        node);
+                        node,
+                        ModuleData.Source.Program.Name);
                     rules.Add(ruleTerm, rule);
                 }
             }
@@ -435,7 +436,8 @@
                                     new Set<Term>(Term.Compare),
                                     IsComprehensionSymbol,
                                     headType, 
-                                    node);
+                                    node,
+                                    ModuleData.Source.Program.Name);
                                 rules.Add(ruleTerm, rule);
                             }
                         }

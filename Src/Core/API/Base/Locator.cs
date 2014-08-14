@@ -19,7 +19,7 @@
     {
         private static readonly Locator[] EmptyArgs = new Locator[0];
 
-        private static readonly ProgramName UnknownProgram =
+        private static readonly ProgramName unknownProgram =
             new ProgramName(string.Format("{0}/unknown", ProgramName.EnvironmentScheme));
 
         /// <summary>
@@ -136,13 +136,18 @@
             private set;
         }
 
+        internal static ProgramName UnknownProgram
+        {
+            get { return unknownProgram; }
+        }
+
         /// <summary>
         /// Constructors the location (0, 0, 0, 0) in the UnknownProgram with synthetic distance 1.
         /// </summary>
         internal Locator()
         {
             Span = new Span(0, 0, 0, 0);
-            Program = UnknownProgram;
+            Program = unknownProgram;
             args = EmptyArgs;
             location = null;
             SyntheticDistance = 1;

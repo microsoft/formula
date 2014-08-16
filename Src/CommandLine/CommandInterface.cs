@@ -764,7 +764,12 @@
             foreach (var p in proofs)
             {
                 p.Debug_PrintTree();
-                p.ComputeLocators();
+                var locs = p.ComputeLocators();
+                Console.WriteLine("{0} locators", locs.Count);
+                foreach (var l in locs)
+                {
+                    l.Debug_Print(4);
+                }
 
                 sink.WriteMessageLine("Press 0 to stop, or 1 to continue", SeverityKind.Info);
                 while (!chooser.GetChoice(out choice) || (int)choice > 1)

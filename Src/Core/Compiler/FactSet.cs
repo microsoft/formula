@@ -45,6 +45,17 @@
         /// </summary>
         private Map<Term, Tuple<ProgramName, Node>> factLocations = new Map<Term, Tuple<ProgramName, Node>>(Term.Compare);
 
+        /// <summary>
+        /// Can be null
+        /// </summary>
+        public Program SourceProgram
+        {
+            get
+            {
+                return myModuleData == null ? null : myModuleData.Source.Program;
+            }
+        }
+
         public AST<Model> Model
         {
             get;
@@ -388,7 +399,7 @@
             }
         }
 
-        public bool TryGetLocator(Term t, out Locator loc)
+        public bool TryGetLocator(Term t, out ModelFactLocator loc)
         {
             Contract.Requires(t != null && t.Owner == Index);
             if (!IsKeepFactLocations)
@@ -405,11 +416,11 @@
             }
 
             var node = location.Item2.NodeKind == NodeKind.ModelFact ? ((ModelFact)location.Item2).Match : location.Item2;
-            loc = new Locator(node.Span, location.Item1, node, location.Item1, this);
+            loc = new ModelFactLocator(node.Span, location.Item1, node, location.Item1, this);
             return true;
         }
 
-        public bool TryGetLocator(Span nodeSpan, ProgramName nodeProgram, UserCnstSymb symb, out Locator loc)
+        public bool TryGetLocator(Span nodeSpan, ProgramName nodeProgram, UserCnstSymb symb, out ModelFactLocator loc)
         {
             Contract.Requires(symb != null && symb.IsSymbolicConstant);
             var localSymb = Index.SymbolTable.Resolve(symb);
@@ -422,7 +433,7 @@
             }
 
             var location = aliasDataMap[localSymb].DefNode;
-            loc = new Locator(nodeSpan, nodeProgram, location.Item2, location.Item1, this);
+            loc = new ModelFactLocator(nodeSpan, nodeProgram, location.Item2, location.Item1, this);
             return true;
         }
 

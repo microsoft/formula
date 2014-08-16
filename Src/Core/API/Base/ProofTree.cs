@@ -69,58 +69,87 @@
         /// Computes a set of locators 
         /// </summary>
         /// <returns></returns>
-        public Set<Locator> ComputeLocators()
+        public LinkedList<Locator> ComputeLocators()
         {           
             if (CoreRule == null)
             {
                 //// Then this is a fact.
-                if (factSets.Count > 1 || !factSets.ContainsKey(string.Empty))
+                ModelFactLocator loc;
+                var locs = new LinkedList<Locator>();
+                //// Not implemented for renamed fact sets. Return some locator associated with some fact set.
+                if (factSets.Count > 1 || 
+                    !factSets.ContainsKey(string.Empty) ||
+                    !factSets[string.Empty].TryGetLocator(Conclusion, out loc))
                 {
-                    //// Not implemented for renamed fact sets.
-                    return new Set<Locator>(Locator.Compare);
+                    using (var it = factSets.GetEnumerator())
+                    {
+                        it.MoveNext();
+                        locs.AddLast(new NodeTermLocator(
+                            it.Current.Value.Model.Node,
+                            it.Current.Value.SourceProgram == null ? Locator.UnknownProgram : it.Current.Value.SourceProgram.Name,
+                            Conclusion));
+                    }
                 }
-
-                Locator loc;
-                var locs = new Set<Locator>(Locator.Compare);
-                if (factSets[string.Empty].TryGetLocator(Conclusion, out loc))
+                else
                 {
-                    locs.Add(loc);
+                    locs.AddLast(loc);
                 }
 
                 return locs;
             }
-            else if (CoreRule.Kind == CoreRule.RuleKind.Sub)
-            {
-                throw new NotImplementedException();
-            }
             else if (premises.Count == 0)
             {
-                var locs = new Set<Locator>(Locator.Compare);
-                locs.Add(MkFactRuleLocator(CoreRule.ProgramName == null ? Locator.UnknownProgram : CoreRule.ProgramName, CoreRule.Node, Conclusion));
+                var locs = new LinkedList<Locator>();
+                locs.AddLast(new NodeTermLocator(
+                    CoreRule.Node,
+                    CoreRule.ProgramName == null ? Locator.UnknownProgram : CoreRule.ProgramName,
+                    Conclusion));
                 return locs;
             }
             else
             {
-                var term2Locs = new Map<Term, Set<Locator>>(Term.Compare);
-                var var2Bindings = new Map<Term, Term>(Term.Compare); 
+                Contract.Assert(CoreRule.Kind == CoreRule.RuleKind.Regular);
+                FactSet sourceFacts;
+                if (factSets.TryFindValue(string.Empty, out sourceFacts) && sourceFacts.Rules.IsSubRuleCopy(CoreRule))
+                {
+                    Contract.Assert(premises.Count == 1);
+                    var inputProof = premises.First().Value.Item2;
+                    return MkSubRuleLocators(
+                        CoreRule.Node,
+                        CoreRule.ProgramName == null ? Locator.UnknownProgram : CoreRule.ProgramName,
+                        Conclusion,
+                        inputProof.Conclusion,
+                        inputProof.ComputeLocators());
+                }
+
+                //// Terms in the body for which locations are known. 
+                var bodyTerm2Locs = new Map<Term, LinkedList<Locator>>(Term.Compare);
+                //// The bindings of body variables implied by the binding variable and its pattern.
+                var bodyVar2Bindings = new Map<Term, Term>(Term.Compare);
+
                 foreach (var kv in premises)
                 {
-                    MkSubLocators(
+                    MkBodyLocators(
                         kv.Value.Item2.ComputeLocators(), 
                         kv.Value.Item2.Conclusion, 
                         kv.Key, 
                         kv.Value.Item1, 
-                        term2Locs,
-                        var2Bindings);
+                        bodyTerm2Locs,
+                        bodyVar2Bindings);
                 }
 
-                foreach (var kv in var2Bindings)
-                {
-                    Console.WriteLine("{0} -> {1}", kv.Key.Debug_GetSmallTermString(), kv.Value.Debug_GetSmallTermString());
-                }
+                //// The bindings of variables or variable selectors implied by the conclusion and the head.
+                //// A variable in the head may have multiple bindings due to renamings.
+                var head2Bindings = new Map<Term, Set<Term>>(Term.Compare);
+                MkHeadBindings(Conclusion, CoreRule.Head, head2Bindings, bodyTerm2Locs, bodyVar2Bindings);
+
+                return MkRuleLocators(
+                    NodeTermLocator.ChooseRepresentativeNode(CoreRule.Node, Conclusion),
+                    CoreRule.ProgramName == null ? Locator.UnknownProgram : CoreRule.ProgramName,
+                    CoreRule.Head,
+                    head2Bindings,
+                    bodyTerm2Locs);
             }
-
-            return null;
         }
        
         public void Debug_PrintTree()
@@ -129,38 +158,160 @@
         }
 
         /// <summary>
+        /// If a subrule returns output Sub(t1,...,tn) from input with inputLocations, then finds all locations
+        /// of the terms t1, ..., tn.
+        /// </summary>
+        private LinkedList<Locator> MkSubRuleLocators(
+            Node subRuleHead,
+            ProgramName subRuleProgram,
+            Term output, 
+            Term input, 
+            LinkedList<Locator> inputLocations)
+        {
+            throw new NotImplementedException();
+        }
+
+        private LinkedList<Locator> MkRuleLocators(
+            Node node,
+            ProgramName nodeProgram,
+            Term head,
+            Map<Term, Set<Term>> head2Bindings,
+            Map<Term, LinkedList<Locator>> bodyTerm2Locs)
+        {
+            //// A subterm l of head is a "leaf" if either it is
+            //// (1) in the domain of bodyTerm2Locs,
+            //// (2) it is in the domain of head2Bindings,
+            //// (3) it is ground.
+            //// In case (1) the locators of leaf is bodyTerm2Locs[leaf]
+            //// In cases (2) and (3) the locators is a NodeTermLocator of l with (a sub-node of) n.
+
+            //// If a subterm of head is not a leaf, then its locators are composite locators 
+            //// given by the products of its arguments.
+
+            var nodeStack = new Stack<Node>();
+            nodeStack.Push(node);
+            return head.Compute<LinkedList<Locator>>(
+                (x, s) => MkRuleLocators_Unfold(x, nodeStack, head2Bindings, bodyTerm2Locs),
+                (x, ch, s) => MkRuleLocators_Fold(x, nodeStack, nodeProgram, ch, head2Bindings, bodyTerm2Locs));
+        }
+
+        private IEnumerable<Term> MkRuleLocators_Unfold(
+            Term head,
+            Stack<Node> nodeStack,
+            Map<Term, Set<Term>> head2Bindings,
+            Map<Term, LinkedList<Locator>> bodyTerm2Locs)
+        {
+            if (head.Symbol == head.Owner.SymbolTable.GetOpSymbol(ReservedOpKind.Relabel))
+            {
+                nodeStack.Push(nodeStack.Peek());
+                yield return head.Args[2];
+            }
+            else if (
+                head2Bindings.ContainsKey(head) ||
+                bodyTerm2Locs.ContainsKey(head) ||
+                head.Groundness == Groundness.Ground)
+            {
+                yield break;
+            }
+
+            Contract.Assert(head.Symbol.IsDataConstructor);
+
+            FuncTerm ftnode;
+            var parentNode = nodeStack.Peek();
+            if (parentNode.NodeKind == NodeKind.FuncTerm &&
+                (ftnode = (FuncTerm)parentNode).Args.Count == head.Symbol.Arity)
+            {
+                int i = 0;
+                foreach (var a in ftnode.Args)
+                {
+                    nodeStack.Push(a);
+                    yield return head.Args[i];
+                    ++i;
+                }
+            }
+            else
+            {
+                for (int i = 0; i < head.Args.Length; ++i)
+                {
+                    nodeStack.Push(parentNode);
+                    yield return head.Args[i];
+                }
+            }
+        }
+
+        private LinkedList<Locator> MkRuleLocators_Fold(
+            Term head,
+            Stack<Node> nodeStack,
+            ProgramName nodeProgram,
+            IEnumerable<LinkedList<Locator>> children,
+            Map<Term, Set<Term>> head2Bindings,
+            Map<Term, LinkedList<Locator>> bodyTerm2Locs)
+        {
+            Set<Term> terms;
+            LinkedList<Locator> locs;
+            var node = nodeStack.Pop();
+            if (head.Symbol == head.Owner.SymbolTable.GetOpSymbol(ReservedOpKind.Relabel))
+            {
+                return children.First();
+            }
+            else if (bodyTerm2Locs.TryFindValue(head, out locs))
+            {
+                return locs;
+            }
+            else if (head2Bindings.TryFindValue(head, out terms))
+            {
+                Contract.Assert(terms.Count > 0);
+                locs = new LinkedList<Locator>();
+                locs.AddLast(new NodeTermLocator(node, nodeProgram, terms.GetSomeElement()));
+                return locs;
+            }
+            else if (head.Groundness == Groundness.Ground)
+            {
+                locs = new LinkedList<Locator>();
+                locs.AddLast(new NodeTermLocator(node, nodeProgram, head));
+                return locs;
+            }
+            else
+            {
+                locs = new LinkedList<Locator>();
+                foreach (var childLocs in Locator.MkPermutations(children, 100))
+                {
+                    locs.AddLast(new CompositeLocator(node.Span, nodeProgram, childLocs));
+                }
+
+                Contract.Assert(locs.Count > 0);
+                return locs;
+            }
+        }
+
+        /// <summary>
         /// Assigns locations to subterms extracted by a bound pattern.
         /// </summary>
-        private void MkSubLocators(
-            Set<Locator> findLocs, 
+        private void MkBodyLocators(
+            LinkedList<Locator> findLocs, 
             Term binding,
             Term boundVar, 
             Term boundPattern, 
-            Map<Term, Set<Locator>> term2Locs,
+            Map<Term, LinkedList<Locator>> term2Locs,
             Map<Term, Term> var2Bindings)
         {
-            if (findLocs == null || findLocs.Count == 0)
-            {
-                return;
-            }
-
             var2Bindings[boundVar] = binding;
-            Set<Locator> termLocs;
+            LinkedList<Locator> termLocs;
             if (!term2Locs.TryFindValue(boundVar, out termLocs))
             {
-                termLocs = new Set<Locator>(Locator.Compare);
+                termLocs = new LinkedList<Locator>();
                 term2Locs.Add(boundVar, termLocs);
             }
 
             foreach (var l in findLocs)
             {
-                termLocs.Add(l);
+                termLocs.AddLast(l);
             }
 
-            Stack<Tuple<Term, Set<Locator>>> locStack = new Stack<Tuple<Term, Set<Locator>>>();
-            locStack.Push(new Tuple<Term, Set<Locator>>(binding, findLocs));
+            Stack<Tuple<Term, LinkedList<Locator>>> locStack = new Stack<Tuple<Term, LinkedList<Locator>>>();
+            locStack.Push(new Tuple<Term, LinkedList<Locator>>(binding, findLocs));
             boundPattern.Compute<Unit>(
-                (x, s) => UnfoldLocators(x, locStack, term2Locs, var2Bindings),
+                (x, s) => MkBodyLocators_Unfold(x, locStack, term2Locs, var2Bindings),
                 (x, ch, s) =>
                 {
                     locStack.Pop();
@@ -168,10 +319,10 @@
                 });
         }
 
-        private IEnumerable<Term> UnfoldLocators(
-            Term pattern, 
-            Stack<Tuple<Term, Set<Locator>>> locStack, 
-            Map<Term, Set<Locator>> term2Locs,
+        private IEnumerable<Term> MkBodyLocators_Unfold(
+            Term pattern,
+            Stack<Tuple<Term, LinkedList<Locator>>> locStack,
+            Map<Term, LinkedList<Locator>> term2Locs,
             Map<Term, Term> var2Bindings)
         {
             var parentTerm = locStack.Peek().Item1;
@@ -180,30 +331,175 @@
                 var2Bindings[pattern] = parentTerm;
             }
 
-            Set<Locator> termLocs;
+            LinkedList<Locator> termLocs;
             if (!term2Locs.TryFindValue(pattern, out termLocs))
             {
-                termLocs = new Set<Locator>(Locator.Compare);
+                termLocs = new LinkedList<Locator>();
                 term2Locs.Add(pattern, termLocs);
             }
 
             var parentLocs = locStack.Peek().Item2;
             foreach (var l in parentLocs)
             {
-                termLocs.Add(l);
+                termLocs.AddLast(l);
+            }
+
+            foreach (var v in CoreRule.GetDirectVarDefs(pattern))
+            {
+                var2Bindings[v] = parentTerm;
+                if (!term2Locs.TryFindValue(v, out termLocs))
+                {
+                    termLocs = new LinkedList<Locator>();
+                    term2Locs.Add(v, termLocs);
+                }
+
+                foreach (var l in parentLocs)
+                {
+                    termLocs.AddLast(l);
+                }
             }
 
             for (int i = 0; i < pattern.Args.Length; ++i)
             {
-                termLocs = new Set<Locator>(Locator.Compare);
+                termLocs = new LinkedList<Locator>();
                 foreach (var l in parentLocs)
                 {
-                    termLocs.Add(l[i]);
+                    termLocs.AddLast(l[i]);
                 }
 
-                locStack.Push(new Tuple<Term, Set<Locator>>(parentTerm.Args[i], termLocs));
+                locStack.Push(new Tuple<Term, LinkedList<Locator>>(parentTerm.Args[i], termLocs));
                 yield return pattern.Args[i];
             }
+        }
+
+        private void MkHeadBindings(
+            Term binding,
+            Term head,
+            Map<Term, Set<Term>> head2Bindings,
+            Map<Term, LinkedList<Locator>> bodyTerm2Locs,
+            Map<Term, Term> bodyVar2Bindings)
+        {
+            var bindingStack = new Stack<Term>();
+            bindingStack.Push(binding);
+            head.Compute<Unit>(
+                (x, s) => MkHeadBindings_Unfold(x, bindingStack, head2Bindings, bodyTerm2Locs, bodyVar2Bindings),
+                (x, ch, s) =>
+                {
+                    bindingStack.Pop();
+                    return default(Unit);
+                });
+        }
+
+        private IEnumerable<Term> MkHeadBindings_Unfold(
+            Term pattern,
+            Stack<Term> bindingStack,
+            Map<Term, Set<Term>> head2Bindings,
+            Map<Term, LinkedList<Locator>> bodyTerm2Locs, 
+            Map<Term, Term> bodyVar2Bindings)
+        {
+            if (pattern.Groundness != Groundness.Variable)
+            {
+                yield break;
+            }
+            else if (pattern.Symbol == pattern.Owner.SelectorSymbol || pattern.Symbol.IsVariable)
+            {
+                Set<Term> bindings;
+                if (!head2Bindings.TryFindValue(pattern, out bindings))
+                {
+                    bindings = new Set<Term>(Term.Compare);
+                    head2Bindings.Add(pattern, bindings);
+                }
+
+                bindings.Add(bindingStack.Peek());
+
+                if (pattern.Symbol == pattern.Owner.SelectorSymbol)
+                {
+                    var selLocs = MkHeadSelectorLocators(pattern, bodyTerm2Locs, bodyVar2Bindings);
+                    if (selLocs != null)
+                    {
+                        LinkedList<Locator> locs;
+                        if (!bodyTerm2Locs.TryFindValue(pattern, out locs))
+                        {
+                            bodyTerm2Locs.Add(pattern, selLocs.Item2);
+                        }
+                        else
+                        {
+                            foreach (var l in selLocs.Item2)
+                            {
+                                locs.AddLast(l);
+                            }
+                        }
+                    }
+                }
+
+                yield break;
+            }
+            else if (pattern.Symbol == pattern.Owner.SymbolTable.GetOpSymbol(ReservedOpKind.Relabel))
+            {
+                bindingStack.Push(bindingStack.Peek());
+                yield return pattern.Args[2];
+            }
+            else
+            {
+                var bindingTop = bindingStack.Peek();
+                for (int i = 0; i < pattern.Args.Length; ++i)
+                {
+                    bindingStack.Push(bindingTop.Args[i]);
+                    yield return pattern.Args[i];
+                }
+            }
+        }
+
+        private Tuple<Term, LinkedList<Locator>> MkHeadSelectorLocators(
+            Term selection, 
+            Map<Term, LinkedList<Locator>> bodyTerm2Locs, 
+            Map<Term, Term> bodyVar2Bindings)
+        {
+            if (selection.Symbol.IsVariable)
+            {
+                LinkedList<Locator> locs;
+                if (!bodyTerm2Locs.TryFindValue(selection, out locs))
+                {
+                    return null;
+                }
+
+                Term binding;
+                if (!bodyVar2Bindings.TryFindValue(selection, out binding))
+                {
+                    return null;
+                }
+
+                return new Tuple<Term, LinkedList<Locator>>(binding, locs);
+            }
+
+            Contract.Assert(selection.Symbol == selection.Owner.SelectorSymbol);
+            var selectorArg = MkHeadSelectorLocators(selection.Args[0], bodyTerm2Locs, bodyVar2Bindings);
+            if (selectorArg == null)
+            {
+                return null;
+            }
+
+            var selectorName = (string)((BaseCnstSymb)selection.Args[1].Symbol).Raw;
+            int selIndex;
+            bool result;
+            if (selectorArg.Item1.Symbol.Kind == SymbolKind.ConSymb)
+            {
+                result = ((ConSymb)selectorArg.Item1.Symbol).GetLabelIndex(selectorName, out selIndex);
+            }
+            else
+            {
+                result = ((MapSymb)selectorArg.Item1.Symbol).GetLabelIndex(selectorName, out selIndex);
+            }
+
+            Contract.Assert(result);
+            var selectedArg = selectorArg.Item1.Args[selIndex];
+            var selectedLocs = new LinkedList<Locator>();
+            foreach (var l in selectorArg.Item2)
+            {
+                selectedLocs.AddLast(l[selIndex]);
+            }
+
+            return new Tuple<Term, LinkedList<Locator>>(selectedArg, selectedLocs);
         }
 
         private void Debug_PrintTree(int indent)
@@ -223,81 +519,6 @@
             }
 
             Console.WriteLine("{0}.", indentStr);
-        }
-
-        /// <summary>
-        /// If n is node associated with a premiseless and conclusion is the result of this rule,
-        /// then constructors a locator l s.t. shape(l) = shape(conclusion) using as much detail from n as possible.
-        /// </summary>
-        private static Locator MkFactRuleLocator(ProgramName program, Node n, Term conclusion)
-        {
-            //// If n is a rule, then use one of the heads.
-            if (n.NodeKind == NodeKind.Rule)
-            {
-                n = ((Rule)n).Heads.First();
-            }
-
-            var nodeStack = new Stack<Node>();
-            nodeStack.Push(n);
-            int i;
-            Locator thisLoc;
-            return conclusion.Compute<Locator>(
-                (x, s) => MkFactRuleLocatorUnfold(x, nodeStack),
-                (x, ch, s) =>
-                {
-                    i = 0;
-                    var chLocs = new Locator[x.Args.Length];
-                    foreach (var l in ch)
-                    {
-                        chLocs[i] = l;
-                        ++i;
-                    }
-
-                    thisLoc = new Locator(nodeStack.Peek().Span, program, chLocs);
-                    nodeStack.Pop();
-                    return thisLoc;
-                });            
-        }
-
-        private static IEnumerable<Term> MkFactRuleLocatorUnfold(Term t, Stack<Node> nodeStack)
-        {
-            if (t.Args.Length == 0)
-            {
-                yield break;
-            }
-
-            var n = nodeStack.Peek();
-            if (n.NodeKind == NodeKind.Rule)
-            {
-                n = ((Rule)n).Heads.First();
-            }
-
-            if (n.NodeKind != NodeKind.FuncTerm)
-            {
-                //// If n is not a funNode, then continue to associate all subterms of t with n.
-                foreach (var a in t.Args)
-                {
-                    nodeStack.Push(n);
-                    yield return a; 
-                }
-            }
-            else
-            {
-                var funNode = n as FuncTerm;
-                Contract.Assert(funNode.Args.Count == t.Args.Length);
-                //// If n is a funNode, then associate the subterms of t with the subnodes of n.
-                using (var nodeIt = funNode.Args.GetEnumerator())
-                {
-                    using (var tIt = t.Args.GetEnumerator())
-                    {
-                        while (nodeIt.MoveNext() && tIt.MoveNext())
-                        {
-                            nodeStack.Push(nodeIt.Current);
-                            yield return tIt.Current;
-                        }
-                    }
-                }
-            }
         }
     }
 }

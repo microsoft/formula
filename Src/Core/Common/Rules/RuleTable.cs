@@ -703,6 +703,25 @@
             }
         }
 
+        /// <summary>
+        /// Returns true if this rule copies the output of a CoreSubRule.
+        /// </summary>
+        internal bool IsSubRuleCopy(CoreRule r)
+        {
+            foreach (var kv in subRules)
+            {
+                foreach (var copy in kv.Value.Item2)
+                {
+                    if (r == copy)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
         private bool MoveProductionState(ConSymb symb, int[] indices, ref Term[] state, ref Term[] choices)
         {
             Term targ;

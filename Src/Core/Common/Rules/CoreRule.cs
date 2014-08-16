@@ -609,6 +609,41 @@
             }
         }
 
+        /// <summary>
+        /// A variable is directly defined by t is there is an equality constraints x = t.
+        /// Returns all the variables directly defined by t.
+        /// </summary>
+        public virtual IEnumerable<Term> GetDirectVarDefs(Term t)
+        {
+            Contract.Requires(t != null && t.Owner == Index);
+            ConstraintNode node;
+            if (!nodes.TryFindValue(t, out node))
+            {
+                yield break;
+            }
+
+            Term a;
+            foreach (var use in node.UseList)
+            {
+                if (use.Item1.Kind != ConstrainNodeKind.EqRel)
+                {
+                    continue;
+                }
+
+                a = use.Item1.Term.Args[0];
+                if (a.Symbol.IsVariable && a != t)
+                {
+                    yield return a;
+                }
+
+                a = use.Item1.Term.Args[1];
+                if (a.Symbol.IsVariable && a != t)
+                {
+                    yield return a;
+                }
+            }
+        }
+
         public static int Compare(CoreRule r1, CoreRule r2)
         {
             return r1.RuleId - r2.RuleId;

@@ -111,6 +111,7 @@
     <Compile Include="API\ASTQueries\NodePredAtom.cs" />
     <Compile Include="API\Base\Builder.cs" />
     <Compile Include="API\Base\BuilderRef.cs" />
+    <Compile Include="API\Base\CompositeLocator.cs" />
     <Compile Include="API\Base\Constants.cs" />
     <Compile Include="API\Base\ASTComputationBase.cs" />
     <Compile Include="API\Base\Env.cs" />
@@ -120,6 +121,8 @@
     <Compile Include="API\Base\ChildInfo.cs" />
     <Compile Include="API\Base\IInternalClonable.cs" />
     <Compile Include="API\Base\Locator.cs" />
+    <Compile Include="API\Base\ModelFactLocator.cs" />
+    <Compile Include="API\Base\NodeTermLocator.cs" />
     <Compile Include="API\Base\ProgramName.cs" />
     <Compile Include="API\Base\ProofTree.cs" />
     <Compile Include="API\Generators\CSharpAlias.cs" />

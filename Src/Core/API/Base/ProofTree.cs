@@ -117,8 +117,8 @@
                     return MkSubRuleLocators(
                         CoreRule.Node,
                         CoreRule.ProgramName == null ? Locator.UnknownProgram : CoreRule.ProgramName,
-                        Conclusion,
                         inputProof.Conclusion,
+                        Conclusion,
                         inputProof.ComputeLocators());
                 }
 
@@ -164,11 +164,105 @@
         private LinkedList<Locator> MkSubRuleLocators(
             Node subRuleHead,
             ProgramName subRuleProgram,
-            Term output, 
             Term input, 
+            Term output, 
             LinkedList<Locator> inputLocations)
         {
-            throw new NotImplementedException();
+            var outputLocs = new LinkedList<Locator>();
+            var placeStack = new LinkedList<Tuple<Term, int>>();
+            placeStack.AddLast(new Tuple<Term, int>(input, -1));
+            var matchCount = new MutableTuple<int>();
+            matchCount.Item1 = 0;
+            input.Compute<Unit>(
+                (x, s) => MkSubRuleLocators_Unfold(x, output, placeStack, inputLocations, outputLocs, subRuleHead, subRuleProgram, matchCount),
+                (x, ch, s) => MkSubRuleLocators_Fold(x, output, placeStack, matchCount));
+            Contract.Assert(placeStack.Count == 0 && matchCount.Item1 == 0 && outputLocs.Count > 0);
+            return outputLocs;
+        }
+
+        private IEnumerable<Term> MkSubRuleLocators_Unfold(
+            Term t,
+            Term output,
+            LinkedList<Tuple<Term, int>> placeStack,
+            LinkedList<Locator> inputLocations,
+            LinkedList<Locator> outputLocations,
+            Node subRuleHead,
+            ProgramName subRuleProgram,
+            MutableTuple<int> matchCount)
+        {        
+            ////  t may extend the match (possibly one or more times)
+            if (t == output.Args[matchCount.Item1])
+            {
+                while (matchCount.Item1 < output.Symbol.Arity && t == output.Args[matchCount.Item1])
+                {
+                    ++matchCount.Item1;
+                }
+            }
+
+            //// The match is complete.
+            if (matchCount.Item1 >= output.Symbol.Arity)
+            {
+                int i = 0;
+                var argLocs = new LinkedList<Locator>[output.Symbol.Arity];
+                var prev = inputLocations;
+                LinkedList<Locator> next;
+                foreach (var place in placeStack)
+                {
+                    if (place.Item2 < 0)
+                    {
+                        next = prev;
+                    }
+                    else
+                    {
+                        next = new LinkedList<Locator>();
+                        foreach (var l in prev)
+                        {
+                            next.AddLast(l[place.Item2]);
+                        }
+                    }
+
+                    while (i < output.Symbol.Arity && output.Args[i] == place.Item1)
+                    {                        
+                        argLocs[i] = next;
+                        ++i;
+                    }
+
+                    if (i >= output.Symbol.Arity)
+                    {
+                        break;
+                    }
+
+                    prev = next;
+                }
+
+                foreach (var alocs in Locator.MkPermutations(argLocs, 100))
+                {
+                    outputLocations.AddLast(new CompositeLocator(subRuleHead.Span, subRuleProgram, alocs));
+                }
+
+                yield break;
+            }
+
+            for (int i = 0; i < t.Symbol.Arity; ++i)
+            {
+                placeStack.AddLast(new Tuple<Term, int>(t.Args[i], i));
+                yield return t.Args[i];
+            }
+        }
+
+        private Unit MkSubRuleLocators_Fold(
+            Term t,
+            Term output,
+            LinkedList<Tuple<Term, int>> placeStack,
+            MutableTuple<int> matchCount)
+        {
+            placeStack.RemoveLast();
+            while (matchCount.Item1 > 0 && t == output.Args[matchCount.Item1 - 1])
+            {
+                --matchCount.Item1;
+            }
+
+            return default(Unit);
         }
 
         private LinkedList<Locator> MkRuleLocators(

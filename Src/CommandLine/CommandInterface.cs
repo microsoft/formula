@@ -768,7 +768,7 @@
                 Console.WriteLine("{0} locators", locs.Count);
                 foreach (var l in locs)
                 {
-                    l.Debug_Print(4);
+                    l.Debug_Print(2);
                 }
 
                 sink.WriteMessageLine("Press 0 to stop, or 1 to continue", SeverityKind.Info);
@@ -1586,73 +1586,6 @@
                     f.Item2.Span.StartCol,
                     f.Item2.Message), f.Item2.Severity);
             }
-        }
-
-        private void DoTest(string s)
-        {
-            Rational r;
-            Rational.TryParseDecimal("1.6666666", out r);
-
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(0), 0));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(1), 1));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(2), 2));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(3), 3));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(4), 4));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(5), 5));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(6), 6));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(7), 7));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(8), 8));
-
-            Rational.TryParseDecimal("-2.9999999", out r);
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(0), 0));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(1), 1));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(2), 2));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(3), 3));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(4), 4));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(5), 5));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(6), 6));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(7), 7));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(8), 8));
-
-            Rational.TryParseDecimal("2.9995999", out r);
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(0), 0));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(1), 1));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(2), 2));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(3), 3));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(4), 4));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(5), 5));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(6), 6));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(7), 7));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(8), 8));
-
-            Rational.TryParseDecimal("-0", out r);
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(0), 0));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(1), 1));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(2), 2));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(3), 3));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(4), 4));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(5), 5));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(6), 6));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(7), 7));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(8), 8));
-
-            Rational.TryParseFraction("1/6", out r);
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(0), 0));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(1), 1));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(2), 2));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(3), 3));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(4), 4));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(5), 5));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(6), 6));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(7), 7));
-            sink.WriteMessageLine(string.Format("{0} {1} ({2})", r.ToString(), r.ToString(8), 8));
-
-            var dom = Factory.Instance.MkDomain("TestDom", ComposeKind.None);
-            var envProg = Factory.Instance.MkProgram(new ProgramName("env:///test.4ml"));
-            envProg = Factory.Instance.AddModule(envProg, dom);
-            InstallResult res;
-            var sc = env.Install(envProg, out res);
-            sink.WriteMessageLine(sc.ToString());
         }
 
         private void DoHelp(string s)

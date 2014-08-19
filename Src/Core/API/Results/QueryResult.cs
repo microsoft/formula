@@ -72,7 +72,7 @@
         {
             flags = new List<Flag>();
             Term grndTerm;
-            if (!ParseGroundGoal(t, flags, out grndTerm))
+            if (!ParseGoalWithDontCares(t, flags, out grndTerm))
             {
                 return LiftedBool.Unknown;
             }
@@ -80,69 +80,16 @@
             return exe.IsDerived(grndTerm);
         }
 
-        /// <summary>
-        /// Enumerates all values that were derived by the query operation.
-        /// </summary>
-        /// <returns></returns>
-        public IEnumerable<AST<Node>> EnumerateDerivations(bool sort = false)
-        {
-            IEnumerable<Term> fixpoint;
-            if (sort)
-            {
-                var sorted = new Set<Term>(exe.TermIndex.LexicographicCompare);
-                foreach (var kv in exe.Fixpoint)
-                {
-                    sorted.Add(kv.Key);
-                }
-
-                fixpoint = sorted;
-            }
-            else
-            {
-                fixpoint = exe.Fixpoint.Keys;
-            }
-
-            Symbol s;
-            foreach (var t in fixpoint)
-            {
-                s = t.Symbol;
-                if ((s.Kind == SymbolKind.UserCnstSymb || s.Kind == SymbolKind.ConSymb || s.Kind == SymbolKind.MapSymb) &&
-                    ((UserSymbol)s).Name.StartsWith(SymbolTable.ManglePrefix))
-                {
-                    continue;
-                }
-
-                yield return Factory.Instance.ToAST(t);
-            }
-        }
-
-        public IEnumerable<ProofTree> EnumerateProofs(string t, out List<Flag> flags, out LiftedBool truthValue)
+        public IEnumerable<ProofTree> EnumerateProofs(string t, out List<Flag> flags, int proofsPerTerm = 0)
         {
             flags = new List<Flag>();
-            Term grndTerm;
-            if (!ParseGroundGoal(t, flags, out grndTerm))
-            {
-                truthValue = LiftedBool.Unknown;
-                return new ProofTree[0];
-            }
-            else if (!exe.IsDerived(grndTerm))
-            {
-                truthValue = false;
-                return new ProofTree[0];
-            }
-            else if (!exe.KeepDerivations)
-            {
-                flags.Add(new Flag(
-                    SeverityKind.Error,
-                    default(Span),
-                    Constants.BadSyntax.ToString("Cannot retrieve proofs; derivations were not kept."),
-                    Constants.BadSyntax.Code));
-                truthValue = true;
-                return new ProofTree[0];
-            }
+            return EnumerateProofsUsingFlags(t, flags, proofsPerTerm);
+        }
 
-            truthValue = true;
-            return exe.GetDerivations(grndTerm);
+        public IEnumerable<AST<Node>> EnumerateDerivations(string t, out List<Flag> flags, bool isSorted = false)
+        {
+            flags = new List<Flag>();
+            return EnumerateDerivationsUsingFlags(t, flags, isSorted);
         }
 
         internal void Start()
@@ -164,14 +111,94 @@
             Conclusion = exe.IsDerived(facts.Index.MkApply(requires, TermIndex.EmptyArgs, out wasAdded));
         }
 
-        private bool ParseGroundGoal(string t, List<Flag> flags, out Term grndTerm)
+        private IEnumerable<ProofTree> EnumerateProofsUsingFlags(string t, List<Flag> flags, int proofsPerTerm)
+        {
+            if (!exe.KeepDerivations)
+            {
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.BadSyntax.ToString("Proofs were not stored."),
+                    Constants.BadSyntax.Code));
+                yield break;
+            }
+
+            Term goalTerm;
+            if (!ParseGoalWithDontCares(t, flags, out goalTerm))
+            {
+                yield break;
+            }
+
+            int count;
+            foreach (var dt in exe.GetDerivedTerms(goalTerm))
+            {
+                count = 0;
+                foreach (var p in exe.GetProofs(dt))
+                {
+                    ++count;
+                    yield return p;
+
+                    if (proofsPerTerm > 0 && count >= proofsPerTerm)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        private IEnumerable<AST<Node>> EnumerateDerivationsUsingFlags(string t, List<Flag> flags, bool isSorted)
+        {
+            Term goalTerm;
+            if (!ParseGoalWithDontCares(t, flags, out goalTerm))
+            {
+                yield break;
+            }
+
+            Symbol s;
+            if (isSorted)
+            {
+                var sorted = new Set<Term>(exe.TermIndex.LexicographicCompare);
+                foreach (var dt in exe.GetDerivedTerms(goalTerm))
+                {
+                    s = dt.Symbol;
+                    if ((s.Kind == SymbolKind.UserCnstSymb || s.Kind == SymbolKind.ConSymb || s.Kind == SymbolKind.MapSymb) &&
+                        ((UserSymbol)s).Name.StartsWith(SymbolTable.ManglePrefix))
+                    {
+                        continue;
+                    }
+
+                    sorted.Add(dt);
+                }
+
+                foreach (var dt in sorted)
+                {
+                    yield return Factory.Instance.ToAST(dt);                   
+                }
+            }
+            else
+            {
+                foreach (var dt in exe.GetDerivedTerms(goalTerm))
+                {
+                    s = dt.Symbol;
+                    if ((s.Kind == SymbolKind.UserCnstSymb || s.Kind == SymbolKind.ConSymb || s.Kind == SymbolKind.MapSymb) &&
+                        ((UserSymbol)s).Name.StartsWith(SymbolTable.ManglePrefix))
+                    {
+                        continue;
+                    }
+
+                    yield return Factory.Instance.ToAST(dt);                   
+                }
+            }
+        }
+
+        private bool ParseGoalWithDontCares(string t, List<Flag> flags, out Term goalTerm)
         {
             ImmutableCollection<Flag> parseFlags;
             var ast = Factory.Instance.ParseDataTerm(t, out parseFlags, facts.Index.Env.Parameters);
             flags.AddRange(parseFlags);
             if (ast == null)
             {
-                grndTerm = null;
+                goalTerm = null;
                 return false;
             }
             else if (WasCancelled)
@@ -181,7 +208,7 @@
                     ast.Node,
                     Constants.BadSyntax.ToString("Query operation was cancelled; derivation is unknown."),
                     Constants.BadSyntax.Code));
-                grndTerm = null;
+                goalTerm = null;
                 return false;
             }
 
@@ -193,13 +220,13 @@
                     simplified,
                     Constants.BadSyntax.ToString("Expected an identifier, constant, or function"),
                     Constants.BadSyntax.Code));
-                grndTerm = null;
+                goalTerm = null;
                 return false;
             }
 
-            grndTerm = facts.Expand(Factory.Instance.ToAST(simplified), flags);
-            Contract.Assert(grndTerm == null || grndTerm.Groundness == Groundness.Ground);
-            return grndTerm != null;
+            goalTerm = facts.Expand(Factory.Instance.ToAST(simplified), flags);
+            Contract.Assert(goalTerm == null || goalTerm.Groundness != Groundness.Type);
+            return goalTerm != null;
         }
     }
 }

@@ -14,7 +14,7 @@ OUT:
 OUT: []> qr Five GenLists.conforms
 OUT: Started query task with Id 0.
 OUT: 
-OUT: []> tr 0 *
+OUT: []> tr 0 _
 OUT: Listing all derived values...
 OUT:    Five.ensures
 OUT:    Five.requires
@@ -74,7 +74,7 @@ OUT:
 OUT: []> qr Ten GenLists.conforms
 OUT: Started query task with Id 1.
 OUT: 
-OUT: []> tr 1 *
+OUT: []> tr 1 _
 OUT: Listing all derived values...
 OUT:    GenLists.conforms
 OUT:    Ten.ensures

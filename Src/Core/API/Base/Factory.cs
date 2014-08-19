@@ -57,7 +57,7 @@
             }
 
             bldr.PushModRef(domainName, null, domainLocation);
-            bldr.PushModel(modelName, false, composeKind);
+            bldr.PushModel(modelName, false, composeKind);           
             for (int i = 0; i < factCount; ++i)
             {
                 bldr.AddModelFact();
@@ -1631,7 +1631,7 @@
             bool isAliased = groundTerm.Arity > 0 && aliases != null && aliases.TryGetValue(groundTerm, out alias);
             if (isAliased)
             {
-                bldr.PushId(alias);
+                bldr.PushId(alias, groundTerm.Span);
             }
             
             while (stack.Count > 0)
@@ -1658,27 +1658,27 @@
                             if (ct.GetType().Name == Generators.CSharpDataModelGen.QuotationClassName)
                             {
                                 s = (string)ct.Symbol;
-                                bldr.PushQuoteRun(s.Length == 2 ? string.Empty : s.Substring(1, s.Length - 2));
-                                bldr.PushQuote();
+                                bldr.PushQuoteRun(s.Length == 2 ? string.Empty : s.Substring(1, s.Length - 2), ct.Span);
+                                bldr.PushQuote(ct.Span);
                                 bldr.AddQuoteItem();
                             }
                             else if (ct.GetType().Name == Generators.CSharpDataModelGen.UserCnstClassName)
                             {
                                 GetResidualSymbol(top.Item3, (string)ct.Symbol, out rs, out ns);
-                                bldr.PushId(rs);
+                                bldr.PushId(rs, ct.Span);
                             }
                             else if (ct is Generators.CSharpAlias)
                             {
-                                bldr.PushId((string)ct.Symbol);
+                                bldr.PushId((string)ct.Symbol, ct.Span);
                             }
                             else
                             {
-                                bldr.PushCnst(ct.Symbol == null ? string.Empty : (string)ct.Symbol);
+                                bldr.PushCnst(ct.Symbol == null ? string.Empty : (string)ct.Symbol, ct.Span);
                             }
                         }
                         else if (ct.Symbol is Rational)
                         {
-                            bldr.PushCnst((Rational)ct.Symbol);
+                            bldr.PushCnst((Rational)ct.Symbol, ct.Span);
                         }
                         else
                         {
@@ -1688,8 +1688,8 @@
                     else
                     {
                         GetResidualSymbol(top.Item3, (string)ct.Symbol, out rs, out ns);
-                        bldr.PushId(rs);
-                        bldr.PushFuncTerm();
+                        bldr.PushId(rs, ct.Span);
+                        bldr.PushFuncTerm(ct.Span);
                         for (int i = 0; i < top.Item1.Arity; ++i)
                         {
                             bldr.AddFuncTermArg();
@@ -1716,11 +1716,11 @@
 
             if (isAliased)
             {
-                bldr.PushModelFact();
+                bldr.PushModelFact(groundTerm.Span);
             }
             else
             {
-                bldr.PushAnonModelFact();
+                bldr.PushAnonModelFact(groundTerm.Span);
             }
         }
     }

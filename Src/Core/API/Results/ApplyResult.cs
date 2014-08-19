@@ -170,7 +170,7 @@
         }
 
         /// <summary>
-        /// Determines if a ground term was derived. 
+        /// Determines if a matching term was derived. 
         /// (Only if applied to a basic transform)
         /// </summary>
         /// <returns></returns>
@@ -188,7 +188,7 @@
             }
 
             Term grndTerm;
-            if (!ParseGroundGoal(t, flags, out grndTerm))
+            if (!ParseGoalWithDontCares(t, flags, out grndTerm))
             {
                 return LiftedBool.Unknown;
             }
@@ -203,84 +203,108 @@
         /// (If sort is true, then items are sorted and enumerated in sorted order.)
         /// </summary>
         /// <returns></returns>
-        public IEnumerable<AST<Node>> EnumerateDerivations(bool sort = false)
+        public IEnumerable<AST<Node>> EnumerateDerivations(string t, out List<Flag> flags, bool isSorted = false)
         {
-            if (applyTarget.Reduced.Node.NodeKind != NodeKind.Transform)
-            {
-                yield break;
-            }
-
-            IEnumerable<Term> fixpoint;
-            if (sort)
-            {
-                var sorted = new Set<Term>(basicTransExe.TermIndex.LexicographicCompare);
-                foreach (var kv in basicTransExe.Fixpoint)
-                {
-                    sorted.Add(kv.Key);
-                }
-
-                fixpoint = sorted;
-            }
-            else
-            {
-                fixpoint = basicTransExe.Fixpoint.Keys;
-            }
-
-            Symbol s;
-            foreach (var t in fixpoint)
-            {
-                s = t.Symbol;
-                if ((s.Kind == SymbolKind.UserCnstSymb || s.Kind == SymbolKind.ConSymb || s.Kind == SymbolKind.MapSymb) &&
-                    ((UserSymbol)s).Name.StartsWith(SymbolTable.ManglePrefix))
-                {
-                    continue;
-                }
-
-                yield return Factory.Instance.ToAST(t);
-            }
+            flags = new List<Flag>();
+            return EnumerateDerivationsUsingFlags(t, flags, isSorted);
         }
 
         /// <summary>
         /// Enumerates proof trees (only if applied to a basic transform). 
         /// </summary>
-        public IEnumerable<ProofTree> EnumerateProofs(string t, out List<Flag> flags, out LiftedBool truthValue)
+        public IEnumerable<ProofTree> EnumerateProofs(string t, out List<Flag> flags, int proofsPerTerm = 0)
         {
             flags = new List<Flag>();
-            if (applyTarget.Reduced.Node.NodeKind != NodeKind.Transform)
+            return EnumerateProofsUsingFlags(t, flags, proofsPerTerm);
+        }
+
+        private IEnumerable<ProofTree> EnumerateProofsUsingFlags(string t, List<Flag> flags, int proofsPerTerm)
+        {
+            if (!basicTransExe.KeepDerivations)
+            {
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.BadSyntax.ToString("Proofs were not stored."),
+                    Constants.BadSyntax.Code));
+                yield break;
+            }
+            else if (applyTarget.Reduced.Node.NodeKind != NodeKind.Transform)
             {
                 flags.Add(new Flag(
                     SeverityKind.Error,
                     applyTarget.Reduced.Node,
                     Constants.BadSyntax.ToString("This operation cannot be performed on this type of application."),
                     Constants.BadSyntax.Code));
-                truthValue = LiftedBool.Unknown;
-                return new ProofTree[0];
+                yield break;
             }
 
-            Term grndTerm;
-            if (!ParseGroundGoal(t, flags, out grndTerm))
+            Term goalTerm;
+            if (!ParseGoalWithDontCares(t, flags, out goalTerm))
             {
-                truthValue = LiftedBool.Unknown;
-                return new ProofTree[0];
-            }
-            else if (!basicTransExe.IsDerived(grndTerm))
-            {
-                truthValue = false;
-                return new ProofTree[0];
-            }
-            else if (!basicTransExe.KeepDerivations)
-            {
-                flags.Add(new Flag(
-                    SeverityKind.Error,
-                    default(Span),
-                    Constants.BadSyntax.ToString("Cannot retrieve proofs; derivations were not kept."),
-                    Constants.BadSyntax.Code));
-                truthValue = true;
-                return new ProofTree[0];
+                yield break;
             }
 
-            truthValue = true;
-            return basicTransExe.GetDerivations(grndTerm);
+            int count;
+            foreach (var dt in basicTransExe.GetDerivedTerms(goalTerm))
+            {
+                count = 0;
+                foreach (var p in basicTransExe.GetProofs(dt))
+                {
+                    ++count;
+                    yield return p;
+
+                    if (proofsPerTerm > 0 && count >= proofsPerTerm)
+                    {
+                        break;
+                    }
+                }
+            }
+        }
+
+        private IEnumerable<AST<Node>> EnumerateDerivationsUsingFlags(string t, List<Flag> flags, bool isSorted)
+        {
+            Term goalTerm;
+            if (!ParseGoalWithDontCares(t, flags, out goalTerm))
+            {
+                yield break;
+            }
+
+            Symbol s;
+            if (isSorted)
+            {
+                var sorted = new Set<Term>(basicTransExe.TermIndex.LexicographicCompare);
+                foreach (var dt in basicTransExe.GetDerivedTerms(goalTerm))
+                {
+                    s = dt.Symbol;
+                    if ((s.Kind == SymbolKind.UserCnstSymb || s.Kind == SymbolKind.ConSymb || s.Kind == SymbolKind.MapSymb) &&
+                        ((UserSymbol)s).Name.StartsWith(SymbolTable.ManglePrefix))
+                    {
+                        continue;
+                    }
+
+                    sorted.Add(dt);
+                }
+
+                foreach (var dt in sorted)
+                {
+                    yield return Factory.Instance.ToAST(dt);
+                }
+            }
+            else
+            {
+                foreach (var dt in basicTransExe.GetDerivedTerms(goalTerm))
+                {
+                    s = dt.Symbol;
+                    if ((s.Kind == SymbolKind.UserCnstSymb || s.Kind == SymbolKind.ConSymb || s.Kind == SymbolKind.MapSymb) &&
+                        ((UserSymbol)s).Name.StartsWith(SymbolTable.ManglePrefix))
+                    {
+                        continue;
+                    }
+
+                    yield return Factory.Instance.ToAST(dt);
+                }
+            }
         }
 
         internal void Start()
@@ -618,7 +642,7 @@
             return name;
         }
 
-        private bool ParseGroundGoal(string t, List<Flag> flags, out Term grndTerm)
+        private bool ParseGoalWithDontCares(string t, List<Flag> flags, out Term goalTerm)
         {
             Contract.Requires(basicTransExe != null);
 
@@ -627,7 +651,7 @@
             flags.AddRange(parseFlags);
             if (ast == null)
             {
-                grndTerm = null;
+                goalTerm = null;
                 return false;
             }
             else if (WasCancelled)
@@ -637,7 +661,7 @@
                     ast.Node,
                     Constants.BadSyntax.ToString("Application operation was cancelled; derivation is unknown."),
                     Constants.BadSyntax.Code));
-                grndTerm = null;
+                goalTerm = null;
                 return false;
             }
 
@@ -649,13 +673,13 @@
                     simplified,
                     Constants.BadSyntax.ToString("Expected an identifier, constant, or function"),
                     Constants.BadSyntax.Code));
-                grndTerm = null;
+                goalTerm = null;
                 return false;
             }
 
-            grndTerm = Expand(Factory.Instance.ToAST(simplified), flags);
-            Contract.Assert(grndTerm == null || grndTerm.Groundness == Groundness.Ground);
-            return grndTerm != null;
+            goalTerm = Expand(Factory.Instance.ToAST(simplified), flags);
+            Contract.Assert(goalTerm == null || goalTerm.Groundness != Groundness.Type);
+            return goalTerm != null;
         }
 
         /// <summary>
@@ -680,11 +704,12 @@
                         kv.Value);
                 }
 
+                var nextDcVarId = new MutableTuple<int>(0);
                 var success = new SuccessToken();
                 var symbStack = new Stack<Tuple<Namespace, Symbol>>();
                 symbStack.Push(new Tuple<Namespace, Symbol>(index.SymbolTable.Root, null));
                 var result = ast.Compute<Tuple<Term, Term>>(
-                    x => Expand_Unfold(x, symbStack, success, flags),
+                    x => Expand_Unfold(x, symbStack, nextDcVarId, success, flags),
                     (x, y) => Expand_Fold(x, y, symbStack, valParamToValue, success, flags));
                 return result == null ? null : result.Item1;
             }
@@ -699,6 +724,7 @@
 
         private IEnumerable<Node> Expand_Unfold(Node n,
                                                 Stack<Tuple<Namespace, Symbol>> symbStack,
+                                                MutableTuple<int> nextDcVarId,
                                                 SuccessToken success,
                                                 List<Flag> flags)
         {
@@ -737,6 +763,14 @@
                                 success.Failed();
                                 return null;
                             }
+                        }
+                        else if (id.Fragments.Length == 1 && id.Name == API.ASTQueries.ASTSchema.Instance.DontCareName)
+                        {
+                            bool wasAdded;
+                            var fresh = index.MkVar(string.Format("{0}{1}{2}", SymbolTable.ManglePrefix, "dc", nextDcVarId.Item1), true, out wasAdded);
+                            ++nextDcVarId.Item1;
+                            symbStack.Push(new Tuple<Namespace, Symbol>(space, fresh.Symbol));
+                            return null;
                         }
                         else if (!Resolve(id.Fragments[0], "variable or constant", id, space, x => x.Kind == SymbolKind.UserCnstSymb, out symb, flags))
                         {
@@ -841,6 +875,11 @@
                     return new Tuple<Term, Term>(valTerm, valTerm);
                 }
             }
+            else if (symb.IsVariable)
+            {
+                var varTerm = index.MkApply(symb, TermIndex.EmptyArgs, out wasAdded);
+                return new Tuple<Term, Term>(varTerm, varTerm);
+            }
             else if (symb.IsDataConstructor)
             {
                 var con = (UserSymbol)symb;
@@ -886,8 +925,9 @@
                             continue;
                         }
                     }
-                    else
+                    else if (!a.Item2.Symbol.IsVariable)
                     {
+                        //// Only don't care variables are allowed, which always type check.
                         throw new NotImplementedException();
                     }
 

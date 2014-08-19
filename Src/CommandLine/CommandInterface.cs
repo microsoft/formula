@@ -504,23 +504,16 @@
                 var result = ((System.Threading.Tasks.Task<QueryResult>)task).Result;
                 List<Flag> flags;
                 var goal = cmdParts.Length == 1 ? string.Format("{0}.requires", result.Source.Node.Name) : cmdParts[1];
-                if (goal.Trim() == "*")
+                sink.WriteMessageLine("Listing all derived values...", SeverityKind.Info);
+                foreach (var a in result.EnumerateDerivations(goal, out flags, true))
                 {
-                    sink.WriteMessageLine("Listing all derived values...", SeverityKind.Info);
-                    foreach (var a in result.EnumerateDerivations(true))
-                    {
-                        sink.WriteMessage("   ");
-                        a.Print(sink.Writer);
-                        sink.WriteMessageLine(string.Empty);
-                    }
-                    sink.WriteMessageLine("List complete", SeverityKind.Info);
+                    sink.WriteMessage("   ");
+                    a.Print(sink.Writer);
+                    sink.WriteMessageLine(string.Empty);
                 }
-                else
-                {
-                    var isTrue = result.IsDerivable(goal, out flags);
-                    WriteFlags(new ProgramName("CommandLine.4ml"), flags);
-                    sink.WriteMessageLine(string.Format("Truth value: {0}", isTrue));
-                }
+
+                sink.WriteMessageLine("List complete", SeverityKind.Info);
+                WriteFlags(new ProgramName("CommandLine.4ml"), flags);
             }
             else if (kind == TaskKind.Apply)
             {
@@ -528,28 +521,21 @@
                 List<Flag> flags;
                 if (cmdParts.Length == 1)
                 {
-                    sink.WriteMessageLine(string.Format("You must supply a ground term"), SeverityKind.Warning);
+                    sink.WriteMessageLine(string.Format("You must supply a goal term"), SeverityKind.Warning);
                     return;
                 }
 
                 var goal = cmdParts[1].Trim();
-                if (goal.Trim() == "*")
-                {                    
-                    sink.WriteMessageLine("Listing all derived values...", SeverityKind.Info);
-                    foreach (var a in result.EnumerateDerivations(true))
-                    {
-                        sink.WriteMessage("   ");
-                        a.Print(sink.Writer);
-                        sink.WriteMessageLine(string.Empty);
-                    }
-                    sink.WriteMessageLine("List complete", SeverityKind.Info);
-                }
-                else
+                sink.WriteMessageLine("Listing all derived values...", SeverityKind.Info);
+                foreach (var a in result.EnumerateDerivations(goal, out flags, true))
                 {
-                    var isTrue = result.IsDerivable(goal, out flags);
-                    WriteFlags(new ProgramName("CommandLine.4ml"), flags);
-                    sink.WriteMessageLine(string.Format("Truth value: {0}", isTrue));
+                    sink.WriteMessage("   ");
+                    a.Print(sink.Writer);
+                    sink.WriteMessageLine(string.Empty);
                 }
+
+                sink.WriteMessageLine("List complete", SeverityKind.Info);
+                WriteFlags(new ProgramName("CommandLine.4ml"), flags);
             }
             else
             {
@@ -730,26 +716,24 @@
                 return;
             }
 
-            IEnumerable<ProofTree> proofs;
             List<Flag> flags;
-            LiftedBool isTrue;
-
+            IEnumerable<ProofTree> proofs;
             if (kind == TaskKind.Query)
             {
                 var result = ((System.Threading.Tasks.Task<QueryResult>)task).Result;
                 var goal = cmdParts.Length == 1 ? string.Format("{0}.requires", result.Source.Node.Name) : cmdParts[1];
-                proofs = result.EnumerateProofs(goal, out flags, out isTrue);
+                proofs = result.EnumerateProofs(goal, out flags);
             }
             else if (kind == TaskKind.Apply)
             {
                 if (cmdParts.Length == 1)
                 {
-                    sink.WriteMessageLine(string.Format("You must supply a ground term"), SeverityKind.Warning);
+                    sink.WriteMessageLine(string.Format("You must supply a goal term"), SeverityKind.Warning);
                     return;
                 }
 
                 var result = ((System.Threading.Tasks.Task<ApplyResult>)task).Result;
-                proofs = result.EnumerateProofs(cmdParts[1], out flags, out isTrue);
+                proofs = result.EnumerateProofs(cmdParts[1], out flags);
             }
             else
             {
@@ -757,20 +741,13 @@
             }
 
             WriteFlags(new ProgramName("CommandLine.4ml"), flags);
-            sink.WriteMessageLine(string.Format("Truth value: {0}", isTrue));
             sink.WriteMessageLine("");
 
+            bool forceStopped = false;
             DigitChoiceKind choice;
             foreach (var p in proofs)
             {
                 p.Debug_PrintTree();
-                var locs = p.ComputeLocators();
-                Console.WriteLine("{0} locators", locs.Count);
-                foreach (var l in locs)
-                {
-                    l.Debug_Print(2);
-                }
-
                 sink.WriteMessageLine("Press 0 to stop, or 1 to continue", SeverityKind.Info);
                 while (!chooser.GetChoice(out choice) || (int)choice > 1)
                 {
@@ -779,8 +756,14 @@
 
                 if (choice == DigitChoiceKind.Zero)
                 {
+                    forceStopped = true;
                     break;
                 }
+            }
+
+            if (!forceStopped)
+            {
+                sink.WriteMessageLine("No more proofs", SeverityKind.Info);
             }
         }
 

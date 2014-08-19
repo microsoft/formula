@@ -381,12 +381,12 @@
             try
             {
                 termIndexLock.Enter(ref gotLock);
-
+                var nextDcVarId = new MutableTuple<int>(0);
                 var success = new SuccessToken();
                 var symbStack = new Stack<Tuple<Namespace, Symbol>>();
                 symbStack.Push(new Tuple<Namespace, Symbol>(Index.SymbolTable.Root, null));
                 var result = ast.Compute<Tuple<Term, Term>>(
-                    x => Expand_Unfold(x, symbStack, success, flags),
+                    x => Expand_Unfold(x, symbStack, nextDcVarId, success, flags),
                     (x, y) => Expand_Fold(x, y, symbStack, success, flags));
                 return result == null ? null : result.Item1;
             }
@@ -861,6 +861,7 @@
 
         private IEnumerable<Node> Expand_Unfold(Node n,
                                                 Stack<Tuple<Namespace, Symbol>> symbStack,
+                                                MutableTuple<int> nextDcVarId,
                                                 SuccessToken success,
                                                 List<Flag> flags)
         {
@@ -899,6 +900,14 @@
                                 success.Failed();
                                 return null;
                             }
+                        }
+                        else if (id.Fragments.Length == 1 && id.Name == ASTSchema.Instance.DontCareName)
+                        {
+                            bool wasAdded;
+                            var fresh = Index.MkVar(string.Format("{0}{1}{2}", SymbolTable.ManglePrefix, "dc", nextDcVarId.Item1), true, out wasAdded);
+                            ++nextDcVarId.Item1;
+                            symbStack.Push(new Tuple<Namespace, Symbol>(space, fresh.Symbol));
+                            return null;
                         }
                         else if (!Resolve(id.Fragments[0], "variable or constant", id, space, x => x.Kind == SymbolKind.UserCnstSymb, out symb, flags))
                         {
@@ -987,6 +996,7 @@
             {
                 return null;
             }
+
             if (symb.IsNonVarConstant)
             {
                 var cnst = symb as UserCnstSymb;
@@ -1001,6 +1011,11 @@
                     var valTerm = Index.MkApply(symb, TermIndex.EmptyArgs, out wasAdded);
                     return new Tuple<Term, Term>(valTerm, valTerm);
                 }
+            }
+            else if (symb.IsVariable)
+            {
+                var varTerm = Index.MkApply(symb, TermIndex.EmptyArgs, out wasAdded);
+                return new Tuple<Term, Term>(varTerm, varTerm);
             }
             else if (symb.IsDataConstructor)
             {
@@ -1047,8 +1062,9 @@
                             continue;
                         }
                     }
-                    else
+                    else if (!a.Item2.Symbol.IsVariable)
                     {
+                        //// Only don't care variables are allowed, which always type check.
                         throw new NotImplementedException();
                     }
 

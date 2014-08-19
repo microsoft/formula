@@ -146,12 +146,53 @@
         }
        
         /// <summary>
-        /// Returns true if the ground term t has been derived.
+        /// Returns true if a term matching t has been derived.
         /// </summary>
         public bool IsDerived(Term t)
         {
-            Contract.Requires(t != null && t.Groundness == Groundness.Ground);
-            return facts.ContainsKey(t);
+            Contract.Requires(t != null && t.Groundness != Groundness.Type);
+            if (t.Groundness == Groundness.Ground)
+            {
+                return facts.ContainsKey(t);                
+            }
+
+            var matcher = new Matcher(t);
+            foreach (var f in facts.Keys)
+            {
+                if (matcher.TryMatch(f))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Returns the derived terms matching t.
+        /// </summary>
+        public IEnumerable<Term> GetDerivedTerms(Term t)
+        {
+            Contract.Requires(t != null && t.Groundness != Groundness.Type);
+
+            if (t.Groundness == Groundness.Ground)
+            {
+                if (facts.ContainsKey(t))
+                {
+                    yield return t;
+                }
+
+                yield break;
+            }
+
+            var matcher = new Matcher(t);
+            foreach (var f in facts.Keys)
+            {
+                if (matcher.TryMatch(f))
+                {
+                    yield return f;
+                }
+            }
         }
 
         public void Execute()
@@ -411,7 +452,7 @@
         /// <summary>
         /// Enumerates proofs for the ground term t. Requires KeepDerivations.
         /// </summary>
-        public IEnumerable<ProofTree> GetDerivations(Term goal)
+        public IEnumerable<ProofTree> GetProofs(Term goal)
         {
             Contract.Requires(KeepDerivations);
             Contract.Requires(goal != null && goal.Owner == TermIndex && goal.Groundness == Groundness.Ground);

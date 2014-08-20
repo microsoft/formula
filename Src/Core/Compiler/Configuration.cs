@@ -64,6 +64,8 @@
         public const string Solver_PosIntegerCostSetting = "solver_PosIntegerCost";
         public const string Solver_StringCostSetting = "solver_StringCost";
         public const string Proofs_KeepLineNumbersSetting = "proofs_KeepLineNumbers";
+        public const string Proofs_MaxLocationsSetting = "proofs_MaxLocations";
+        public const string Rule_ClassesSetting = "rule_Classes";
 
         static Configuration()
         {
@@ -72,7 +74,9 @@
             TopSettingValidators[Parse_ActiveRenderSetting] = ValidateStringSetting;
             TopSettingValidators[Solver_ActiveStrategySetting] = ValidateStringSetting;
             TopSettingValidators[Compiler_ProductivityCheckSetting] = ValidateStringSetting;
+            TopSettingValidators[Rule_ClassesSetting] = ValidateStringSetting;
             TopSettingValidators[Proofs_KeepLineNumbersSetting] = ValidateBoolSetting;
+            TopSettingValidators[Proofs_MaxLocationsSetting] = (s, f) => ValidateIntSetting(s, 1, 256, f);
             TopSettingValidators[Solver_RealCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_IntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_NaturalCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
@@ -161,6 +165,16 @@
                     Proofs_KeepLineNumbersSetting,
                     CnstKind.String,
                     string.Format("Use {0} = \"TRUE\" (\"FALSE\") to so proofs can (not) locate the line numbers of the model facts they require.", Proofs_KeepLineNumbersSetting)),
+
+                new Tuple<string, CnstKind, string>(
+                    Proofs_MaxLocationsSetting,
+                    CnstKind.Numeric,
+                    string.Format("Use {0} = n for 1 <= n <= 256 to set the maximum number of locations computed per proof.", Proofs_MaxLocationsSetting)),
+
+                new Tuple<string, CnstKind, string>(
+                    Rule_ClassesSetting,
+                    CnstKind.String,
+                    string.Format("Use {0} = \"class1, ..., classn\" to tag a rule with a set of classes.", Rule_ClassesSetting)),
             };
 
             Array.Sort(settingDescrs, (x, y) => string.Compare(x.Item1, y.Item1));

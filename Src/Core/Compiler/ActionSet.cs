@@ -177,7 +177,7 @@
                 
                 foreach (var h in heads)
                 {
-                    var act = new Action(h, cs, TypeEnvironment, myComprData);
+                    var act = new Action(h, cs, TypeEnvironment, myComprData, AST.Node);
                     if (act.Validate(flags, cancel, isCompilerAction))
                     {
                         actions.AddLast(act);

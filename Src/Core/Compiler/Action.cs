@@ -28,6 +28,11 @@
         private ComprehensionData myComprData;
         private TypeEnvironment typeEnvironment;
 
+        /// <summary>
+        /// A rule or contract item node possibly with configuration information.
+        /// </summary>
+        private Node configurationContext;
+
         internal Node Head
         {
             get;
@@ -61,11 +66,13 @@
             Node head, 
             ConstraintSystem body,
             TypeEnvironment typeEnv,
-            ComprehensionData comprData = null)
+            ComprehensionData comprData = null,
+            Node configurationContext = null)
         {
             Head = head;
             Body = body;
             myComprData = comprData;
+            this.configurationContext = configurationContext;
 
             typeEnvironment = typeEnv;
             theUnnSymbol = body.Index.SymbolTable.GetOpSymbol(ReservedOpKind.TypeUnn);
@@ -147,11 +154,11 @@
 
             if (myComprData == null)
             {
-                rules.CompileRule(HeadTerm, HeadType, parts, Head, Body);
+                rules.CompileRule(HeadTerm, HeadType, parts, Head, Body, configurationContext);
             }
             else
             {                
-                rules.CompileRule(rules.MkComprHead(myComprData, HeadTerm), Index.FalseValue, parts, Head, Body);
+                rules.CompileRule(rules.MkComprHead(myComprData, HeadTerm), Index.FalseValue, parts, Head, Body, configurationContext);
             }
 
             return true;

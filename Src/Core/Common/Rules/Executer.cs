@@ -701,7 +701,7 @@
             var proofTreeStack = new Stack<ProofTree>();
             var proofStateStack = new Stack<MutableTuple<ProofState, int>>();
 
-            proofTreeStack.Push(new ProofTree(goal, root.CurrentSubProofs[0].Derivation.Rule, factSets));
+            proofTreeStack.Push(new ProofTree(goal, root.CurrentSubProofs[0].Derivation.Rule, factSets, Rules));
             proofStateStack.Push(new MutableTuple<ProofState, int>(root.CurrentSubProofs[0], -1));
 
             ProofTree treeTop;
@@ -728,7 +728,7 @@
                     if (!bindingVar.Symbol.IsReservedOperation)
                     {
                         proofTreeStack.Push(
-                            new ProofTree(binding, stateTop.Item1.CurrentSubProofs[stateTop.Item2].Derivation.Rule, factSets));
+                            new ProofTree(binding, stateTop.Item1.CurrentSubProofs[stateTop.Item2].Derivation.Rule, factSets, Rules));
                     }
 
                     proofStateStack.Push(new MutableTuple<ProofState, int>(stateTop.Item1.CurrentSubProofs[stateTop.Item2], -1));

@@ -321,7 +321,7 @@
             return new FindData(body, rule.Head, rule.HeadType);         
         }
 
-        internal void CompileRule(Term headTerm, Term headType, FindData[] parts, Node node, ConstraintSystem environment)
+        internal void CompileRule(Term headTerm, Term headType, FindData[] parts, Node node, ConstraintSystem environment, Node configurationContext)
         {
             Contract.Requires(headTerm != null && headType != null && parts != null && parts.Length > 0);
             Term projBody, comprLabel, ruleTerm;
@@ -364,7 +364,9 @@
                         IsComprehensionSymbol,
                         headType, 
                         node,
-                        ModuleData.Source.Program.Name);
+                        ModuleData.Source.Program.Name,
+                        environment);
+                    rule.MergeConfigurations(configurationContext);
                     rules.Add(ruleTerm, rule);
                 }
             }
@@ -437,7 +439,9 @@
                                     IsComprehensionSymbol,
                                     headType, 
                                     node,
-                                    ModuleData.Source.Program.Name);
+                                    ModuleData.Source.Program.Name,
+                                    environment);
+                                rule.MergeConfigurations(configurationContext);
                                 rules.Add(ruleTerm, rule);
                             }
                         }

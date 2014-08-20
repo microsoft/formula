@@ -110,10 +110,5 @@
                     Index.FalseValue);
             }
         }
-
-        public override IEnumerable<Term> GetDirectVarDefs(Term t)
-        {
-            yield break;
-        }
     }
 }

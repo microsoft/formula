@@ -164,6 +164,23 @@
             return true;
         }
 
+        /// <summary>
+        /// Returns the terms in the congruence class of t.
+        /// </summary>
+        public IEnumerable<Term> GetCongruenceMembers(Term t)
+        {
+            CongruenceClass cls;
+            if (!classes.TryFindValue(t, out cls))
+            {
+                yield return t;
+            }
+
+            foreach (var m in cls.Members)
+            {
+                yield return m;
+            }
+        }
+
         public bool Validate(
                     List<Flag> flags, 
                     IEnumerable<Id> headVars,

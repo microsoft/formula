@@ -15,6 +15,9 @@
    
     public sealed class ProofTree
     {
+        private const int Default_MaxLocationsPerProof = 100;
+
+        private int maxLocationsPerProof = Default_MaxLocationsPerProof;
         private Map<string, FactSet> factSets;
         private Map<Term, Tuple<Term, ProofTree>> premises = new Map<Term, Tuple<Term, ProofTree>>(Term.Compare);
 
@@ -41,6 +44,22 @@
             private set;
         }
 
+        public IEnumerable<String> RuleClasses
+        {
+            get
+            {
+                if (CoreRule == null || CoreRule.RuleClasses == null)
+                {
+                    yield break;
+                }
+
+                foreach (var cls in CoreRule.RuleClasses)
+                {
+                    yield return cls;
+                }
+            }
+        }
+
         /// <summary>
         /// CoreRule is null if conclusion is a fact.
         /// </summary>
@@ -50,19 +69,30 @@
             private set;
         }
       
-        internal ProofTree(Term conclusion, CoreRule coreRule, Map<string, FactSet> factSets)
+        internal ProofTree(Term conclusion, CoreRule coreRule, Map<string, FactSet> factSets, RuleTable rules)
         {
             Contract.Requires(conclusion != null && factSets != null);
             this.factSets = factSets;
             Conclusion = conclusion;
             CoreRule = coreRule;
             Rule = coreRule == null ? Factory.Instance.MkId("fact", new Span(0, 0, 0, 0)).Node : coreRule.Node;
+            SetMaxLocationsPerProof(rules);
         }
 
         internal void AddSubproof(Term boundVar, Term boundPattern, ProofTree subproof)
         {
             Contract.Requires(boundVar != null && boundPattern != null && subproof != null);
             premises.Add(boundVar, new Tuple<Term, ProofTree>(boundPattern, subproof));
+        }
+
+        public bool HasRuleClass(string cls)
+        {
+            if (cls == null || CoreRule == null || CoreRule.RuleClasses == null)
+            {
+                return false;
+            }
+
+            return CoreRule.RuleClasses.Contains(cls);
         }
 
         /// <summary>
@@ -126,7 +156,8 @@
                 var bodyTerm2Locs = new Map<Term, LinkedList<Locator>>(Term.Compare);
                 //// The bindings of body variables implied by the binding variable and its pattern.
                 var bodyVar2Bindings = new Map<Term, Term>(Term.Compare);
-
+                //// Records to the set of variable bindings in this pass.
+                var newVarBindings = new Stack<Term>();
                 foreach (var kv in premises)
                 {
                     MkBodyLocators(
@@ -135,7 +166,35 @@
                         kv.Key, 
                         kv.Value.Item1, 
                         bodyTerm2Locs,
-                        bodyVar2Bindings);
+                        bodyVar2Bindings, 
+                        newVarBindings);
+                }
+
+                if (CoreRule.AdditionalVarDefs != null)
+                {
+                    Set<Term> eqs;
+                    while (newVarBindings.Count > 0)
+                    {
+                        var x = newVarBindings.Pop();
+                        if (!CoreRule.AdditionalVarDefs.TryFindValue(x, out eqs) || eqs.Count == 0)
+                        {
+                            continue;
+                        }
+
+                        var xlocs = bodyTerm2Locs[x];
+                        var xbinding = bodyVar2Bindings[x];
+                        foreach (var eq in eqs)
+                        {
+                            MkBodyLocators(
+                                xlocs,
+                                xbinding,
+                                x,
+                                eq,
+                                bodyTerm2Locs,
+                                bodyVar2Bindings,
+                                newVarBindings);
+                        }
+                    }
                 }
 
                 //// The bindings of variables or variable selectors implied by the conclusion and the head.
@@ -235,7 +294,7 @@
                     prev = next;
                 }
 
-                foreach (var alocs in Locator.MkPermutations(argLocs, 100))
+                foreach (var alocs in Locator.MkPermutations(argLocs, maxLocationsPerProof))
                 {
                     outputLocations.AddLast(new CompositeLocator(subRuleHead.Span, subRuleProgram, alocs));
                 }
@@ -368,7 +427,7 @@
             else
             {
                 locs = new LinkedList<Locator>();
-                foreach (var childLocs in Locator.MkPermutations(children, 100))
+                foreach (var childLocs in Locator.MkPermutations(children, maxLocationsPerProof))
                 {
                     locs.AddLast(new CompositeLocator(node.Span, nodeProgram, childLocs));
                 }
@@ -387,9 +446,15 @@
             Term boundVar, 
             Term boundPattern, 
             Map<Term, LinkedList<Locator>> term2Locs,
-            Map<Term, Term> var2Bindings)
+            Map<Term, Term> var2Bindings,
+            Stack<Term> newVarBindings)
         {
-            var2Bindings[boundVar] = binding;
+            if (!var2Bindings.ContainsKey(boundVar))
+            {
+                var2Bindings[boundVar] = binding;
+                newVarBindings.Push(boundVar);
+            }
+
             LinkedList<Locator> termLocs;
             if (!term2Locs.TryFindValue(boundVar, out termLocs))
             {
@@ -399,13 +464,16 @@
 
             foreach (var l in findLocs)
             {
-                termLocs.AddLast(l);
+                if (!termLocs.Contains(l))
+                {
+                    termLocs.AddLast(l);
+                }
             }
 
             Stack<Tuple<Term, LinkedList<Locator>>> locStack = new Stack<Tuple<Term, LinkedList<Locator>>>();
             locStack.Push(new Tuple<Term, LinkedList<Locator>>(binding, findLocs));
             boundPattern.Compute<Unit>(
-                (x, s) => MkBodyLocators_Unfold(x, locStack, term2Locs, var2Bindings),
+                (x, s) => MkBodyLocators_Unfold(x, locStack, term2Locs, var2Bindings, newVarBindings),
                 (x, ch, s) =>
                 {
                     locStack.Pop();
@@ -417,12 +485,14 @@
             Term pattern,
             Stack<Tuple<Term, LinkedList<Locator>>> locStack,
             Map<Term, LinkedList<Locator>> term2Locs,
-            Map<Term, Term> var2Bindings)
+            Map<Term, Term> var2Bindings,
+            Stack<Term> newVarBindings)
         {
             var parentTerm = locStack.Peek().Item1;
-            if (pattern.Symbol.IsVariable)
+            if (pattern.Symbol.IsVariable && !var2Bindings.ContainsKey(pattern))
             {
                 var2Bindings[pattern] = parentTerm;
+                newVarBindings.Push(pattern);
             }
 
             LinkedList<Locator> termLocs;
@@ -435,22 +505,16 @@
             var parentLocs = locStack.Peek().Item2;
             foreach (var l in parentLocs)
             {
-                termLocs.AddLast(l);
-            }
-
-            foreach (var v in CoreRule.GetDirectVarDefs(pattern))
-            {
-                var2Bindings[v] = parentTerm;
-                if (!term2Locs.TryFindValue(v, out termLocs))
-                {
-                    termLocs = new LinkedList<Locator>();
-                    term2Locs.Add(v, termLocs);
-                }
-
-                foreach (var l in parentLocs)
+                if (!termLocs.Contains(l))
                 {
                     termLocs.AddLast(l);
                 }
+            }
+
+            //// Only unfold this term further if it is constructed data.
+            if (pattern.Symbol.Arity > 0 && !pattern.Symbol.IsDataConstructor)
+            {
+                yield break;
             }
 
             for (int i = 0; i < pattern.Args.Length; ++i)
@@ -613,6 +677,38 @@
             }
 
             Console.WriteLine("{0}.", indentStr);
+        }
+
+        private void SetMaxLocationsPerProof(RuleTable rules)
+        {
+            var source = rules.ModuleData == null ? null : rules.ModuleData.Source.AST;
+            if (source == null)
+            {
+                return;
+            }
+
+            Configuration config = null;
+            switch (source.Node.NodeKind)
+            {
+                case NodeKind.Model:
+                    config = (Configuration)((Model)source.Node).Config.CompilerData;
+                    break;
+                case NodeKind.Domain:
+                    config = (Configuration)((Domain)source.Node).Config.CompilerData;
+                    break;
+                case NodeKind.Transform:
+                    config = (Configuration)((Transform)source.Node).Config.CompilerData;
+                    break;
+                default:
+                    return;
+            }
+
+            Contract.Assert(config != null);
+            Cnst maxLocs;
+            if (config.TryGetSetting(Configuration.Proofs_MaxLocationsSetting, out maxLocs))
+            {
+                maxLocationsPerProof = (int)maxLocs.GetNumericValue().Numerator;
+            }
         }
     }
 }

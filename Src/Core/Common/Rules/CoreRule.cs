@@ -16,6 +16,8 @@
 
     internal class CoreRule
     {
+        private static readonly char[] ClassesSplits = new char[] { ',' };
+
         private enum ConstrainNodeKind { Ground, Nonground, TypeRel, EqRel }
         private enum InitStatusKind { Uninit, Success, Fail }
         public enum RuleKind { Regular, Sub }
@@ -138,6 +140,25 @@
             private set;
         }
 
+        /// <summary>
+        /// Can be null if the rule has no classes.
+        /// </summary>
+        public Set<string> RuleClasses
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
+        /// Contains an additional set of equalities of the form x = t that were implied by the rule body.
+        /// Can be null.
+        /// </summary>
+        public Map<Term, Set<Term>> AdditionalVarDefs
+        {
+            get;
+            private set;
+        }
+
         public CoreRule(
             int ruleId, 
             Term head, 
@@ -147,7 +168,8 @@
             Predicate<Symbol> isCompr,
             Term headType = null, 
             Node node = null,
-            ProgramName programName = null)
+            ProgramName programName = null,
+            ConstraintSystem environment = null)
         {
             Contract.Requires(head != null && constrs != null);
             Index = head.Owner;
@@ -231,6 +253,23 @@
             {
                 Trigger2 = Executer.MkPattern(Find2.Pattern, null);
             }
+
+            if (environment != null)
+            {
+                AdditionalVarDefs = new Map<Term, Set<Term>>(Term.Compare);
+                foreach (var v in environment.Variables)
+                {
+                    var set = new Set<Term>(Term.Compare);
+                    AdditionalVarDefs.Add(v, set);
+                    foreach (var m in environment.GetCongruenceMembers(v))
+                    {
+                        if (m != v)
+                        {
+                            set.Add(m);
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -289,7 +328,23 @@
                 Node,
                 ProgramName);
 
+            if (AdditionalVarDefs != null)
+            {
+                cloneRule.AdditionalVarDefs = new Map<Term, Set<Term>>(Term.Compare);
+                foreach (var kv in AdditionalVarDefs)
+                {
+                    var v = index.MkClone(kv.Key, renaming, symbolTransfer);
+                    var set = new Set<Term>(Term.Compare);
+                    cloneRule.AdditionalVarDefs.Add(v, set);
+                    foreach (var rhs in kv.Value)
+                    {
+                        set.Add(index.MkClone(rhs, renaming, symbolTransfer));
+                    }
+                }
+            }
+
             cloneRule.IsClone = true;
+            cloneRule.MergeConfigurations(this);
             return cloneRule;
         }
 
@@ -333,6 +388,17 @@
 
                     inliner1.Add(head.Args[i], pattern.Args[i]);
                 }
+
+                if (AdditionalVarDefs != null)
+                {
+                    foreach (var x in AdditionalVarDefs.Keys)
+                    {
+                        if (!inliner1.ContainsKey(x))
+                        {
+                            inliner1.Add(x, x);
+                        }
+                    }
+                }
             }
 
             Map<Term, Term> inliner2 = null;
@@ -349,6 +415,18 @@
 
                     inliner2.Add(head.Args[i], pattern.Args[i]);
                 }
+
+                if (AdditionalVarDefs != null)
+                {
+                    foreach (var x in AdditionalVarDefs.Keys)
+                    {
+                        if (!inliner2.ContainsKey(x))
+                        {
+                            inliner2.Add(x, x);
+                        }
+
+                    }
+                }
             }
 
             //// If no find matches the inliner, then fail.
@@ -358,6 +436,15 @@
                 return this;
             }
 
+            var optAddVarDefs = new Map<Term, Set<Term>>(Term.Compare);
+            if (AdditionalVarDefs != null)
+            {
+                foreach (var kv in AdditionalVarDefs)
+                {
+                    AddVarDefs(optAddVarDefs, kv.Key, kv.Value);
+                }
+            }
+         
             string varPrefix;
             var inlinedFind1 = Find1;
             var inlinedFind2 = Find2;
@@ -365,6 +452,11 @@
             if (inliner1 != null)
             {
                 varPrefix = string.Format("~inl~{0}~1", inliner.RuleId);
+                foreach (var kv in inliner1)
+                {
+                    AddVarDef(optAddVarDefs, kv.Key, kv.Value);
+                }
+
                 foreach (var c in inliner.Constraints)
                 {
                     inlinedConstrs.Add(Substitute(c, inliner1, varPrefix));
@@ -372,20 +464,48 @@
 
                 if (!inliner.Find1.IsNull)
                 {
+                    Term b, p;
                     inlinedFind1 = new FindData(
-                        Substitute(inliner.Find1.Binding, inliner1, varPrefix),
-                        Substitute(inliner.Find1.Pattern, inliner1, varPrefix),
+                        b = Substitute(inliner.Find1.Binding, inliner1, varPrefix),
+                        p = Substitute(inliner.Find1.Pattern, inliner1, varPrefix),
                         Substitute(inliner.Find1.Type, inliner1, varPrefix));
+
+                    if (b.Symbol.IsVariable)
+                    {
+                        AddVarDef(optAddVarDefs, b, p);
+                    }
                 }
                 else
                 {
                     inlinedFind1 = new FindData();
+                }
+
+                if (inliner.AdditionalVarDefs != null)
+                {
+                    foreach (var kv in inliner.AdditionalVarDefs)
+                    {
+                        var x = Substitute(kv.Key, inliner1, varPrefix);
+                        if (!x.Symbol.IsVariable)
+                        {
+                            continue;
+                        }
+
+                        foreach (var rhs in kv.Value)
+                        {
+                            AddVarDef(optAddVarDefs, x, Substitute(rhs, inliner1, varPrefix));
+                        }
+                    }
                 }
             }
 
             if (inliner2 != null)
             {
                 varPrefix = string.Format("~inl~{0}~2", inliner.RuleId);
+                foreach (var kv in inliner2)
+                {
+                    AddVarDef(optAddVarDefs, kv.Key, kv.Value);
+                }
+
                 foreach (var c in inliner.Constraints)
                 {
                     inlinedConstrs.Add(Substitute(c, inliner2, varPrefix));
@@ -393,21 +513,45 @@
 
                 if (!inliner.Find1.IsNull)
                 {
+                    Term b, p;
                     inlinedFind2 = new FindData(
-                        Substitute(inliner.Find1.Binding, inliner2, varPrefix),
-                        Substitute(inliner.Find1.Pattern, inliner2, varPrefix),
+                        b = Substitute(inliner.Find1.Binding, inliner2, varPrefix),
+                        p = Substitute(inliner.Find1.Pattern, inliner2, varPrefix),
                         Substitute(inliner.Find1.Type, inliner2, varPrefix));
+
+                    if (b.Symbol.IsVariable)
+                    {
+                        AddVarDef(optAddVarDefs, b, p);
+                    }
                 }
                 else
                 {
                     inlinedFind2 = new FindData();
                 }
+
+                if (inliner.AdditionalVarDefs != null)
+                {
+                    foreach (var kv in inliner.AdditionalVarDefs)
+                    {
+                        var x = Substitute(kv.Key, inliner2, varPrefix);
+                        if (!x.Symbol.IsVariable)
+                        {
+                            continue;
+                        }
+
+                        foreach (var rhs in kv.Value)
+                        {
+                            AddVarDef(optAddVarDefs, x, Substitute(rhs, inliner2, varPrefix));
+                        }
+                    }
+                }
             }
 
             succeeded = true;
+            CoreRule optRule;
             if (inlinedFind1.IsNull && !inlinedFind2.IsNull)
             {
-                return new CoreRule(
+                optRule = new CoreRule(
                     RuleId,
                     Head,
                     inlinedFind2,
@@ -420,7 +564,7 @@
             }
             else
             {
-                return new CoreRule(
+                optRule = new CoreRule(
                     RuleId,
                     Head,
                     inlinedFind1,
@@ -430,6 +574,98 @@
                     HeadType,
                     Node,
                     ProgramName);
+            }
+
+            optRule.AdditionalVarDefs = optAddVarDefs;
+            optRule.MergeConfigurations(this, inliner);
+            return optRule;
+        }
+
+        public void MergeConfigurations(params CoreRule[] rules)
+        {
+            foreach (var r in rules)
+            {
+                if (r == this)
+                {
+                    continue;
+                }
+
+                //// Step 1. Merge rule classes
+                if (r.RuleClasses != null)
+                {
+                    if (RuleClasses == null)
+                    {
+                        RuleClasses = new Set<string>(string.Compare);
+                    }
+
+                    foreach (var cls in r.RuleClasses)
+                    {
+                        RuleClasses.Add(cls);
+                    }
+                }
+            }
+        }
+
+        public void MergeConfigurations(Node node)
+        {
+            if (node == null)
+            {
+                return;
+            }
+
+            Config configNode = null;
+            switch (node.NodeKind)
+            {
+                case NodeKind.Rule:
+                    configNode = ((Rule)node).Config;
+                    break;
+                case NodeKind.ContractItem:
+                    configNode = ((ContractItem)node).Config;
+                    break;
+                default:
+                    return;
+            }
+
+            if (configNode == null)
+            {
+                return;
+            }
+
+            var config = (Configuration)configNode.CompilerData;
+
+            //// (1) Try to configure rule classes
+            Cnst setting;
+            if (!config.TryGetSetting(Configuration.Rule_ClassesSetting, out setting))
+            {
+                return;
+            }
+
+            var classArr = setting.GetStringValue().Split(ClassesSplits, StringSplitOptions.RemoveEmptyEntries);
+
+            if (RuleClasses == null)
+            {
+                RuleClasses = new Set<string>(string.Compare);
+            }
+            
+            foreach (var cls in classArr)
+            {
+                var clsTrimmed = cls.Trim();
+                if (clsTrimmed != string.Empty)
+                {
+                    RuleClasses.Add(clsTrimmed);
+                }
+            }
+        }
+
+        private static void Debug_Print(Map<Term, Set<Term>> optAddVarDefs)
+        {
+            foreach (var kv in optAddVarDefs)
+            {
+                Console.WriteLine("{0} =", kv.Key.Debug_GetSmallTermString());
+                foreach (var eq in kv.Value)
+                {
+                    Console.WriteLine("   {0}", eq.Debug_GetSmallTermString());
+                }
             }
         }
 
@@ -609,41 +845,6 @@
             }
         }
 
-        /// <summary>
-        /// A variable is directly defined by t is there is an equality constraints x = t.
-        /// Returns all the variables directly defined by t.
-        /// </summary>
-        public virtual IEnumerable<Term> GetDirectVarDefs(Term t)
-        {
-            Contract.Requires(t != null && t.Owner == Index);
-            ConstraintNode node;
-            if (!nodes.TryFindValue(t, out node))
-            {
-                yield break;
-            }
-
-            Term a;
-            foreach (var use in node.UseList)
-            {
-                if (use.Item1.Kind != ConstrainNodeKind.EqRel)
-                {
-                    continue;
-                }
-
-                a = use.Item1.Term.Args[0];
-                if (a.Symbol.IsVariable && a != t)
-                {
-                    yield return a;
-                }
-
-                a = use.Item1.Term.Args[1];
-                if (a.Symbol.IsVariable && a != t)
-                {
-                    yield return a;
-                }
-            }
-        }
-
         public static int Compare(CoreRule r1, CoreRule r2)
         {
             return r1.RuleId - r2.RuleId;
@@ -737,6 +938,46 @@
             }
 
             dervs.Add(d);
+        }
+
+        private static void AddVarDef(Map<Term, Set<Term>> varDefs, Term vt, Term def)
+        {
+            Contract.Requires(varDefs != null && vt != null && def != null);
+            Contract.Requires(vt.Symbol.IsVariable);
+            if (vt == def)
+            {
+                return;
+            }
+
+            Set<Term> eqs;
+            if (!varDefs.TryFindValue(vt, out eqs))
+            {
+                eqs = new Set<Term>(Term.Compare);
+                varDefs.Add(vt, eqs);
+            }
+
+            eqs.Add(def);
+        }
+
+        private static void AddVarDefs(Map<Term, Set<Term>> varDefs, Term vt, Set<Term> defs)
+        {
+            Contract.Requires(varDefs != null && vt != null && defs != null);
+            Contract.Requires(vt.Symbol.IsVariable);
+
+            Set<Term> eqs;
+            if (!varDefs.TryFindValue(vt, out eqs))
+            {
+                eqs = new Set<Term>(Term.Compare);
+                varDefs.Add(vt, eqs);
+            }
+
+            foreach (var def in defs)            
+            {
+                if (vt != def)
+                {
+                    eqs.Add(def);
+                }
+            }
         }
 
         /// <summary>

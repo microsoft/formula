@@ -150,6 +150,15 @@
         }
 
         /// <summary>
+        /// If true, then an event is generated whenever this rule produces a new value
+        /// </summary>
+        public bool IsWatched
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
         /// Contains an additional set of equalities of the form x = t that were implied by the rule body.
         /// Can be null.
         /// </summary>
@@ -603,6 +612,9 @@
                         RuleClasses.Add(cls);
                     }
                 }
+
+                //// Step 2. Merge IsWatched
+                IsWatched = IsWatched || r.IsWatched;
             }
         }
 
@@ -635,25 +647,30 @@
 
             //// (1) Try to configure rule classes
             Cnst setting;
-            if (!config.TryGetSetting(Configuration.Rule_ClassesSetting, out setting))
+            if (config.TryGetSetting(Configuration.Rule_ClassesSetting, out setting))
             {
-                return;
-            }
+                var classArr = setting.GetStringValue().Split(ClassesSplits, StringSplitOptions.RemoveEmptyEntries);
 
-            var classArr = setting.GetStringValue().Split(ClassesSplits, StringSplitOptions.RemoveEmptyEntries);
-
-            if (RuleClasses == null)
-            {
-                RuleClasses = new Set<string>(string.Compare);
-            }
-            
-            foreach (var cls in classArr)
-            {
-                var clsTrimmed = cls.Trim();
-                if (clsTrimmed != string.Empty)
+                if (RuleClasses == null)
                 {
-                    RuleClasses.Add(clsTrimmed);
+                    RuleClasses = new Set<string>(string.Compare);
                 }
+
+                foreach (var cls in classArr)
+                {
+                    var clsTrimmed = cls.Trim();
+                    if (clsTrimmed != string.Empty)
+                    {
+                        RuleClasses.Add(clsTrimmed);
+                    }
+                }
+            }
+
+            //// (2) Try to configure IsWatched
+            if (config.TryGetSetting(Configuration.Rule_WatchSetting, out setting) && 
+                setting.GetStringValue() == ASTSchema.Instance.ConstNameTrue)
+            {
+                IsWatched = true;
             }
         }
 

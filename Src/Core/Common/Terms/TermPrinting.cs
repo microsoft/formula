@@ -16,6 +16,24 @@
     {
         private enum TypeEnumState { None, Opened };
 
+        internal static void PrintTerm(
+                    Term t, 
+                    TextWriter wr, 
+                    System.Threading.CancellationToken cancel = default(System.Threading.CancellationToken),
+                    EnvParams envParams = null)
+        {
+            t.Compute<Unit>(
+                (x, s) =>
+                {
+                    wr.Write(x.Symbol.PrintableName);
+                    return PrintTerm_Unfold(x, wr);             
+                },
+                (x, ch, s) =>
+                {
+                    return default(Unit);
+                });
+        }
+
         internal static void PrintTypeTerm(
                     Term t, 
                     TextWriter wr, 
@@ -123,6 +141,28 @@
             if (enumState != TypeEnumState.None)
             {
                 wr.Write("}");
+            }
+        }
+
+        private static IEnumerable<Term> PrintTerm_Unfold(Term t, TextWriter wr)
+        {
+            if (t.Symbol.Arity == 0)
+            {
+                yield break;
+            }
+
+            wr.Write("(");
+            for (int i = 0; i < t.Args.Length; ++i)
+            {
+                yield return t.Args[i];
+                if (i < t.Args.Length - 1)
+                {
+                    wr.Write(", ");
+                }
+                else
+                {
+                    wr.Write(")");
+                }
             }
         }
 

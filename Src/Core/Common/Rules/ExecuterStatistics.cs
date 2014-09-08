@@ -96,6 +96,17 @@
                 return Read(() => activations == null ? null : activations.Values); 
             }
         }
+
+        internal Action<Term, ProgramName, Node, CancellationToken> FireAction
+        {
+            get;
+            private set;
+        }
+
+        public ExecuterStatistics(Action<Term, ProgramName, Node, CancellationToken> fireAction)
+        {
+            FireAction = fireAction;
+        }
         
         internal void SetRules(Set<CoreRule> rules)
         {

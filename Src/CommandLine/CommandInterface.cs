@@ -11,19 +11,13 @@
     using Common;
     using Common.Extras;
     using Common.Terms;
+
     /// <summary>
     /// The command interface.
-    /// This needs to be a public class.
     /// </summary>
     public class CommandInterface : IDisposable
     {
-        /*
-        static CommandInterface()
-        {
-            var currentDomain = AppDomain.CurrentDomain;
-            currentDomain.AssemblyResolve += new ResolveEventHandler(LoadFromSameFolder);
-        }
-        */
+        private enum WatchLevelKind { Off, On, Prompt };
 
         private static readonly char[] cmdSplitChars = new char[] { ' ' };
         public const string ExitCommand = "exit";
@@ -60,6 +54,7 @@
         private const string ExtractMsg = "Extract and install a result. Use: extract (app_id | solv_id n) output_name [render_class render_dll]";
         private const string DelVarMsg = "Deleted variable '{0}'";
         private const string ConfigHelpMsg = "Provides help about module configurations and settings";
+        private const string WatchMsg = "Use: watch [off | on | prompt] to control watch behavior";
 
         private SpinLock cmdLock = new SpinLock();
         private bool isCmdLocked = false;
@@ -77,7 +72,14 @@
         private LinkedList<ProgramName> loadOrder = new 
             LinkedList<ProgramName>();
 
+        /// <summary>
+        /// A non-blocking thread safe object for writing messages.
+        /// </summary>
         private IMessageSink sink;
+
+        /// <summary>
+        /// A (possibly blocking) thread safe object for getting choices from client
+        /// </summary>
         private IChooser chooser;
 
         /// <summary>
@@ -86,7 +88,58 @@
         /// </summary>
         private bool exeOptions = false;
 
+        /// <summary>
+        /// Controls verbosity of interface
+        /// </summary>
         private bool isVerboseOn = true;
+
+        /// <summary>
+        /// The current watch level of the prompt.
+        /// </summary>
+        private WatchLevelKind watchLevel = WatchLevelKind.Off;
+        private SpinLock watchLevelLock = new SpinLock();
+
+        /// <summary>
+        /// This event blocks continuation of executers while in "watch prompt" mode.
+        /// </summary>
+        private AutoResetEvent promptStepEvent = new AutoResetEvent(true);
+
+        private WatchLevelKind WatchLevel
+        {
+            get
+            {
+                bool gotLock = false;
+                try
+                {
+                    watchLevelLock.Enter(ref gotLock);
+                    return watchLevel;
+                }
+                finally
+                {
+                    if (gotLock)
+                    {
+                        watchLevelLock.Exit();
+                    }
+                }
+            }
+
+            set
+            {
+                bool gotLock = false;
+                try
+                {
+                    watchLevelLock.Enter(ref gotLock);
+                    watchLevel = value;
+                }
+                finally
+                {
+                    if (gotLock)
+                    {
+                        watchLevelLock.Exit();
+                    }
+                }
+            }
+        }
 
         /// <summary>
         /// The environment used by the interface
@@ -200,6 +253,10 @@
             cmdMap.Add(waitCmd.Name, waitCmd);
             cmdMap.Add(waitCmd.ShortName, waitCmd);
 
+            var watchCmd = new Command("watch", "wch", DoWatch, WatchMsg);
+            cmdMap.Add(watchCmd.Name, watchCmd);
+            cmdMap.Add(watchCmd.ShortName, watchCmd);
+
             var typesCmd = new Command("types", "typ", DoTypes, TypesMsg);
             cmdMap.Add(typesCmd.Name, typesCmd);
             cmdMap.Add(typesCmd.ShortName, typesCmd);
@@ -247,6 +304,7 @@
         {
             if (string.IsNullOrWhiteSpace(command))
             {
+                promptStepEvent.Set();
                 return true;
             }
 
@@ -415,6 +473,35 @@
             else
             {
                 sink.WriteMessageLine(WaitMsg, SeverityKind.Warning);
+            }
+        }
+
+        private void DoWatch(string s)
+        {
+            promptStepEvent.Set();
+
+            if (s.StartsWith("on"))
+            {
+                WatchLevel = WatchLevelKind.On;
+                sink.WriteMessageLine("watch on");
+            }
+            else if (s.StartsWith("off"))
+            {
+                WatchLevel = WatchLevelKind.Off;
+                sink.WriteMessageLine("watch off");
+            }
+            else if (s.StartsWith("prompt"))
+            {
+                WatchLevel = WatchLevelKind.Prompt;
+                sink.WriteMessageLine("watch prompt");
+            }
+            else if (string.IsNullOrEmpty(s))
+            {
+                sink.WriteMessageLine(string.Format("watch {0}", WatchLevel.ToString().ToLowerInvariant()));
+            }
+            else
+            {
+                sink.WriteMessageLine(WatchMsg, SeverityKind.Warning);
             }
         }
 
@@ -901,7 +988,8 @@
                 out flags,
                 out task,
                 out stats,
-                applyCancel.Token);
+                applyCancel.Token,
+                FireAction);
 
             if (!result)
             {
@@ -991,7 +1079,8 @@
                 out flags,
                 out task,
                 out stats,
-                queryCancel.Token);
+                queryCancel.Token,
+                FireAction);
 
             if (!result)
             {
@@ -1096,7 +1185,7 @@
             WriteFlags(cmdLineName, flags);
             if (task != null)
             {
-                var id = taskManager.StartTask(task, new Common.Rules.ExecuterStatistics(), solveCancel);
+                var id = taskManager.StartTask(task, new Common.Rules.ExecuterStatistics(null), solveCancel);
                 sink.WriteMessageLine(string.Format("Started solve task with Id {0}.", id), SeverityKind.Info);
             }
             else
@@ -2283,6 +2372,28 @@
                     cmdLock.Exit();
                 }
             }
+        }
+
+        private void FireAction(Term t, ProgramName p, Node n, CancellationToken c)
+        {
+            var wl = WatchLevel;
+            if (wl == WatchLevelKind.Off)
+            {
+                return;
+            }
+
+            if (wl == WatchLevelKind.Prompt)
+            {
+                promptStepEvent.WaitOne();
+            }
+
+            t.PrintTerm(sink.Writer);
+            sink.WriteMessageLine(string.Empty);
+            sink.WriteMessageLine(string.Format(
+                "   :- {0} ({1}, {2})",
+                p == null ? "?" : p.ToString(),
+                n == null ? "?" : n.Span.StartLine.ToString(),
+                n == null ? "?" : n.Span.StartCol.ToString()));
         }
 
         private bool GetCommandLock()

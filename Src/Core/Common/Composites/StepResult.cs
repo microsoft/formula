@@ -79,7 +79,7 @@
                 var valParams = tsystem.InstantiateValueParams(step, index, valueParams);
                 var modParams = tsystem.InstantiateModelParams(step, resultMap);
 
-                var exe = new Executer(copyRules, modParams, valParams, null, false);
+                var exe = new Executer(copyRules, modParams, valParams, null, false, cancel);
                 exe.Execute();
 
                 Namespace outNS;

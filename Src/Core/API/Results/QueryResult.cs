@@ -95,7 +95,7 @@
         internal void Start()
         {
             Contract.Assert(exe == null);
-            exe = new Executer(facts, stats, KeepDerivations);
+            exe = new Executer(facts, stats, KeepDerivations, cancel);
             exe.Execute();
             StopTime = DateTime.Now;
             if (cancel.IsCancellationRequested)

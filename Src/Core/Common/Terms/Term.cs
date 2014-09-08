@@ -164,6 +164,15 @@
                 return 0;
             }
         }
+        
+        public void PrintTerm(
+                    TextWriter wr, 
+                    System.Threading.CancellationToken cancel = default(System.Threading.CancellationToken),
+                    EnvParams envParams = null)
+
+        {
+            TermPrinting.PrintTerm(this, wr, cancel, envParams);
+        }
 
         /// <summary>
         /// Expects this to be a type term. If not an InvalidOperationException will be thrown.

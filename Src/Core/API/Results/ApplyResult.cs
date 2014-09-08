@@ -327,7 +327,7 @@
             else if (applyTarget.Reduced.Node.NodeKind == NodeKind.Transform)
             {
                 var copyRules = ((RuleTable)applyTarget.FinalOutput).CloneTransformTable(index);
-                var exe = new Executer(copyRules, modelInputs, valueInputs, stats, KeepDerivations);
+                var exe = new Executer(copyRules, modelInputs, valueInputs, stats, KeepDerivations, cancel);
                 exe.Execute();
                 basicTransExe = exe;
 

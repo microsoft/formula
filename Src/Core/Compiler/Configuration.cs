@@ -66,6 +66,7 @@
         public const string Proofs_KeepLineNumbersSetting = "proofs_KeepLineNumbers";
         public const string Proofs_MaxLocationsSetting = "proofs_MaxLocations";
         public const string Rule_ClassesSetting = "rule_Classes";
+        public const string Rule_WatchSetting = "rule_Watch";
 
         static Configuration()
         {
@@ -75,6 +76,7 @@
             TopSettingValidators[Solver_ActiveStrategySetting] = ValidateStringSetting;
             TopSettingValidators[Compiler_ProductivityCheckSetting] = ValidateStringSetting;
             TopSettingValidators[Rule_ClassesSetting] = ValidateStringSetting;
+            TopSettingValidators[Rule_WatchSetting] = ValidateBoolSetting;
             TopSettingValidators[Proofs_KeepLineNumbersSetting] = ValidateBoolSetting;
             TopSettingValidators[Proofs_MaxLocationsSetting] = (s, f) => ValidateIntSetting(s, 1, 256, f);
             TopSettingValidators[Solver_RealCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
@@ -175,6 +177,11 @@
                     Rule_ClassesSetting,
                     CnstKind.String,
                     string.Format("Use {0} = \"class1, ..., classn\" to tag a rule with a set of classes.", Rule_ClassesSetting)),
+
+                new Tuple<string, CnstKind, string>(
+                    Rule_WatchSetting,
+                    CnstKind.String,
+                    string.Format("Use {0} = \"TRUE\" (\"FALSE\") to (not) generate an event whenever rules fire.", Rule_WatchSetting)),
             };
 
             Array.Sort(settingDescrs, (x, y) => string.Compare(x.Item1, y.Item1));

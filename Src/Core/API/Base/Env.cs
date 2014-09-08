@@ -387,7 +387,8 @@
                           out List<Flag> flags,
                           out Task<ApplyResult> task,
                           out Common.Rules.ExecuterStatistics exeStats,
-                          CancellationToken cancel = default(CancellationToken))
+                          CancellationToken cancel = default(CancellationToken),
+                          Action<Common.Terms.Term, ProgramName, Node, CancellationToken> fireAction = null)
         {
             Contract.Requires(transformStep != null);
             task = null;
@@ -487,7 +488,7 @@
                     goto Unlock;
                 }
 
-                var lclExeStats = keepStatistics ? new Formula.Common.Rules.ExecuterStatistics() : null;
+                var lclExeStats = keepStatistics ? new Formula.Common.Rules.ExecuterStatistics(fireAction) : null;
                 task = new Task<ApplyResult>(() =>
                 {
                     var ap = new ApplyResult(
@@ -654,7 +655,7 @@
                     goto Unlock;
                 }
 
-                var lclExeStats = keepStatistics ? new Formula.Common.Rules.ExecuterStatistics() : null;
+                var lclExeStats = keepStatistics ? new Formula.Common.Rules.ExecuterStatistics(fireAction) : null;
                 task = new Task<ApplyResult>(() =>
                 {
                     var ap = new ApplyResult(
@@ -700,7 +701,8 @@
                           out List<Flag> flags,
                           out Task<QueryResult> task,
                           out Common.Rules.ExecuterStatistics exeStats,
-                          CancellationToken cancel = default(CancellationToken))
+                          CancellationToken cancel = default(CancellationToken),
+                          Action<Common.Terms.Term, ProgramName, Node, CancellationToken> fireAction = null)
         {
             Contract.Requires(progName != null && modelName != null);
             Contract.Requires(goals != null && goals.Count<AST<Body>>() > 0);
@@ -810,7 +812,7 @@
             }
 
             modData = queryModel.Node.CompilerData as ModuleData;
-            var lclExeStats = keepStatistics ? new Formula.Common.Rules.ExecuterStatistics() : null;
+            var lclExeStats = keepStatistics ? new Formula.Common.Rules.ExecuterStatistics(fireAction) : null;
             task = new Task<QueryResult>(() =>
             {
                 var qr = new QueryResult((FactSet)modData.FinalOutput, lclExeStats, keepDerivations, cancel);

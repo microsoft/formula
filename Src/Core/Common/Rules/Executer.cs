@@ -56,6 +56,11 @@
         private Map<Term, Set<Derivation>> facts = new Map<Term, Set<Derivation>>(Term.Compare);
 
         /// <summary>
+        /// The cancellation token
+        /// </summary>
+        private CancellationToken cancel;
+
+        /// <summary>
         /// Indicates if the index is storing derivations
         /// </summary>
         public bool KeepDerivations
@@ -96,7 +101,8 @@
         public Executer(
             FactSet factSet, 
             ExecuterStatistics stats,
-            bool keepDervs)
+            bool keepDervs,
+            CancellationToken cancel)
         {
             Contract.Requires(factSet != null);
             KeepDerivations = keepDervs;
@@ -105,6 +111,7 @@
             factSets = new Map<string, FactSet>(string.Compare);
             factSets.Add(string.Empty, factSet);
             this.Statistics = stats;
+            this.cancel = cancel;
             InitializeExecuter(factSet.GetSymbCnstValue);
         }
 
@@ -116,7 +123,8 @@
             Map<string, FactSet> modelInputs,
             Map<string, Term> valueInputs,
             ExecuterStatistics stats,
-            bool keepDervs)
+            bool keepDervs,
+            CancellationToken cancel)
         {
             Contract.Requires(rules != null && rules.ModuleData.Reduced.Node.NodeKind == NodeKind.Transform);
             Contract.Requires(modelInputs != null);
@@ -299,6 +307,16 @@
         public bool IfExistsThenDerive(Term t, Derivation d)
         {
             Contract.Requires(t != null);
+            if (Statistics != null && 
+                Statistics.FireAction != null && 
+                d.Rule != null && 
+                d.Rule.IsWatched &&
+                d.Rule.Node != null && 
+                !t.Symbol.PrintableName.StartsWith(SymbolTable.ManglePrefix))
+            {
+                Statistics.FireAction(t, d.Rule.ProgramName, d.Rule.Node, cancel);
+            }
+
             if (!KeepDerivations)
             {
                 return facts.ContainsKey(t);

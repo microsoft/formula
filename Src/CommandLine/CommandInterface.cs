@@ -835,6 +835,13 @@
             foreach (var p in proofs)
             {
                 p.Debug_PrintTree();
+                /*
+                foreach (var loc in p.ComputeLocators())
+                {
+                    loc.Debug_Print(3);
+                }
+                */
+
                 sink.WriteMessageLine("Press 0 to stop, or 1 to continue", SeverityKind.Info);
                 while (!chooser.GetChoice(out choice) || (int)choice > 1)
                 {

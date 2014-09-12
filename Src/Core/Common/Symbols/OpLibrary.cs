@@ -323,6 +323,14 @@
             return ValidateArity(ft, "lstLength", BinNoCompr, flags);
         }
 
+        internal static bool ValidateUse_LstReverse(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstReverse);
+            return ValidateArity(ft, "lstReverse", BinNoCompr, flags);
+        }
+
         internal static bool ValidateUse_RflIsMember(Node n, List<Flag> flags)
         {
             Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
@@ -551,6 +559,35 @@
 
             bool wasAdded;
             return facts.TermIndex.MkCnst(new Rational(len, BigInteger.One), out wasAdded);
+        }
+
+        internal static Term Evaluator_LstReverse(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            Term listConSort;
+            if (!ToType(values[0].Binding, out listConSort))
+            {
+                return null;
+            }
+
+            var listSymbol = ((UserSortSymb)listConSort.Symbol).DataSymbol;
+            var list = values[1].Binding;
+            var revQueue = new Queue<Term>();
+            while (list.Symbol == listSymbol)
+            {
+                revQueue.Enqueue(list.Args[0]);
+                list = list.Args[1];
+            }
+
+            bool wasAdded;
+            //// Now reverse the list keeping the same list terminator (at the top of the stack).
+            var revList = list;
+            while (revQueue.Count > 0)
+            {
+                revList = facts.TermIndex.MkApply(listSymbol, new Term[] { revQueue.Dequeue(), revList }, out wasAdded); 
+            }
+
+            return revList;
         }
 
         internal static Term Evaluator_RflGetArgType(Executer facts, Bindable[] values)
@@ -2208,6 +2245,16 @@
         public static Func<TermIndex, Term[], Term[]> TypeApprox_LstLength_Down
         {
             get { return LstLengthDownwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstReverse_Up
+        {
+            get { return LstReverseUpwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstReverse_Down
+        {
+            get { return LstReverseDownwardApprox.Instance.Approximate; }
         }
 
         public static Func<TermIndex, Term[], Term[]> TypeApprox_RflIsMember_Up
@@ -6892,6 +6939,80 @@
             }
 
             private LstLengthDownwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 1);
+                if (index.ListTypeConstantsType == null)
+                {
+                    //// Then just return some value, which will be filtered by upward approx.
+                    return new Term[] { index.FalseValue, index.CanonicalAnyType };
+                }
+
+                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType };
+            }
+        }
+
+        private class LstReverseUpwardApprox : GaloisApproxTable
+        {
+            private static readonly LstReverseUpwardApprox theInstance = new LstReverseUpwardApprox();
+            public static LstReverseUpwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstReverseUpwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 2);
+                Set<Term> types;
+                if (!GetTypeConstantTypes(args[0], index, out types, true))
+                {
+                    return null;
+                }
+
+                bool wasAdded;
+                if (types.Count == 1 && args[1].Groundness == Groundness.Ground)
+                {
+                    var listSymb = ((UserSortSymb)types.GetSomeElement().Symbol).DataSymbol;
+                    var list = args[1];
+                    var revQueue = new Queue<Term>();
+                    while (list.Symbol == listSymb)
+                    {
+                        revQueue.Enqueue(list.Args[0]);
+                        list = list.Args[1];
+                    }
+
+                    //// Now reverse the list keeping the same list terminator (at the top of the stack).
+                    var revList = list;
+                    while (revQueue.Count > 0)
+                    {
+                        revList = index.MkApply(listSymb, new Term[] { revQueue.Dequeue(), revList }, out wasAdded);
+                    }
+
+                    return new Term[] { revList };
+                }
+                else
+                {
+                    return new Term[] { index.MkDataWidenedType(args[1]) };
+                }
+            }
+        }
+
+        private class LstReverseDownwardApprox : GaloisApproxTable
+        {
+            private static readonly LstReverseDownwardApprox theInstance = new LstReverseDownwardApprox();
+            public static LstReverseDownwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstReverseDownwardApprox()
                 : base(Approx)
             { }
 

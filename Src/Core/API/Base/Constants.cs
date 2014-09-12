@@ -82,6 +82,7 @@
         LCM,
         LCMAll,
         LstLength,
+        LstReverse,
         Max,
         MaxAll,
         Min,

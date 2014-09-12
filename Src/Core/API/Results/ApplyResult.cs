@@ -126,6 +126,7 @@
 
         /// <summary>
         /// Returns a task that builds an output model. Returns null if there is no output model named outModelName.
+        /// If aliasPrefix is null, then no aliasing.
         /// TODO: Support cancellation
         /// </summary>
         public Task<AST<Program>> GetOutputModel(
@@ -135,7 +136,7 @@
             CancellationToken cancel = default(CancellationToken))
         {
             Contract.Requires(!string.IsNullOrWhiteSpace(outModelName));
-            Contract.Requires(outProgName != null && !string.IsNullOrWhiteSpace(aliasPrefix));
+            Contract.Requires(outProgName != null);
 
             Set<Term> facts;
             if (!modelOutputs.TryFindValue(outModelName, out facts))
@@ -143,7 +144,7 @@
                 return null;
             }
 
-            aliasPrefix = aliasPrefix.Trim();
+            aliasPrefix = aliasPrefix == null ? null : aliasPrefix.Trim();
             return Task.Factory.StartNew<AST<Program>>(() =>
                 {
                     var bldr = new Builder();
@@ -409,8 +410,16 @@
             bool removeRenaming)
         {
             Contract.Assert(t.Symbol.Kind == SymbolKind.ConSymb || t.Symbol.Kind == SymbolKind.MapSymb);
-            var myAlias = ToAliasName((UserSymbol)t.Symbol, removeRenaming, aliasPrefix, aliases.Count);
-            bldr.PushId(myAlias);
+            string myAlias;
+            if (aliasPrefix == null)
+            {
+                myAlias = null;
+            }
+            else
+            {
+                myAlias = ToAliasName((UserSymbol)t.Symbol, removeRenaming, aliasPrefix, aliases.Count);
+                bldr.PushId(myAlias);
+            }
 
             string alias;
             BaseCnstSymb bc;
@@ -488,11 +497,21 @@
                     return default(Unit);
                 });
 
-            bldr.PushModelFact();
-            bldr.Load(modelRef);
-            bldr.AddModelFact(true);
-            bldr.Pop();
-            aliases.Add(t, myAlias);
+            if (aliasPrefix == null)
+            {
+                bldr.PushAnonModelFact();
+                bldr.Load(modelRef);
+                bldr.AddModelFact(true);
+                bldr.Pop();
+            }
+            else
+            {
+                bldr.PushModelFact();
+                bldr.Load(modelRef);
+                bldr.AddModelFact(true);
+                bldr.Pop();
+                aliases.Add(t, myAlias);
+            }
         }
 
         private Map<string, string> MkTransToUserMap()

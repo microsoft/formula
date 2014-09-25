@@ -480,74 +480,86 @@
                 yield break;
             }
 
-            ProofState p;
-            LinkedListNode<ProofState> n, m, backtrack = null;
-            bool isFullyExpanded;
             var root = new ProofState(goalDervs);
-            var branch = new LinkedList<ProofState>();
-            n = branch.AddLast(root);
-            while (n != null)
-            {
-                m = n;
-                //// This loop continues until all subgoals are expanded.
-                //// Then n is pointing at the leaf of the rightmost fact in the proof.
-                //// The proof state list contains the proof states reaching n.
-                isFullyExpanded = true;
-                while (m != null)
-                {
-                    if ((p = m.Value.ExpandSubgoal(branch, this, out isFullyExpanded)) != null)
-                    {
-                        while (branch.Last != m)
-                        {
-                            branch.RemoveLast();
-                        }
+            var stack = new Stack<ProofState>();
+            var result = StabilizeProof(root, stack);
 
-                        m = n = branch.AddLast(p);
-                    }
-                    else if (isFullyExpanded)
-                    {
-                        m = m.Previous;
-                    }
-                    else
-                    {
-                        break;
-                    }
+            //// There must be at least one proof.
+            Contract.Assert(result);
+            PrintStack(stack);
+            yield return MkProof(root, goal);
+
+            //// To find the more proofs pop the right-most leaf (top of stack) and stabilize.
+            //// If cannot stabilize, then remove this node.
+            //// If can stabilize, then rebuild the proofs to the right of the parents of change.
+            ProofState top, right;
+            while (stack.Count > 0)
+            {
+                top = stack.Pop();
+                //// Save this branch into parent, in case parent needs to restore it.
+                top.SaveBranch();
+
+                //// If this has no subgoals, then it cannot create a new proof.
+                if (top.NSubgoals == 0)
+                {
+                    continue;
+                }
+                
+                //// If top cannot be added to the stack in a new configuration
+                //// then it cannot create a new proof.
+                if (!StabilizeProof(top, stack))
+                {
+                    continue;
                 }
 
-                if (isFullyExpanded)
+                Console.WriteLine("Moved {0}", top.Derivation != null && top.Derivation.Rule != null ? top.Derivation.Rule.Head.Debug_GetSmallTermString() : "?");
+
+                //// Otherwise, reset the right subproof of each parent and stabilize.
+                if (top.Parent != null && top.NSubgoals == 2 && top.CurrentSubProofs[1] == top)
                 {
-                    yield return MkProof(root, goal); //// Return proof
+                    //// In this case, already stabilized the right-side of parent. So jump to grand-parent.
+                    top = top.Parent.Parent;
                 }
                 else
                 {
-                    Contract.Assert(backtrack != null);
-                    while (branch.Last != backtrack)
-                    {
-                        branch.RemoveLast();
-                        Contract.Assert(branch.Count > 0);
-                    }
+                    top = top.Parent;
                 }
 
-                while (branch.Count > 0)
+                while (top != null)
                 {
-                    m = branch.Last;
-                    if ((p = m.Value.MoveChoice(branch, this)) != null)
+                    if (top.NSubgoals == 2)
                     {
-                        backtrack = m;
-                        n = branch.AddLast(p);
-                        break;
+                        //// It must be possible to stabilize this proof, because 
+                        //// the moved does not affect this part of the proof branch.
+                        right = top.ResetRightProofState(this);
+                        result = StabilizeProof(right, stack);
+                        Console.WriteLine("Resetting right of {0}", top.Derivation != null && top.Derivation.Rule != null ? top.Derivation.Rule.Head.Debug_GetSmallTermString() : "?");
+                        Contract.Assert(result);
                     }
-                    else if ((p = m.Value.DropSubproof()) != null)
-                    {
-                        p.AppendRightmostBranch(branch);
-                    }
-                    else
-                    {
-                        n = null;
-                        branch.RemoveLast();
-                    }
-                }            
-            }            
+
+                    top = top.Parent;
+                }
+
+                PrintStack(stack);
+                yield return MkProof(root, goal);
+            }
+        }
+
+        private void PrintStack(Stack<ProofState> stack)
+        {
+            foreach (var p in stack)
+            {
+                if (p.Derivation == null || p.Derivation.Rule == null)
+                {
+                    Console.Write("? ");
+                }
+                else
+                {
+                    Console.Write("{0} ", p.Derivation.Rule.Head.Debug_GetSmallTermString());
+                }
+            }
+
+            Console.WriteLine();
         }
 
         public void Debug_PrintIndex()
@@ -595,6 +607,98 @@
             }
         }
 
+        /// <summary>
+        /// Ancestor states and lefter states occur earlier in the stack.
+        /// </summary>
+        private bool StabilizeProof(ProofState s, Stack<ProofState> proofStates)
+        {
+            Contract.Assert(s != null);
+            //// If there are no subgoals, then s can always be stabilized.
+            if (s.NSubgoals == 0)
+            {
+                proofStates.Push(s);
+                return true;
+            }
+
+            //// If the derivation used by s is already in this proof branch, then it is a cyclic proof and s cannot stabilize.
+            if (s.Derivation != null)
+            {
+                ProofState p = s.Parent;
+                while (p != null)
+                {
+                    if (p.Derivation != null && Derivation.Compare(p.Derivation, s.Derivation) == 0)
+                    {
+                        return false;
+                    }
+
+                    p = p.Parent;
+                }
+            }
+
+            proofStates.Push(s);
+
+            //// If there are no more ways to prove the subgoals of s, then the proof cannot stabilize.
+            bool restore;
+            bool unstable = true;
+            ProofState left, right, t;
+            while (unstable)
+            {
+                if (!s.MoveChoice(this, out left, out right, out restore))
+                {
+                    //// Cannot stabilize subgoals, pop the stack until s is removed.
+                    while (true)
+                    {
+                        t = proofStates.Pop();
+                        if (s == t)
+                        {
+                            break;
+                        }
+                    }
+
+                    return false;
+                }
+
+                if (s.NSubgoals >= 1)
+                {
+                    if (restore)
+                    {
+                        Console.WriteLine("Restore left of {0}", s.Derivation != null && s.Derivation.Rule != null ? s.Derivation.Rule.Head.Debug_GetSmallTermString() : "?");
+                        unstable = false;
+                        RestoreBranch(left, proofStates);
+                    }
+                    else
+                    {
+                        unstable = !StabilizeProof(left, proofStates);
+                    }
+                }
+
+                if (!unstable && s.NSubgoals == 2)
+                {
+                    unstable = !StabilizeProof(right, proofStates);
+                }                               
+            }
+
+            return true;
+        }
+
+        private void RestoreBranch(ProofState s, Stack<ProofState> proofStates)
+        {
+            Contract.Assert(s != null);
+            ProofState left, right;
+            s.Restore(out left, out right);
+            proofStates.Push(s);
+
+            if (left != null)
+            {
+                RestoreBranch(left, proofStates);
+            }
+
+            if (right != null)
+            {
+                RestoreBranch(right, proofStates);
+            }
+        }
+            
         private void InitializeExecuter(Func<Term, Term> symbCnstGetter, IEnumerable<Term> otherSymbCnsts = null)
         {
             var optRules = Rules.Optimize();
@@ -941,10 +1045,10 @@
 
         private class ProofState
         {
-            private int lastExpSubgoal = -1;
             private Set<Derivation>[] choices;
             private IEnumerator<Derivation>[] crntSubGoals;
             private ProofState[] crntSubProofs;
+            private ProofState[] restorePoints;
 
             public int NSubgoals
             {
@@ -962,8 +1066,15 @@
                 private set;
             }
 
-            public ProofState(Executer index, Derivation d)
+            public ProofState Parent
             {
+                get;
+                private set;
+            }
+
+            public ProofState(ProofState parent, Executer index, Derivation d)
+            {
+                Parent = parent;
                 Derivation = d;
 
                 if (d.Binding1 != index.TermIndex.FalseValue &&
@@ -972,9 +1083,12 @@
                     choices = new Set<Derivation>[2];
                     crntSubGoals = new IEnumerator<Derivation>[2];
                     crntSubProofs = new ProofState[2];
+                    restorePoints = new ProofState[2];
                     
                     crntSubGoals[0] = crntSubGoals[1] = null;
                     crntSubProofs[0] = crntSubProofs[1] = null;
+                    restorePoints[0] = restorePoints[1] = null;
+
                     choices[0] = index.facts[d.Binding1];
                     choices[1] = index.facts[d.Binding2];
                     Contract.Assert(choices[0].Count > 0 && choices[1].Count > 0);
@@ -984,7 +1098,9 @@
                     choices = new Set<Derivation>[1];
                     crntSubGoals = new IEnumerator<Derivation>[1];
                     crntSubProofs = new ProofState[1];
+                    restorePoints = new ProofState[1];
 
+                    restorePoints[0] = null; 
                     crntSubGoals[0] = null;
                     crntSubProofs[0] = null;
                     choices[0] = index.facts[d.Binding1];
@@ -995,7 +1111,9 @@
                     choices = new Set<Derivation>[1];
                     crntSubGoals = new IEnumerator<Derivation>[1];
                     crntSubProofs = new ProofState[1];
+                    restorePoints = new ProofState[1];
 
+                    restorePoints[0] = null;
                     crntSubGoals[0] = null;
                     crntSubProofs[0] = null;
                     choices[0] = index.facts[d.Binding2];
@@ -1006,17 +1124,21 @@
                     choices = new Set<Derivation>[0];
                     crntSubGoals = new IEnumerator<Derivation>[0];
                     crntSubProofs = new ProofState[0];
+                    restorePoints = new ProofState[0];
                 }
             }
 
             public ProofState(Set<Derivation> goals)
             {
                 Derivation = null;
+                Parent = null;
 
                 choices = new Set<Derivation>[] { goals };
                 crntSubGoals = new IEnumerator<Derivation>[1];
                 crntSubProofs = new ProofState[1];
+                restorePoints = new ProofState[1];
 
+                restorePoints[0] = null;
                 crntSubGoals[0] = null;
                 crntSubProofs[0] = null;
             }
@@ -1049,164 +1171,161 @@
                 }
             }
 
-            public void AppendRightmostBranch(LinkedList<ProofState> branch)
+            /// <summary>
+            /// Moves the branch enumerators to the positions of the saved children. 
+            /// Returns the saved children.
+            /// </summary>
+            public void Restore(out ProofState left, out ProofState right)
             {
-                var n = this;
-                while (n != null)
+                left = right = null;
+                Derivation d;
+                IEnumerator<Derivation> e;
+                for (int i = 0; i < choices.Length; ++i)
                 {
-                    branch.AddLast(n);
-                    n = n.lastExpSubgoal == -1 ? null : n.crntSubProofs[n.lastExpSubgoal];
+                    e = choices[i].GetEnumerator();
+                    d = restorePoints[i].Derivation;
+                    crntSubGoals[i] = e;
+                    crntSubProofs[i] = null;
+
+                    //// Move the branch enumerator to the stored derivation.
+                    while (e.MoveNext())
+                    {
+                        if (e.Current == d)
+                        {
+                            crntSubProofs[i] = restorePoints[i];
+                            if (i == 0)
+                            {
+                                left = restorePoints[i];
+                            }
+                            else
+                            {
+                                right = restorePoints[i];
+                            }
+
+                            break;
+                        }
+                    }
+
+                    Contract.Assert(crntSubProofs[i] != null);
                 }
             }
 
             /// <summary>
-            /// Drops the proof of the ith subgoal and returns the current proof at i - 1. Returns null if i - 1 is not defined. 
+            /// Saves the current state of this branch in the parent, so the parent
+            /// can restore this branch to the same configuration.
             /// </summary>
-            public ProofState DropSubproof()
+            public void SaveBranch()
             {
-                if (lastExpSubgoal == -1)
+                if (Parent == null)
                 {
-                    return null;
+                    return;
                 }
 
-                crntSubProofs[lastExpSubgoal] = null;
-                crntSubGoals[lastExpSubgoal] = null;
-
-                --lastExpSubgoal;
-                if (lastExpSubgoal == -1)
+                for (int i = 0; i < Parent.NSubgoals; ++i)
                 {
-                    return null;
+                    if (Parent.crntSubProofs[i] == this)
+                    {
+                        Parent.restorePoints[i] = this;
+                        return;
+                    }
+                }
+
+                throw new Impossible();
+            }
+
+            /// <summary>
+            /// Create and sets the right proof to its initial configuration.
+            /// </summary>
+            /// <returns></returns>
+            public ProofState ResetRightProofState(Executer index)
+            {
+                Contract.Requires(NSubgoals == 2);
+                crntSubGoals[1] = choices[1].GetEnumerator();
+                var moved = crntSubGoals[1].MoveNext();
+                Contract.Assert(moved);
+                var right = new ProofState(this, index, crntSubGoals[1].Current);
+                crntSubProofs[1] = right;
+                return right;
+            }
+
+            /// <summary>
+            /// If false, then left and right are null. If true, then right can be null if NSubgoals == 1.
+            /// If restoreLeft = true, then the right branch was moved, and the left branch did not.
+            /// Hence, the left branch should be restored instead of stabilized.
+            /// </summary>
+            public bool MoveChoice(Executer index, out ProofState left, out ProofState right, out bool restoreLeft)
+            {
+                restoreLeft = false;
+                if (NSubgoals == 0)
+                {
+                    left = right = null;
+                }
+
+                //// This is the first time move next has been called on this proof state.
+                //// Need to move both the left and the right proofs.
+                if (crntSubGoals[0] == null)
+                {
+                    left = right = null;
+                    if (NSubgoals >= 1)
+                    {
+                        crntSubGoals[0] = choices[0].GetEnumerator();
+                        var moved = crntSubGoals[0].MoveNext();
+                        Contract.Assert(moved);
+                        crntSubProofs[0] = left = new ProofState(this, index, crntSubGoals[0].Current);
+                    }
+
+                    if (NSubgoals == 2)
+                    {
+                        crntSubGoals[1] = choices[1].GetEnumerator();
+                        var moved = crntSubGoals[1].MoveNext();
+                        Contract.Assert(moved);
+                        crntSubProofs[1] = right = new ProofState(this, index, crntSubGoals[1].Current);
+                    }
+
+                    return true;
+                }
+
+                //// If one subgoal, try to move it.
+                if (NSubgoals == 1)
+                {
+                    if (crntSubGoals[0].MoveNext())
+                    {
+                        right = null;
+                        crntSubProofs[0] = left = new ProofState(this, index, crntSubGoals[0].Current);
+                        return true;
+                    }
+                    else
+                    {
+                        left = right = null;
+                        return false;
+                    }
+                }
+
+                //// Otherwise, there are two subgoals, and try to move the right first.
+                if (crntSubGoals[1].MoveNext())
+                {
+                    //// In this case, the left does not actually move, but will be restored.
+                    Contract.Assert(restorePoints[0] != null && restorePoints[0].Derivation == crntSubGoals[0].Current);
+                    restoreLeft = true;
+                    left = restorePoints[0];                                    
+                    crntSubProofs[1] = right = new ProofState(this, index, crntSubGoals[1].Current);
+                    return true;
+                }
+                else if (crntSubGoals[0].MoveNext())
+                {
+                    crntSubProofs[0] = left = new ProofState(this, index, crntSubGoals[0].Current);
+                    crntSubGoals[1] = choices[1].GetEnumerator();
+                    var moved = crntSubGoals[1].MoveNext();
+                    Contract.Assert(moved);
+                    crntSubProofs[1] = right = new ProofState(this, index, crntSubGoals[1].Current);
+                    return true;
                 }
                 else
                 {
-                    return crntSubProofs[lastExpSubgoal];
+                    left = right = null;
+                    return false;
                 }
-            }
-
-            public ProofState MoveChoice(LinkedList<ProofState> branch, Executer index)
-            {
-                if (lastExpSubgoal == -1)
-                {
-                    return null;
-                }
-
-                bool moveAgain = true;
-                LinkedListNode<ProofState> n;
-                while (moveAgain)
-                {
-                    if (!crntSubGoals[lastExpSubgoal].MoveNext())
-                    {
-                        return null;
-                    }
-
-                    moveAgain = false;
-
-                    //// Backup to the place where this subgoal is being expanded.
-                    n = branch.Last;
-                    while (n != null)
-                    {
-                        if (n.Value == this)
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            n = n.Previous;
-                        }
-                    }
-
-                    while (n != null)
-                    {
-                        if (n.Value.Derivation == null)
-                        {
-                            n = n.Previous;
-                            continue;
-                        }
-
-                        if (Derivation.Compare(n.Value.Derivation, crntSubGoals[lastExpSubgoal].Current) == 0)
-                        {
-                            moveAgain = true;
-                            break;
-                        }
-                        else
-                        {
-                            n = n.Previous;
-                        }
-                    }
-                }
-
-                return crntSubProofs[lastExpSubgoal] = new ProofState(index, crntSubGoals[lastExpSubgoal].Current);
-
-                /*
-                if (crntSubGoals[lastExpSubgoal].MoveNext())
-                {
-                    return crntSubProofs[lastExpSubgoal] = new ProofState(index, crntSubGoals[lastExpSubgoal].Current);
-                }
-                 
-                return null;
-                */
-            }
-            
-            public ProofState ExpandSubgoal(LinkedList<ProofState> branch, Executer index, out bool isFullyExpanded)
-            {
-                if (lastExpSubgoal == choices.Length - 1)
-                {
-                    isFullyExpanded = true;
-                    return null;
-                }
-
-                ++lastExpSubgoal;
-                isFullyExpanded = false;
-                bool moveAgain = true;
-                LinkedListNode<ProofState> n;
-                crntSubGoals[lastExpSubgoal] = choices[lastExpSubgoal].GetEnumerator();
-
-                while (moveAgain)
-                {
-                    if (!(moveAgain = crntSubGoals[lastExpSubgoal].MoveNext()))
-                    {
-                        --lastExpSubgoal;
-                        return null;
-                    }
-
-                    moveAgain = false;
-
-                    //// Backup to the place where this subgoal is being expanded.
-                    n = branch.Last;
-                    while (n != null)
-                    {
-                        if (n.Value == this)
-                        {
-                            break;
-                        }
-                        else
-                        {
-                            n = n.Previous;
-                        }
-                    }
-
-                    while (n != null)
-                    {
-                        if (n.Value.Derivation == null)
-                        {
-                            n = n.Previous;
-                            continue;
-                        }
-
-                        if (Derivation.Compare(n.Value.Derivation, crntSubGoals[lastExpSubgoal].Current) == 0)
-                        {
-                            moveAgain = true;
-                            break;
-                        }
-                        else
-                        {
-                            n = n.Previous;
-                        }
-                    }
-                }
-
-                return crntSubProofs[lastExpSubgoal] = new ProofState(index, crntSubGoals[lastExpSubgoal].Current);
-            }
+            }            
         }
 
         private class PendingActivation

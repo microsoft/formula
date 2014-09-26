@@ -1705,7 +1705,9 @@
                     GetResidualSymbol(string.Empty, (string)ct.Symbol, out rs, out ns);
                     if (nt.Arity > 0 && aliases != null && aliases.TryGetValue(nt, out alias))
                     {
-                        stack.Push(new MutableTuple<Generators.ICSharpTerm, int, string>(new Generators.CSharpAlias((string)alias), -1, ns));
+                        var ca = new Generators.CSharpAlias((string)alias);
+                        ca.Span = nt.Span;
+                        stack.Push(new MutableTuple<Generators.ICSharpTerm, int, string>(ca, -1, ns));
                     }
                     else
                     {

@@ -371,6 +371,14 @@
             return ValidateArity(ft, "toList", TerTerCompr, flags);
         }
 
+        internal static bool ValidateUse_ToOrdinal(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.ToOrdinal);
+            return ValidateArity(ft, "toOrdinal", TerTerCompr, flags);
+        }
+
         internal static bool ValidateUse_ToNatural(Node n, List<Flag> flags)
         {
             Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
@@ -1310,6 +1318,19 @@
             return facts.TermIndex.MkCnst(new Rational(nResults), out wasAdded);
         }
 
+        internal static Term Evaluator_ToOrdinal(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 3);
+            int ordinal;
+            if (!facts.GetOrdinal(values[2].Binding, values[0].Binding, out ordinal))
+            {
+                return values[1].Binding;
+            }
+
+            bool wasAdded;
+            return facts.TermIndex.MkCnst(new Rational(ordinal), out wasAdded);
+        }
+
         internal static Term Evaluator_MaxAll(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -2115,6 +2136,16 @@
         public static Func<TermIndex, Term[], Term[]> TypeApprox_Prod_Down
         {
             get { return ProdDownwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_ToOrdinal_Up
+        {
+            get { return ToOrdinalUpwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_ToOrdinal_Down
+        {
+            get { return ToOrdinalDownwardApprox.Instance.Approximate; }
         }
 
         public static Func<TermIndex, Term[], Term[]> TypeApprox_Mul_Up
@@ -5160,6 +5191,50 @@
                 var widened = index.MkApply(
                     index.TypeUnionSymbol,
                     new Term[] { index.MkDataWidenedType(args[0]), MkBaseSort(index, BaseSortKind.Real) },
+                    out wasAdded);
+
+                return new Term[] { widened };
+            }
+        }
+
+        private class ToOrdinalDownwardApprox : GaloisApproxTable
+        {
+            private static readonly ToOrdinalDownwardApprox theInstance = new ToOrdinalDownwardApprox();
+            public static ToOrdinalDownwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private ToOrdinalDownwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 1);
+                return new Term[] { index.CanonicalAnyType, index.CanonicalAnyType, index.CanonicalAnyType };
+            }
+        }
+
+        private class ToOrdinalUpwardApprox : GaloisApproxTable
+        {
+            private static readonly ToOrdinalUpwardApprox theInstance = new ToOrdinalUpwardApprox();
+            public static ToOrdinalUpwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private ToOrdinalUpwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 3);
+                bool wasAdded;
+                var widened = index.MkApply(
+                    index.TypeUnionSymbol,
+                    new Term[] { index.MkDataWidenedType(args[1]), MkBaseSort(index, BaseSortKind.Natural) },
                     out wasAdded);
 
                 return new Term[] { widened };

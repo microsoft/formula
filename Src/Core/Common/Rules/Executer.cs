@@ -414,6 +414,27 @@
         }
 
         /// <summary>
+        /// If member is an element of the comphrension, then returns true and provides the ordinal
+        /// of this element. Otherwise returns false.
+        /// </summary>
+        public bool GetOrdinal(Term comprTerm, Term member, out int ordinal)
+        {
+            Contract.Requires(comprTerm != null);
+            var subIndex = comprIndices[comprTerm.Symbol];
+            var projection = new Term[comprTerm.Symbol.Arity - 1];
+
+            //// Console.Write("Query {0}: [", subIndex.Pattern.Debug_GetSmallTermString());
+            for (int i = 0; i < comprTerm.Symbol.Arity - 1; ++i)
+            {
+                //// Console.Write(" " + comprTerm.Args[i].Debug_GetSmallTermString());
+                projection[i] = comprTerm.Args[i];
+            }
+
+            //// Console.WriteLine(" ]");
+            return subIndex.GetOrdinal(projection, member, out ordinal);
+        }
+
+        /// <summary>
         /// Returns a subindex pattern for looking up matching terms when 
         /// boundVars are already bound.
         /// </summary>
@@ -1295,6 +1316,11 @@
             private Map<Term[], Set<Term>> facts = new Map<Term[], Set<Term>>(Compare);
 
             /// <summary>
+            /// Caches comprehension ordinals on demand
+            /// </summary>
+            private Map<Term[], Map<Term, int>> ordinalCache = new Map<Term[], Map<Term, int>>(Compare);
+
+            /// <summary>
             /// The pattern of this subindex.
             /// </summary>
             public Term Pattern
@@ -1344,6 +1370,38 @@
                 }
 
                 return Query(projection);
+            }
+
+            public bool GetOrdinal(Term[] projection, Term member, out int ordinal)
+            {
+                Set<Term> subindex;
+                if (!facts.TryFindValue(projection, out subindex))
+                {
+                    ordinal = 0;
+                    return false;
+                }
+
+                Map<Term, int> ordinals;
+                if (ordinalCache.TryFindValue(projection, out ordinals))
+                {
+                    return ordinals.TryFindValue(member, out ordinal);
+                }
+
+                ordinals = new Map<Term, int>(Pattern.Owner.LexicographicCompare);
+                foreach (var t in subindex)
+                {
+                    ordinals.Add(t.Args[t.Args.Length - 1], -1);
+                }
+
+                ordinal = 0;
+                foreach (var t in ordinals.Keys)
+                {
+                    ordinals.SetExistingKey(t, ordinal);
+                    ++ordinal;
+                }
+
+                ordinalCache.Add(projection, ordinals);
+                return ordinals.TryFindValue(member, out ordinal);
             }
 
             public void AddTrigger(CoreRule rule, int findNumber)

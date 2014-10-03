@@ -159,6 +159,11 @@
             return setMap.TryFindValue(t, out tp);
         }
 
+        public bool GetOrdinal(T t, out int ordinal)
+        {
+            return setMap.GetKeyOrdinal(t, out ordinal);
+        }
+
         public T GetSmallestElement()
         {
             Contract.Requires(Count > 0);

@@ -2847,6 +2847,14 @@
                 OpLibrary.TypeApprox_ToList_Down,
                 OpLibrary.Evaluator_ToList,
                 OpLibrary.AppConstrainer_ToList));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.ToOrdinal,
+                3,
+                OpLibrary.ValidateUse_ToOrdinal,
+                OpLibrary.TypeApprox_ToOrdinal_Up,
+                OpLibrary.TypeApprox_ToOrdinal_Down,
+                OpLibrary.Evaluator_ToOrdinal));
              
             AddBaseOp(new BaseOpSymb(
                 OpKind.ToNatural,

@@ -112,6 +112,7 @@
         Sub,
         Sum,
         ToNatural,
+        ToOrdinal,
         ToList,
         ToString,
         ToSymbol

@@ -215,6 +215,28 @@
         }
 
         /// <summary>
+        /// If k is a key, then returns true and the ordinal of k in the map domain.
+        /// Otherwise, returns false.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public bool GetKeyOrdinal(S k, out int ordinal)
+        {
+            ordinal = 0;
+            foreach (var kv in this)
+            {
+                if (comparer(kv.Key, k) == 0)
+                {
+                    return true;
+                }
+
+                ++ordinal;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// Start sorted-order enumeration at the element k.
         /// </summary>
         /// <param name="key"></param>

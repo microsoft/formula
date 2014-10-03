@@ -1202,6 +1202,7 @@
             Register(OpKind.Sign, "sign", OpStyleKind.Apply);
 
             Register(OpKind.ToList, "toList", OpStyleKind.Apply);
+            Register(OpKind.ToOrdinal, "toOrdinal", OpStyleKind.Apply);
             Register(OpKind.ToNatural, "toNatural", OpStyleKind.Apply);
             Register(OpKind.ToString, "toString", OpStyleKind.Apply);
             Register(OpKind.ToSymbol, "toSymbol", OpStyleKind.Apply);

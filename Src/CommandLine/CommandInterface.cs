@@ -47,10 +47,10 @@
         private const string QueryMsg = "Start a query task. Use: query model goals";
         private const string SolveMsg = "Start a solve task. Use: solve partial_model max_sols goals";
         private const string ApplyMsg = "Start an apply task. Use: apply transformstep";
-        private const string StatsMsg = "Prints task statistics. Use: stats task_id";
+        private const string StatsMsg = "Prints task statistics. Use: stats task_id [top_k_rule]";
         private const string GenDataMsg = "Generate C# data model. Use: generate modname";
-        private const string TruthMsg = "Test if a ground term is derivable under a model/apply. Use: truth task_id [ground_term | *]";
-        private const string ProofMsg = "Enumerate proofs that a ground term is derivable under a model/apply. Use: proof task_id [ground_term]";
+        private const string TruthMsg = "Test if a ground term is derivable under a model/apply. Use: truth task_id [term]";
+        private const string ProofMsg = "Enumerate proofs that a ground term is derivable under a model/apply. Use: proof task_id [term]";
         private const string ExtractMsg = "Extract and install a result. Use: extract (app_id | solv_id n) output_name [render_class render_dll]";
         private const string DelVarMsg = "Deleted variable '{0}'";
         private const string ConfigHelpMsg = "Provides help about module configurations and settings";
@@ -507,7 +507,7 @@
 
         private void DoStats(string s)
         {
-            var cmdParts = s.Split(cmdSplitChars, 1, StringSplitOptions.RemoveEmptyEntries);
+            var cmdParts = s.Split(cmdSplitChars, 2, StringSplitOptions.RemoveEmptyEntries);
             if (cmdParts.Length == 0)
             {
                 sink.WriteMessageLine(StatsMsg, SeverityKind.Warning);
@@ -518,6 +518,13 @@
             if (!int.TryParse(cmdParts[0], out taskId))
             {
                 sink.WriteMessageLine(string.Format("{0} is not a task id", cmdParts[0]), SeverityKind.Warning);
+                return;
+            }
+
+            int maxCount = 0;
+            if (cmdParts.Length == 2 && (!int.TryParse(cmdParts[1], out maxCount) || maxCount <= 0))
+            {
+                sink.WriteMessageLine(string.Format("{0} is not a positive integer", cmdParts[1]), SeverityKind.Warning);
                 return;
             }
 
@@ -545,6 +552,10 @@
                 return;
             }
 
+            ///// Sort activations
+            int totalRules = 0;
+            LinkedList<Common.Rules.ActivationStatistics> equalCounts;
+            var sorted = new Map<System.Numerics.BigInteger, LinkedList<Common.Rules.ActivationStatistics>>((x, y) => x > y ? -1 : (x == y ? 0 : 1));
             foreach (var a in activations)
             {
                 if (a.TotalActivations == 0)
@@ -552,9 +563,37 @@
                     continue;
                 }
 
-                a.PrintRule(null);
-                sink.WriteMessageLine(string.Format("Rule: {0}, Acts: {1}, TotalPend: {2}, TotalFail: {3}", a.RuleId, a.TotalActivations, a.TotalPends, a.TotalFailures));
+                ++totalRules;
+                if (!sorted.TryFindValue(a.TotalActivations, out equalCounts))
+                {
+                    equalCounts = new LinkedList<Common.Rules.ActivationStatistics>();
+                    sorted.Add(a.TotalActivations, equalCounts);
+                }
+
+                equalCounts.AddLast(a);
             }
+
+            var count = 0;
+            foreach (var eqs in sorted.Values)
+            {
+                foreach (var a in eqs)
+                {
+                    a.PrintRule(null);
+                    sink.WriteMessageLine(string.Format("Rule: {0}, Acts: {1}, TotalPend: {2}, TotalFail: {3}", a.RuleId, a.TotalActivations, a.TotalPends, a.TotalFailures));
+                    ++count;
+                    if (cmdParts.Length > 1 && count == maxCount)
+                    {
+                        break;
+                    }
+                }
+
+                if (cmdParts.Length > 1 && count == maxCount)
+                {
+                    break;
+                }
+            }
+
+            sink.WriteMessageLine(string.Format("Listed {0} of {1} activations", cmdParts.Length > 1 ? maxCount : totalRules, totalRules));
         }
 
         private void DoTruth(string s)

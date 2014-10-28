@@ -52,6 +52,13 @@
             new Map<Term, Node>(Term.Compare);
 
         /// <summary>
+        /// The order in which find variables were added to finds. Needed
+        /// for order-sensitive operations like choosing a variable orientation.
+        /// </summary>
+        private LinkedList<KeyValuePair<Term, Node>> orderedFinds =
+            new LinkedList<KeyValuePair<Term, Node>>();
+
+        /// <summary>
         /// The currently active equality stack that can be used
         /// to pend implied equalities. Can be null.
         /// </summary>
@@ -739,6 +746,7 @@
                 if (!finds.ContainsKey(fndClss.Representative))
                 {
                     finds.Add(fndClss.Representative, n);
+                    orderedFinds.AddLast(new KeyValuePair<Term, Node>(fndClss.Representative, n));
                 }
                 else
                 {
@@ -1131,6 +1139,7 @@
 
             constraints.Add(new Constraint(RelKind.Eq, id, scFndCls, scValCls));
             finds.Add(scFnd, id);
+            orderedFinds.AddLast(new KeyValuePair<Term, Node>(scFnd, id));
             return (UserSymbol)scVar.Symbol;
         }
                                    
@@ -3307,6 +3316,7 @@
                         {
                             case Definition.VarDefKind.Find:
                                 Owner.finds.Add(top, r.Value);
+                                Owner.orderedFinds.AddLast(new KeyValuePair<Term, Node>(top, r.Value));
                                 break;
                             case Definition.VarDefKind.Compr:
                                 Owner.comprehensions.Add(top, GetComprData(top));
@@ -3403,14 +3413,20 @@
                     }
                 }
 
-                //// Find variables are automatically oriented.
-                foreach (var kv in Owner.finds)
+                //// Find variables are automatically oriented. Push variables in reverse order
+                //// so first find variable is popped off the stack first.
+                Contract.Assert(Owner.finds.Count == Owner.orderedFinds.Count);
+                var crnt = Owner.orderedFinds.Last;
+                while (crnt != null)
                 {
+                    var kv = crnt.Value;
                     if (!oriented.Contains(cls = Owner.classes[kv.Key].Find()))
                     {
                         oriented.Add(cls);
                         stack.Push(RecordOrientation(cls, kv.Key));
                     }
+
+                    crnt = crnt.Previous;
                 }
 
                 //// Data grounded classes are automatically oriented.
@@ -3605,6 +3621,7 @@
             private void RecordOrientation(Term orienter, Term dataTerm)
             {
                 Contract.Requires(orienter != null && dataTerm != null);
+
                 if (dataTerm.Groundness == Groundness.Ground)
                 {
                     return;

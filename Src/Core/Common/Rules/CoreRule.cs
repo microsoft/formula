@@ -43,6 +43,15 @@
         }
 
         /// <summary>
+        /// True if the rule computes an unconstrained product of two non-ground matches
+        /// </summary>
+        public bool IsProductRule
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
         /// Can be null if this rule is a partial rule.
         /// </summary>
         public Node Node
@@ -241,18 +250,33 @@
             {
                 Map<Term, int> pattrnPos1, pattrnPos2;
 
+                //// The set of vars determined by constraints alone.
+                var alwaysDet1 = GetDeterminedVars(new Set<Term>(Term.Compare));
+                var alwaysDet2 = new Set<Term>(Term.Compare, alwaysDet1);
+
                 var find1Vars = GetFindVariables(Find1, out pattrnPos1);
                 var find2Det = GetDeterminedVars(find1Vars);
                 var find2Vars = GetFindVariables(Find2, out pattrnPos2);
                 var find1Det = GetDeterminedVars(find2Vars);
 
                 find1Det.IntersectWith(find1Vars);
+                alwaysDet1.IntersectWith(find1Vars);
+
                 Trigger1 = Executer.MkPattern(Find1.Pattern, find1Det);
                 projVector1 = MkProjectionVector(pattrnPos1, find1Det);
 
                 find2Det.IntersectWith(find2Vars);
+                alwaysDet2.IntersectWith(find2Vars);
+
                 Trigger2 = Executer.MkPattern(Find2.Pattern, find2Det);
                 projVector2 = MkProjectionVector(pattrnPos2, find2Det);
+
+                //// This is a product rule if the find vars of neither pattern contrain
+                //// the find vars of the other pattern.
+                IsProductRule = Find1.Pattern.Groundness != Groundness.Ground && 
+                                Find2.Pattern.Groundness != Groundness.Ground &&
+                                (find1Det.Count == alwaysDet1.Count) && 
+                                (find2Det.Count == alwaysDet2.Count);
             }
             else if (!Find1.IsNull)
             {
@@ -366,9 +390,11 @@
         /// F(x1,...,xn) :- [G(s),] body'. (inliner has no more than one find and x_i's are distinct.) 
         /// 
         /// Produces:
-        /// h :- [G(s)[x/t],], body, body'[x/t]. (other variables from inliner are renamed.)
+        /// h :- [G(s)[x/t],], body, body'[x/t].
         /// 
         /// Or returns this rule if inlining cannot be applied.
+        /// NOTE: Under current naming scheme, variables with identical names in rule and inliner and semantically 
+        /// the same variable.
         /// </summary>
         /// <param name="eliminator"></param>
         /// <returns></returns>
@@ -454,13 +480,15 @@
                 }
             }
          
-            string varPrefix;
+            //// string varPrefix;
             var inlinedFind1 = Find1;
             var inlinedFind2 = Find2;
             var inlinedConstrs = new Set<Term>(Term.Compare, Constraints);
             if (inliner1 != null)
             {
-                varPrefix = string.Format("~inl~{0}~1", inliner.RuleId);
+                //// Under current naming scheme, prefixing is not required.
+                //// varPrefix = string.Format("~inl~{0}~1", inliner.RuleId);
+
                 foreach (var kv in inliner1)
                 {
                     AddVarDef(optAddVarDefs, kv.Key, kv.Value);
@@ -468,16 +496,16 @@
 
                 foreach (var c in inliner.Constraints)
                 {
-                    inlinedConstrs.Add(Substitute(c, inliner1, varPrefix));
+                    inlinedConstrs.Add(Substitute(c, inliner1));
                 }
 
                 if (!inliner.Find1.IsNull)
                 {
                     Term b, p;
                     inlinedFind1 = new FindData(
-                        b = Substitute(inliner.Find1.Binding, inliner1, varPrefix),
-                        p = Substitute(inliner.Find1.Pattern, inliner1, varPrefix),
-                        Substitute(inliner.Find1.Type, inliner1, varPrefix));
+                        b = Substitute(inliner.Find1.Binding, inliner1),
+                        p = Substitute(inliner.Find1.Pattern, inliner1),
+                        Substitute(inliner.Find1.Type, inliner1));
 
                     if (b.Symbol.IsVariable)
                     {
@@ -493,7 +521,7 @@
                 {
                     foreach (var kv in inliner.AdditionalVarDefs)
                     {
-                        var x = Substitute(kv.Key, inliner1, varPrefix);
+                        var x = Substitute(kv.Key, inliner1);
                         if (!x.Symbol.IsVariable)
                         {
                             continue;
@@ -501,7 +529,7 @@
 
                         foreach (var rhs in kv.Value)
                         {
-                            AddVarDef(optAddVarDefs, x, Substitute(rhs, inliner1, varPrefix));
+                            AddVarDef(optAddVarDefs, x, Substitute(rhs, inliner1));
                         }
                     }
                 }
@@ -509,7 +537,9 @@
 
             if (inliner2 != null)
             {
-                varPrefix = string.Format("~inl~{0}~2", inliner.RuleId);
+                //// Under current naming scheme, prefixing is not required.
+                //// varPrefix = string.Format("~inl~{0}~2", inliner.RuleId);
+
                 foreach (var kv in inliner2)
                 {
                     AddVarDef(optAddVarDefs, kv.Key, kv.Value);
@@ -517,16 +547,16 @@
 
                 foreach (var c in inliner.Constraints)
                 {
-                    inlinedConstrs.Add(Substitute(c, inliner2, varPrefix));
+                    inlinedConstrs.Add(Substitute(c, inliner2));
                 }
 
                 if (!inliner.Find1.IsNull)
                 {
                     Term b, p;
                     inlinedFind2 = new FindData(
-                        b = Substitute(inliner.Find1.Binding, inliner2, varPrefix),
-                        p = Substitute(inliner.Find1.Pattern, inliner2, varPrefix),
-                        Substitute(inliner.Find1.Type, inliner2, varPrefix));
+                        b = Substitute(inliner.Find1.Binding, inliner2),
+                        p = Substitute(inliner.Find1.Pattern, inliner2),
+                        Substitute(inliner.Find1.Type, inliner2));
 
                     if (b.Symbol.IsVariable)
                     {
@@ -542,7 +572,7 @@
                 {
                     foreach (var kv in inliner.AdditionalVarDefs)
                     {
-                        var x = Substitute(kv.Key, inliner2, varPrefix);
+                        var x = Substitute(kv.Key, inliner2);
                         if (!x.Symbol.IsVariable)
                         {
                             continue;
@@ -550,7 +580,7 @@
 
                         foreach (var rhs in kv.Value)
                         {
-                            AddVarDef(optAddVarDefs, x, Substitute(rhs, inliner2, varPrefix));
+                            AddVarDef(optAddVarDefs, x, Substitute(rhs, inliner2));
                         }
                     }
                 }
@@ -587,6 +617,7 @@
 
             optRule.AdditionalVarDefs = optAddVarDefs;
             optRule.MergeConfigurations(this, inliner);
+
             return optRule;
         }
 
@@ -869,7 +900,11 @@
 
         public virtual void Debug_PrintRule()
         {
-            Console.WriteLine("ID: {0}, Stratum: {1}", RuleId, stratum < 0 ? "?" : stratum.ToString());
+            Console.WriteLine("{2}ID: {0}, Stratum: {1}", 
+                RuleId, 
+                stratum < 0 ? "?" : stratum.ToString(),
+                IsProductRule ? "(PROD) " : string.Empty);
+
             if (Head.Symbol.PrintableName.StartsWith(SymbolTable.ManglePrefix))
             {
                 Console.WriteLine(Head.Debug_GetSmallTermString());
@@ -1053,9 +1088,9 @@
             }
         }
 
-        private Term Substitute(Term t, Map<Term, Term> substitution, string varPrefix)
+        private Term Substitute(Term t, Map<Term, Term> substitution)
         {
-            Contract.Requires(t != null && substitution != null && varPrefix != null);
+            Contract.Requires(t != null && substitution != null);
 
             int i;
             Term sub;
@@ -1070,13 +1105,14 @@
                     }
                     else if (x.Symbol.IsVariable)
                     {
-                        if (!substitution.TryFindValue(x, out sub))
+                        if (substitution.TryFindValue(x, out sub))
                         {
-                            sub = Index.MkVar(string.Format("{0}{1}", varPrefix, ((UserSymbol)x.Symbol).Name), true, out wasAdded);
-                            substitution.Add(x, sub);
+                            return sub;
                         }
-
-                        return sub;
+                        else
+                        {
+                            return x;
+                        }
                     }
 
                     i = 0;

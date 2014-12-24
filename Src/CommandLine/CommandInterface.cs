@@ -553,6 +553,7 @@
             }
 
             ///// Sort activations
+            System.Numerics.BigInteger totalWork;
             int totalRules = 0;
             LinkedList<Common.Rules.ActivationStatistics> equalCounts;
             var sorted = new Map<System.Numerics.BigInteger, LinkedList<Common.Rules.ActivationStatistics>>((x, y) => x > y ? -1 : (x == y ? 0 : 1));
@@ -564,10 +565,11 @@
                 }
 
                 ++totalRules;
-                if (!sorted.TryFindValue(a.TotalActivations, out equalCounts))
+                totalWork = a.TotalActivations + a.TotalPends + a.TotalFailures;
+                if (!sorted.TryFindValue(totalWork, out equalCounts))
                 {
                     equalCounts = new LinkedList<Common.Rules.ActivationStatistics>();
-                    sorted.Add(a.TotalActivations, equalCounts);
+                    sorted.Add(totalWork, equalCounts);
                 }
 
                 equalCounts.AddLast(a);
@@ -874,12 +876,12 @@
             foreach (var p in proofs)
             {
                 p.Debug_PrintTree();
-                /*
+                ///*
                 foreach (var loc in p.ComputeLocators())
                 {
                     loc.Debug_Print(3);
                 }
-                */
+                //*/
 
                 sink.WriteMessageLine("Press 0 to stop, or 1 to continue", SeverityKind.Info);
                 while (!chooser.GetChoice(out choice) || (int)choice > 1)

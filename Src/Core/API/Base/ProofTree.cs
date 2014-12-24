@@ -100,7 +100,7 @@
         /// </summary>
         /// <returns></returns>
         public LinkedList<Locator> ComputeLocators()
-        {           
+        {
             if (CoreRule == null)
             {
                 //// Then this is a fact.

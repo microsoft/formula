@@ -196,7 +196,7 @@
             {
                 r = kv.Value;
                 symb = (UserSymbol)r.Head.Symbol;
-                if (!r.Find2.IsNull || IsComprehensionSymbol(symb))
+                if (IsComprehensionSymbol(symb))
                 {
                     continue;
                 }
@@ -224,6 +224,11 @@
                 }
 
                 succeeded = optimizedSet.Contains(kv.Value, out inliner);
+                if (!inliner.Find2.IsNull)
+                {
+                    continue;
+                }
+
                 Contract.Assert(succeeded);
                 foreach (var end in node.Provides)
                 {

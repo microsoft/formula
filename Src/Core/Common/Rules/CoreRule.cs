@@ -617,7 +617,6 @@
 
             optRule.AdditionalVarDefs = optAddVarDefs;
             optRule.MergeConfigurations(this, inliner);
-
             return optRule;
         }
 

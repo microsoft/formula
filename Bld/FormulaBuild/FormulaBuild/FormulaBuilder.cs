@@ -94,7 +94,19 @@
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\libz3.dll"),
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\bin\\Debug\\FormulaToTex.exe", 
-                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\FormulaToTex.exe")
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\FormulaToTex.exe"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\bin\\x86\\FormulaCodeGeneratorTask.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\FormulaCodeGeneratorTask.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\bin\\x64\\FormulaCodeGeneratorTask.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\FormulaCodeGeneratorTask.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\bin\\x86\\FormulaCodeGeneratorTask.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\FormulaCodeGeneratorTask.pdb"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\bin\\x64\\FormulaCodeGeneratorTask.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\FormulaCodeGeneratorTask.pdb\\FormulaCodeGeneratorTask.pdb")
         };
 
         private static readonly Tuple<string, string>[] ReleaseMoveMap = new Tuple<string, string>[]
@@ -152,7 +164,19 @@
                 "..\\..\\..\\..\\Drops\\Formula_Release_x64\\libz3.dll"),
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\bin\\Release\\FormulaToTex.exe", 
-                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\FormulaToTex.exe")
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\FormulaToTex.exe"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\bin\\x86\\FormulaCodeGeneratorTask.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\FormulaCodeGeneratorTask.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\bin\\x64\\FormulaCodeGeneratorTask.dll", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\FormulaCodeGeneratorTask.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\bin\\x86\\FormulaCodeGeneratorTask.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\FormulaCodeGeneratorTask.pdb"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\bin\\x64\\FormulaCodeGeneratorTask.pdb", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\FormulaCodeGeneratorTask.pdb")
         };
 
         public static bool Build(bool isBldDebug)

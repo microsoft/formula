@@ -106,7 +106,39 @@
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\FormulaCodeGeneratorTask.pdb"),
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\bin\\x64\\FormulaCodeGeneratorTask.pdb", 
-                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\FormulaCodeGeneratorTask.pdb\\FormulaCodeGeneratorTask.pdb")
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\FormulaCodeGeneratorTask.pdb"),
+
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_formula.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\license_formula.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\license_z3.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gppg.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\license_gppg.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gplex.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\license_gplex.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\readme.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\readme.txt"),
+
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_formula.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\license_formula.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\license_z3.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gppg.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\license_gppg.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gplex.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\license_gplex.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\readme.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\readme.txt"),
         };
 
         private static readonly Tuple<string, string>[] ReleaseMoveMap = new Tuple<string, string>[]
@@ -176,7 +208,39 @@
                 "..\\..\\..\\..\\Drops\\Formula_Release_x86\\FormulaCodeGeneratorTask.pdb"),
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\bin\\x64\\FormulaCodeGeneratorTask.pdb", 
-                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\FormulaCodeGeneratorTask.pdb")
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\FormulaCodeGeneratorTask.pdb"),
+
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_formula.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\license_formula.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\license_z3.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gppg.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\license_gppg.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gplex.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\license_gplex.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\readme.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\readme.txt"),
+
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_formula.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\license_formula.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\license_z3.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gppg.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\license_gppg.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gplex.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\license_gplex.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\readme.txt", 
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\readme.txt"),
         };
 
         public static bool Build(bool isBldDebug)

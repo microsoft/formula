@@ -1418,6 +1418,11 @@
                 if (top.Term.Groundness == Groundness.Variable &&
                     top.Term.Symbol.IsDataConstructor)
                 {
+                    if (top.NArgs != top.Binding.Args.Length)
+                    {
+                        return false;
+                    }
+
                     for (int i = 0; i < top.NArgs; ++i)
                     {
                         arg = top[i];

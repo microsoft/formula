@@ -1289,6 +1289,7 @@
                 }
             }
 
+            programDeps = nextDeps;
             FileRoot = newFileRoot;
             EnvRoot = newEnvRoot;
         }

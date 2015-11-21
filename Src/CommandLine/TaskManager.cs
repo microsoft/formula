@@ -47,6 +47,26 @@
             return true;
         }
 
+        public int UnloadTasks()
+        {
+            var unloadCount = tasks.Count;
+            tasks.Clear();
+            GC.Collect();
+            return unloadCount;
+        }
+
+        public bool TryUnloadTask(int id)
+        {
+            if (!tasks.ContainsKey(id))
+            {
+                return false;
+            }
+
+            tasks.Remove(id);
+            GC.Collect();
+            return true;
+        }
+
         public bool TryGetStatistics(int id, out ExecuterStatistics stats)
         {
             TaskData data;

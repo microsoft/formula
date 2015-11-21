@@ -1292,6 +1292,8 @@
             programDeps = nextDeps;
             FileRoot = newFileRoot;
             EnvRoot = newEnvRoot;
+
+            GC.Collect();
         }
 
         private IEnumerable<ProgramName> EnumeratePrograms(DependencyCollection<ProgramName, Unit>.IDependencyNode n)

@@ -36,8 +36,9 @@
         private const string SaveMsg = "Saves the module modname into file.";
         private const string LSInfoMsg = "Lists environment objects. Use: ls [vars | progs | tasks]";
         private const string LoadMsg = "Loads and compiles a file that is not yet loaded. Use: load filename";
-        private const string UnloadMsg = "Unloads and an installed program and all dependent programs. Use: unload [prog | *]";
-        private const string ReloadMsg = "Reloads and an installed program and all dependent programs. Use: reload [prog | *]";
+        private const string UnloadMsg = "Unloads an installed program and all dependent programs. Use: unload [prog | *]";
+        private const string TUnloadMsg = "Unloads a task. Use: tunload [id | *]";
+        private const string ReloadMsg = "Reloads an installed program and all dependent programs. Use: reload [prog | *]";
         private const string PrintMsg = "Prints the installed program with the given name. Use: print progname";
         private const string DetailsMsg = "Prints details about the compiled module with the given name. Use: det modname";
         private const string TypesMsg = "Prints inferred variable types. Use: types modname";
@@ -224,6 +225,10 @@
             var ulCmd = new Command("unload", "ul", DoUnload, UnloadMsg);
             cmdMap.Add(ulCmd.Name, ulCmd);
             cmdMap.Add(ulCmd.ShortName, ulCmd);
+
+            var tulCmd = new Command("tunload", "tul", DoTUnload, TUnloadMsg);
+            cmdMap.Add(tulCmd.Name, tulCmd);
+            cmdMap.Add(tulCmd.ShortName, tulCmd);
 
             var rlCmd = new Command("reload", "rl", DoReload, ReloadMsg);
             cmdMap.Add(rlCmd.Name, rlCmd);
@@ -502,6 +507,29 @@
             else
             {
                 sink.WriteMessageLine(WatchMsg, SeverityKind.Warning);
+            }
+        }
+
+        private void DoTUnload(string s)
+        {
+            s = s.Trim();
+            int taskId;
+            if (!int.TryParse(s, out taskId) && s != "*")
+            {
+                sink.WriteMessageLine(TUnloadMsg, SeverityKind.Warning);
+            }
+            else if (s == "*")
+            {
+                var cnt = taskManager.UnloadTasks();
+                sink.WriteMessageLine(string.Format("Unloaded {0} tasks", cnt));
+            }
+            else if (taskManager.TryUnloadTask(taskId))
+            {
+                sink.WriteMessageLine(string.Format("Unloaded task {0}", taskId));
+            }
+            else
+            {
+                sink.WriteMessageLine(string.Format("No task with ID {0}", taskId), SeverityKind.Warning);
             }
         }
 

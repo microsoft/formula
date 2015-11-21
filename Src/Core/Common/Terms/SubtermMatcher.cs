@@ -73,8 +73,10 @@
 
         public SubtermMatcher(TermIndex index, bool onlyNewKinds, Term[] pattern)
         {
-            Contract.Requires(index != null);
             Contract.Requires(pattern != null && pattern.Length > 0);
+            //// Appears that Requires is triggering bug in Code Contracts 1.9.10714.2
+            Contract.Assert(index != null);
+
             this.pattern = pattern;
             IsMatchOnlyNewKinds = onlyNewKinds;
             matchingUnions = new AppFreeCanUnn[pattern.Length];

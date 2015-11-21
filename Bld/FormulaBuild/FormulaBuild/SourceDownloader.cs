@@ -264,6 +264,18 @@
                 var subKey = Environment.Is64BitOperatingSystem ? RegVS64SubKey : RegVS32SubKey;
 
                 string installDir = null;
+                //// Try to get version 14
+                if (installDir == null)
+                {
+                    using (var key = Registry.LocalMachine.OpenSubKey(string.Format(subKey, 14)))
+                    {
+                        if (key != null)
+                        {
+                            installDir = key.GetValue("ProductDir") as string;
+                        }
+                    }
+                }
+
                 //// Try to get version 12
                 if (installDir == null)
                 {

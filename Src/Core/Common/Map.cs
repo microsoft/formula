@@ -11,15 +11,53 @@
     /// </summary>
     public class Map<S, T> : IEnumerable<KeyValuePair<S, T>>
     {
-        private Comparison<S> comparer;
+        private SpinLock lastFoundLock = new SpinLock();
+        private Node lastFoundNode = null;
 
-        private ThreadLocal<Node> lastFound = new ThreadLocal<Node>();
+        private Comparison<S> comparer;
 
         private int numberOfKeys = 0;
 
         private LinkedList<Phantom> phantomList = new LinkedList<Phantom>();
 
         private Node root = null;
+
+        private Node LastFound
+        {
+            get
+            {
+                bool gotLock = false;
+                try
+                {
+                    lastFoundLock.Enter(ref gotLock);
+                    return lastFoundNode;
+                }
+                finally
+                {
+                    if (gotLock)
+                    {
+                        lastFoundLock.Exit();
+                    }
+                }
+            }
+
+            set
+            {
+                bool gotLock = false;
+                try
+                {
+                    lastFoundLock.Enter(ref gotLock);
+                    lastFoundNode = value;
+                }
+                finally
+                {
+                    if (gotLock)
+                    {
+                        lastFoundLock.Exit();
+                    }
+                }
+            }
+        }
 
         public Map(Comparison<S> comparer)
         {
@@ -187,7 +225,7 @@
             numberOfKeys = 0;
             phantomList.Clear();
             root = null;
-            lastFound.Value = null;
+            LastFound = null;
         }
 
         [Pure]
@@ -413,9 +451,11 @@
 
         public bool TryFindValue(S key, out T value)
         {
-            if (lastFound.Value != null && Compare(lastFound.Value, key) == 0)
+            var lastFound = LastFound;
+
+            if (lastFound != null && Compare(lastFound, key) == 0)
             {
-                value = lastFound.Value.Value;
+                value = lastFound.Value;
                 return true;
             }
 
@@ -427,7 +467,7 @@
                 if (cmp == 0)
                 {
                     value = checkNode.Value;
-                    lastFound.Value = checkNode;
+                    LastFound = checkNode;
                     return true;
                 }
                 else if (cmp > 0)
@@ -446,7 +486,7 @@
 
         public bool Remove(S key)
         {
-            lastFound.Value = null;
+            LastFound = null;
             Node deletePos = FindNearestNode(key);
             if (deletePos == null || Compare(deletePos, key) != 0)
             {

@@ -60,6 +60,15 @@
                 }
             }
 
+            string python = FindInPath("Python.exe");
+            if (python == null)
+            {
+                Program.WriteError("Could not find Python, please install Python 2.7");
+                Program.WriteError("and make sure the location is in your PATH environment.");
+                Program.WriteError("See: https://www.python.org/downloads/release");
+                return;
+            }
+
             WriteInfo("Building in {0} configuration", isDebug ? "debug" : "release");
 
             var result = GardensPointBuilder.Build(isForced) &&
@@ -110,5 +119,19 @@
             Program.WriteInfo("{0}: The expected layout of external dependencies (relative to FormulaBuild.exe)", LayoutFlag);
             Program.WriteInfo("{0}: Force rebuild of external dependencies", DebugFlag);
         }
+
+        private static string FindInPath(string tool)
+        {
+            foreach (string s in Environment.GetEnvironmentVariable("PATH").Split(';'))
+            {
+                string fullPath = Path.Combine(s, tool);
+                if (File.Exists(fullPath))
+                {
+                    return fullPath;
+                }
+            }
+            return null;
+        }
+
     }
 }

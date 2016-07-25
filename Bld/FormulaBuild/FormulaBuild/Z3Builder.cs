@@ -193,6 +193,7 @@
                 if (!SourceDownloader.GetBuildRelFile(bat, out batFile))
                 {
                     Program.WriteError("Could not find file {0}", bat);
+                    return false;
                 }
 
                 var psi = new ProcessStartInfo();

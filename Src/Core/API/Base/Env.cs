@@ -827,7 +827,7 @@
             return true;
         }
 
-#if SOLVE
+#if SOLVER
         /// <summary>
         /// Tries to solve a model for a disjunction of goals. Currently reduces this to
         /// old formula, so this interface is under-defined.

@@ -15,49 +15,82 @@
         private const string LayoutFlag = "-l";
         private const string ExtFlag = "-e";
 
-        static void Main(string[] args)     
+        bool isDebug = false;
+        bool isForced = false;
+        bool layout = false;
+        bool solver = true;
+
+        bool ParseCommandLine(string[] args)
         {
-            if (args.Length > 1)
+            for (int i = 0, n = args.Length; i < n; i++)
             {
-                WriteError("Unexpected number of arguments");
+                string arg = args[i];
+                if (arg[0] == '/' || arg[0] == '-')
+                {
+                    switch (arg.Substring(1).ToLowerInvariant())
+                    {
+                        case "h":
+                        case "?":
+                        case "help":
+                            return false;
+                        case "l":
+                            layout = true;
+                            break;
+                        case "d":
+                            isDebug = true;
+                            break;
+                        case "e":
+                            isForced = true;
+                            break;
+                        case "solver":
+                            if (i+1<n )
+                            {
+                                bool s;
+                                if (bool.TryParse(args[++i], out s))
+                                {
+                                    solver = s;
+                                }
+                                else
+                                {
+                                    WriteError("Expecting 'true' or 'false' after -solver argument, but found: {0}", args[i]);
+                                    return false;
+                                }
+                            }
+                            break;
+                        default:
+                            WriteError("Unexpected flag {0}", arg);
+                            return false;
+                    }
+                }
+                else
+                {
+                    WriteError("Unexpected argument: {0}", arg);
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        static void Main(string[] args)
+        {
+            Program p = new FormulaBuild.Program();
+            if (!p.ParseCommandLine(args))
+            {
                 PrintUsage();
                 Environment.ExitCode = FailCode;
                 return;
             }
+            p.Run();
+        }
 
-            if (args.Length == 1 && args[0].Trim() == HelpFlag)
-            {
-                PrintUsage();
-                return;
-            }
-
-            if (args.Length == 1 && args[0].Trim() == LayoutFlag)
+        void Run()
+        { 
+            if (layout)
             {
                 SourceDownloader.PrintSourceURLs();
                 GardensPointBuilder.PrintOutputs();
                 Z3Builder.PrintOutputs();
                 return;
-            }
-
-            bool isDebug = false;
-            bool isForced = false;
-            if (args.Length == 1)
-            {
-                if (args[0].Trim() == DebugFlag)
-                {
-                    isDebug = true;
-                }
-                else if (args[0].Trim() == ExtFlag)
-                {
-                    isForced = true;
-                }
-                else
-                {
-                    WriteError("Unexpected flag {0}", args[0]);
-                    PrintUsage();
-                    Environment.ExitCode = FailCode;
-                    return;
-                }
             }
 
             string python = FindInPath("Python.exe");
@@ -71,9 +104,14 @@
 
             WriteInfo("Building in {0} configuration", isDebug ? "debug" : "release");
 
-            var result = GardensPointBuilder.Build(isForced) &&
-                         Z3Builder.Build(isForced) &&
-                         FormulaBuilder.Build(isDebug);
+            var result = GardensPointBuilder.Build(isForced);
+
+            if (solver)
+            {
+                result |= Z3Builder.Build(isForced);
+            }
+
+            result |= FormulaBuilder.Build(isDebug, solver, isForced);
 
             if (!result)
             {

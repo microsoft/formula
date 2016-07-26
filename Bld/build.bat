@@ -22,7 +22,7 @@ if %ERRORLEVEL% neq 0 (
   exit /B 1
 )
 
-.\FormulaBuild\FormulaBuild\bin\Debug\FormulaBuild.exe %1
+.\FormulaBuild\FormulaBuild\bin\Debug\FormulaBuild.exe %1 %2 %3
 if %ERRORLEVEL% neq 0 (
   echo Build failed.
   exit /B 1

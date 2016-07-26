@@ -13,7 +13,7 @@
 
     internal static class FormulaBuilder
     {
-        private const string MsBuildCommand = "\"{0}\" /p:Configuration={1} /p:Platform={2}";
+        private const string MsBuildCommand = "\"{0}\" /p:Configuration={1} /p:Platform={2} {3}";
         private const string ConfigDebug = "Debug";
         private const string ConfigRelease = "Release";
         private const string PlatformX86 = "x86";
@@ -32,10 +32,10 @@
         private static readonly Tuple<bool, string, string, bool>[] Projects = new Tuple<bool, string, string, bool>[]
         {
             new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\CommandLine\\CommandLine.csproj", PlatformX86, true),
-            new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\CommandLine\\CommandLinex64.csproj", PlatformX64, true),
+            new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\CommandLine\\CommandLine.csproj", PlatformX64, true),
             new Tuple<bool, string, string, bool>(true, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGenerator\\FormulaCodeGenerator.csproj", PlatformX86, false),
             new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTask.csproj", PlatformX86, true),    
-            new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTaskx64.csproj", PlatformX64, true),    
+            new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\Extensions\\FormulaCodeGeneratorTask\\FormulaCodeGeneratorTask.csproj", PlatformX64, true),    
             new Tuple<bool, string, string, bool>(false, "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\FormulaToTex.csproj", PlatformAny, true)
         };
 
@@ -57,15 +57,6 @@
                 "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Core.pdb", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Core.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Microsoft.Z3.dll", 
-                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Microsoft.Z3.dll"),
-            new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Microsoft.Z3.pdb", 
-                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Microsoft.Z3.pdb"),
-            new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\libz3.dll", 
-                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\libz3.dll"),
-            new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\bin\\Debug\\FormulaToTex.exe", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\FormulaToTex.exe"),
             new Tuple<string, string>(
@@ -83,15 +74,6 @@
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Core.pdb", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Core.pdb"),
-            new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Microsoft.Z3.dll", 
-                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Microsoft.Z3.dll"),
-            new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Microsoft.Z3.pdb", 
-                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Microsoft.Z3.pdb"),
-            new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\libz3.dll", 
-                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\libz3.dll"),
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\bin\\Debug\\FormulaToTex.exe", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\FormulaToTex.exe"),
@@ -112,9 +94,6 @@
                 "..\\..\\..\\..\\..\\Doc\\Licenses\\license_formula.txt", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\license_formula.txt"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt", 
-                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\license_z3.txt"),
-            new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gppg.txt", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\license_gppg.txt"),
             new Tuple<string, string>(
@@ -128,9 +107,6 @@
                 "..\\..\\..\\..\\..\\Doc\\Licenses\\license_formula.txt", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\license_formula.txt"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt", 
-                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\license_z3.txt"),
-            new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gppg.txt", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\license_gppg.txt"),
             new Tuple<string, string>(
@@ -139,6 +115,35 @@
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Doc\\Licenses\\readme.txt", 
                 "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\readme.txt"),
+        };
+
+
+        private static readonly Tuple<string, string>[] DebugZ3MoveMap = new Tuple<string, string>[]
+        {
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Microsoft.Z3.dll",
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Microsoft.Z3.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\Microsoft.Z3.pdb",
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\Microsoft.Z3.pdb"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Debug\\libz3.dll",
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\libz3.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Microsoft.Z3.dll",
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Microsoft.Z3.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\Microsoft.Z3.pdb",
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\Microsoft.Z3.pdb"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Debug\\libz3.dll",
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\libz3.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt",
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x64\\license_z3.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt",
+                "..\\..\\..\\..\\Drops\\Formula_Debug_x86\\license_z3.txt"),
         };
 
         private static readonly Tuple<string, string>[] ReleaseMoveMap = new Tuple<string, string>[]
@@ -159,15 +164,6 @@
                 "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Core.pdb", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Core.pdb"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Microsoft.Z3.dll", 
-                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Microsoft.Z3.dll"),
-            new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Microsoft.Z3.pdb", 
-                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Microsoft.Z3.pdb"),
-            new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\libz3.dll", 
-                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\libz3.dll"),
-            new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\bin\\Release\\FormulaToTex.exe", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x86\\FormulaToTex.exe"),
             new Tuple<string, string>(
@@ -185,15 +181,6 @@
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Core.pdb", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Core.pdb"),
-            new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Microsoft.Z3.dll", 
-                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Microsoft.Z3.dll"),
-            new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Microsoft.Z3.pdb", 
-                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Microsoft.Z3.pdb"),
-            new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\libz3.dll", 
-                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\libz3.dll"),
             new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Src\\Utilities\\FormulaToTex\\bin\\Release\\FormulaToTex.exe", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x64\\FormulaToTex.exe"),
@@ -214,9 +201,6 @@
                 "..\\..\\..\\..\\..\\Doc\\Licenses\\license_formula.txt", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x64\\license_formula.txt"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt", 
-                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\license_z3.txt"),
-            new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gppg.txt", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x64\\license_gppg.txt"),
             new Tuple<string, string>(
@@ -230,9 +214,6 @@
                 "..\\..\\..\\..\\..\\Doc\\Licenses\\license_formula.txt", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x86\\license_formula.txt"),
             new Tuple<string, string>(
-                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt", 
-                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\license_z3.txt"),
-            new Tuple<string, string>(
                 "..\\..\\..\\..\\..\\Doc\\Licenses\\license_gppg.txt", 
                 "..\\..\\..\\..\\Drops\\Formula_Release_x86\\license_gppg.txt"),
             new Tuple<string, string>(
@@ -243,7 +224,35 @@
                 "..\\..\\..\\..\\Drops\\Formula_Release_x86\\readme.txt"),
         };
 
-        public static bool Build(bool isBldDebug)
+        private static readonly Tuple<string, string>[] ReleaseZ3MoveMap = new Tuple<string, string>[]
+        {
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Microsoft.Z3.dll",
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Microsoft.Z3.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\Microsoft.Z3.pdb",
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\Microsoft.Z3.pdb"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x86\\Release\\libz3.dll",
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\libz3.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Microsoft.Z3.dll",
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Microsoft.Z3.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\Microsoft.Z3.pdb",
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\Microsoft.Z3.pdb"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Src\\CommandLine\\bin\\x64\\Release\\libz3.dll",
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\libz3.dll"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt",
+                "..\\..\\..\\..\\Drops\\Formula_Release_x64\\license_z3.txt"),
+            new Tuple<string, string>(
+                "..\\..\\..\\..\\..\\Doc\\Licenses\\license_z3.txt",
+                "..\\..\\..\\..\\Drops\\Formula_Release_x86\\license_z3.txt"),
+        };
+
+        public static bool Build(bool isBldDebug, bool solver, bool isForced)
         {
             var result = true;
             FileInfo msbuild, msbuild32 = null;
@@ -260,7 +269,12 @@
             foreach (var proj in Projects)
             {
                 Program.WriteInfo("Building {0}: Config = {1}, Platform = {2}", proj.Item2, config, proj.Item3);
-                result = BuildCSProj(proj.Item1 ? msbuild32 : msbuild, proj.Item2, config, proj.Item3, proj.Item4) && result;
+                string optionalArgs = solver ? "/p:SOLVER=SOLVER" : "/p:SOLVER=NOSOLVER";
+                if (isForced)
+                {
+                    optionalArgs += " /t:rebuild";
+                }
+                result = BuildCSProj(proj.Item1 ? msbuild32 : msbuild, proj.Item2, config, proj.Item3, optionalArgs, proj.Item4) && result;
             }
 
             if (!result)
@@ -269,6 +283,10 @@
             }
 
             result = DoMove(isBldDebug ? DebugMoveMap : ReleaseMoveMap) && result;
+            if (solver)
+            {
+                result = DoMove(isBldDebug ? DebugZ3MoveMap : ReleaseZ3MoveMap) && result;
+            }
             InstallVsix(isBldDebug ? CodeGeneratorDebug : CodeGeneratorRelease);
             return result;
         }
@@ -377,7 +395,7 @@
             }
         }
 
-        private static bool BuildCSProj(FileInfo msbuild, string projFileName, string config, string platform, bool isRequired)
+        private static bool BuildCSProj(FileInfo msbuild, string projFileName, string config, string platform, string optionalArgs, bool isRequired)
         {
             try
             {
@@ -402,7 +420,7 @@
                 psi.RedirectStandardOutput = true;
                 psi.WorkingDirectory = projFile.Directory.FullName;
                 psi.FileName = msbuild.FullName;
-                psi.Arguments = string.Format(MsBuildCommand, projFile.Name, config, platform);
+                psi.Arguments = string.Format(MsBuildCommand, projFile.Name, config, platform, optionalArgs);
                 psi.CreateNoWindow = true;
 
                 var process = new Process();

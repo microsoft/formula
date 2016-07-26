@@ -270,9 +270,11 @@
             cmdMap.Add(queryCmd.Name, queryCmd);
             cmdMap.Add(queryCmd.ShortName, queryCmd);
 
+#if SOLVER
             var solveCmd = new Command("solve", "sl", DoSolve, SolveMsg);
             cmdMap.Add(solveCmd.Name, solveCmd);
             cmdMap.Add(solveCmd.ShortName, solveCmd);
+#endif
 
             var truthCmd = new Command("truth", "tr", DoTruth, TruthMsg);
             cmdMap.Add(truthCmd.Name, truthCmd);
@@ -771,6 +773,7 @@
             }
             else
             {
+#if SOLVER
                 var result = ((System.Threading.Tasks.Task<SolveResult>)task).Result;
                 WriteFlags(new ProgramName("program.4ml"), result.Flags);
 
@@ -787,6 +790,7 @@
                     modName);
 
                 bldTask.Wait();
+#endif
             }
 
             InstallResult insResult;
@@ -1176,6 +1180,7 @@
             }
         }
 
+#if SOLVER
         private void DoSolve(string s)
         {
             var cmdParts = s.Split(cmdSplitChars, 3, StringSplitOptions.RemoveEmptyEntries);
@@ -1269,6 +1274,7 @@
                 sink.WriteMessageLine("Failed to start solved task.", SeverityKind.Warning);
             }
         }
+#endif
 
         private void DoDetails(string s)
         {

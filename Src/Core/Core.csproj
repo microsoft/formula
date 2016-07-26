@@ -16,6 +16,8 @@
     <GPPGPath>..\..\Ext\GPPG</GPPGPath>
     <CodeContractsAssemblyMode>1</CodeContractsAssemblyMode>
     <TargetFrameworkProfile />
+    <SOLVER>$(SOLVER)</SOLVER>
+    <SOLVER Condition="'$(SOLVER)'==''">true</SOLVER>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>
@@ -73,13 +75,66 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x64\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeContractsEnableRuntimeChecking>True</CodeContractsEnableRuntimeChecking>
+    <CodeContractsRuntimeOnlyPublicSurface>False</CodeContractsRuntimeOnlyPublicSurface>
+    <CodeContractsRuntimeThrowOnFailure>False</CodeContractsRuntimeThrowOnFailure>
+    <CodeContractsRuntimeCallSiteRequires>False</CodeContractsRuntimeCallSiteRequires>
+    <CodeContractsRuntimeSkipQuantifiers>False</CodeContractsRuntimeSkipQuantifiers>
+    <CodeContractsRunCodeAnalysis>False</CodeContractsRunCodeAnalysis>
+    <CodeContractsNonNullObligations>True</CodeContractsNonNullObligations>
+    <CodeContractsBoundsObligations>True</CodeContractsBoundsObligations>
+    <CodeContractsArithmeticObligations>False</CodeContractsArithmeticObligations>
+    <CodeContractsEnumObligations>False</CodeContractsEnumObligations>
+    <CodeContractsRedundantAssumptions>False</CodeContractsRedundantAssumptions>
+    <CodeContractsMissingPublicRequiresAsWarnings>True</CodeContractsMissingPublicRequiresAsWarnings>
+    <CodeContractsInferRequires>True</CodeContractsInferRequires>
+    <CodeContractsInferEnsures>False</CodeContractsInferEnsures>
+    <CodeContractsInferObjectInvariants>False</CodeContractsInferObjectInvariants>
+    <CodeContractsSuggestAssumptions>False</CodeContractsSuggestAssumptions>
+    <CodeContractsSuggestRequires>True</CodeContractsSuggestRequires>
+    <CodeContractsSuggestEnsures>False</CodeContractsSuggestEnsures>
+    <CodeContractsSuggestObjectInvariants>False</CodeContractsSuggestObjectInvariants>
+    <CodeContractsRunInBackground>True</CodeContractsRunInBackground>
+    <CodeContractsShowSquigglies>True</CodeContractsShowSquigglies>
+    <CodeContractsUseBaseLine>False</CodeContractsUseBaseLine>
+    <CodeContractsEmitXMLDocs>False</CodeContractsEmitXMLDocs>
+    <CodeContractsCustomRewriterAssembly />
+    <CodeContractsCustomRewriterClass />
+    <CodeContractsLibPaths />
+    <CodeContractsExtraRewriteOptions />
+    <CodeContractsExtraAnalysisOptions />
+    <CodeContractsSQLServerOption />
+    <CodeContractsBaseLineFile />
+    <CodeContractsCacheAnalysisResults>True</CodeContractsCacheAnalysisResults>
+    <CodeContractsFailBuildOnWarnings>False</CodeContractsFailBuildOnWarnings>
+    <CodeContractsRuntimeCheckingLevel>Full</CodeContractsRuntimeCheckingLevel>
+    <CodeContractsReferenceAssembly>%28none%29</CodeContractsReferenceAssembly>
+    <CodeContractsAnalysisWarningLevel>0</CodeContractsAnalysisWarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <OutputPath>bin\x64\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x64</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.Z3">
-      <HintPath>..\..\Ext\Z3\x86\Microsoft.Z3.dll</HintPath>
+    <Reference Condition="'$(SOLVER)'=='true'" Include="Microsoft.Z3">
+      <HintPath>..\..\Ext\Z3\$(Platform)\Microsoft.Z3.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\Ext\Z3\x86\libz3.dll">
+    <None Condition="'$(SOLVER)'=='true'" Include="..\..\Ext\Z3\$(Platform)\libz3.dll">
       <Link>libz3.dll</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
@@ -133,21 +188,21 @@
     <Compile Include="API\Results\GenerateResult.cs" />
     <Compile Include="API\Results\ObjectGraphResult.cs" />
     <Compile Include="API\Results\QueryResult.cs" />
-    <Compile Include="API\Results\SolveResult.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="API\Results\SolveResult.cs" />
     <Compile Include="Common\Extras\BitMethods.cs" />
-    <Compile Include="Common\Extras\Z3Utilities.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Common\Extras\Z3Utilities.cs" />
     <Compile Include="Common\FixedDomMap.cs" />
     <Compile Include="Common\Rules\ActivationStatistics.cs" />
     <Compile Include="Common\Rules\CoreSubRule.cs" />
     <Compile Include="Common\Terms\SubtermMatcher.cs" />
     <Compile Include="Common\Terms\TermPrinting.cs" />
-    <Compile Include="Solver\Execution\DecisionStack.cs" />
-    <Compile Include="Solver\Execution\SymFixpoint.cs" />
-    <Compile Include="Solver\Execution\ShapeTrie.cs" />
-    <Compile Include="Solver\Execution\SymElement.cs" />
-    <Compile Include="Solver\Execution\SymExecuter.cs" />
-    <Compile Include="Solver\Execution\Activation.cs" />
-    <Compile Include="Solver\Execution\TermEncIndex.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\Execution\DecisionStack.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\Execution\SymFixpoint.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\Execution\ShapeTrie.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\Execution\SymElement.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\Execution\SymExecuter.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\Execution\Activation.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\Execution\TermEncIndex.cs" />
     <Compile Include="Solver\Cardinality.cs" />
     <Compile Include="Solver\CardSystem.cs" />
     <Compile Include="Common\Composites\CoreTSystem.cs" />
@@ -267,23 +322,23 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Solver\CardRange.cs" />
     <Compile Include="Solver\ISolver.cs" />
-    <Compile Include="Solver\OldPrinter.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\OldPrinter.cs" />
     <Compile Include="Solver\SearchState.cs" />
-    <Compile Include="Solver\Solver.cs" />
-    <Compile Include="Solver\Strategies\OATStrategy.cs" />
-    <Compile Include="Solver\TypeEmbedding\ConstructorEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\EnumEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\IntegerEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\IntRangeEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\ITypeEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\NaturalEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\NegIntegerEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\PosIntegerEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\RealEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\SingletonEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\StringEmbedding.cs" />
-    <Compile Include="Solver\TypeEmbedding\TypeEmbedder.cs" />
-    <Compile Include="Solver\TypeEmbedding\UnionEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\Solver.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\Strategies\OATStrategy.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\ConstructorEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\EnumEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\IntegerEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\IntRangeEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\ITypeEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\NaturalEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\NegIntegerEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\PosIntegerEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\RealEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\SingletonEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\StringEmbedding.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\TypeEmbedder.cs" />
+    <Compile Condition="'$(SOLVER)'=='true'" Include="Solver\TypeEmbedding\UnionEmbedding.cs" />
   </ItemGroup>
   <ItemGroup>
     <MPLexCompile Include="API\Parser\lexer.lex" />

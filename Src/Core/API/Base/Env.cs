@@ -827,6 +827,7 @@
             return true;
         }
 
+#if SOLVE
         /// <summary>
         /// Tries to solve a model for a disjunction of goals. Currently reduces this to
         /// old formula, so this interface is under-defined.
@@ -960,7 +961,8 @@
             ReleaseEnvLock();
             return true;
         }
-                                                  
+#endif
+                                                          
         public bool Install(string filename, out InstallResult result)
         {
             Contract.Requires(filename != null);

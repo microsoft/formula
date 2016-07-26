@@ -719,7 +719,7 @@
                 foreach (var kv in valueInputs)
                 {
                     valParamToValue.Add(
-                        (UserCnstSymb)symTable.Resolve(string.Format("%{1}", kv.Key), out other, symTable.ModuleSpace),
+                        (UserCnstSymb)symTable.Resolve(string.Format("%{0}", kv.Key), out other, symTable.ModuleSpace),
                         kv.Value);
                 }
 

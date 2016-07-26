@@ -16,7 +16,6 @@
     <FileAlignment>512</FileAlignment>
     <CodeContractsAssemblyMode>1</CodeContractsAssemblyMode>
     <SOLVER>$(SOLVER)</SOLVER>
-    <SOLVER Condition="'$(SOLVER)'==''">SOLVER</SOLVER>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
     <PlatformTarget>x86</PlatformTarget>

@@ -17,7 +17,6 @@
     <CodeContractsAssemblyMode>1</CodeContractsAssemblyMode>
     <TargetFrameworkProfile />
     <SOLVER>$(SOLVER)</SOLVER>
-    <SOLVER Condition="'$(SOLVER)'==''">SOLVER</SOLVER>
   </PropertyGroup>
   <PropertyGroup>
     <SignAssembly>false</SignAssembly>

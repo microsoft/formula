@@ -51,56 +51,9 @@
             get;
         }
 
-        /// <summary>
-        /// The program where the related span occurs.
-        /// </summary>
-        public abstract ProgramName Program
-        {
-            get;
-        }
-
         public void Debug_Print(int maxDepth)
         {
             Debug_Print(0, maxDepth);
-        }
-
-        /// <summary>
-        /// Chooses the lexicographically smallest program name, and then produces a span containing
-        /// all the spans occuring in that program name. Returns null if there are no locators.
-        /// </summary>
-        internal static Tuple<Span, ProgramName> Widen(IEnumerable<Locator> locators)
-        {
-            if (locators == null || Common.Extras.EnumerableMethods.IsEmpty(locators))
-            {
-                return null;
-            }
-
-            var widened = default(Span);
-            ProgramName smallest = null;
-            foreach (var l in locators)
-            {
-                if (smallest == null || string.Compare(l.Program.ToString(), smallest.ToString()) < 0)
-                {
-                    smallest = l.Program;
-                    widened = l.Span;
-                }
-            }
-
-            foreach (var l in locators)
-            {
-                if (l.Program.ToString() != smallest.ToString())
-                {
-                    continue;
-                }
-
-                widened = new Span(
-                    Math.Min(widened.StartLine, l.Span.StartLine),
-                    Math.Min(widened.StartCol, l.Span.StartCol),
-                    Math.Max(widened.EndLine, l.Span.EndLine),
-                    Math.Max(widened.EndCol, l.Span.EndCol));
-            }
-
-            return new Tuple<Span, ProgramName>(widened, smallest);
         }
 
         /// <summary>
@@ -190,7 +143,7 @@
             Console.WriteLine(
                 "{0}{1} ({2}, {3})", 
                 indent,
-                Program.ToString(),
+                Span.Program.ToString(),
                 Span.StartLine,
                 Span.StartCol);
 

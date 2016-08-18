@@ -1053,7 +1053,7 @@
 
             try
             {
-                var absUri = new Uri(((Program)AttachedAST.Root).Name.Uri, modRef.Node.Location.Replace('\\', '/'));
+                var absUri = new Uri(((Program)AttachedAST.Root).Name.Uri, modRef.Node.Location);
                 var qptype = typeof(T);
                 var assm = System.Reflection.Assembly.LoadFrom(absUri.LocalPath);
                 var types = assm.GetExportedTypes();

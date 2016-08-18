@@ -96,11 +96,11 @@
             //// Don't trust that the user provided coordinates in a meaningful order.
             if (srcLine1 > srcLine2 || (srcLine1 == srcLine2 && srcCol1 > srcCol2))
             {
-                return new Span(srcLine2, srcCol2, srcLine1, srcCol1);
+                return new Span(srcLine2, srcCol2, srcLine1, srcCol1, quoteSpan.Program);
             }
             else
             {
-                return new Span(srcLine1, srcCol1, srcLine2, srcCol2);
+                return new Span(srcLine1, srcCol1, srcLine2, srcCol2, quoteSpan.Program);
             }
         }
 

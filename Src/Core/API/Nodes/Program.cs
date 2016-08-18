@@ -116,7 +116,7 @@
             var v = (int)NodeKind;
             unchecked
             {
-                v += Name.Uri.AbsoluteUri.ToLowerInvariant().GetHashCode();
+                v += Name.Uri.GetComponents(UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase).ToLowerInvariant().GetHashCode();
             }
 
             return v;

@@ -43,7 +43,7 @@
         /// <summary>
         /// If IsKeepFactLocations, then provides a map from top-level terms to the AST nodes that created them.
         /// </summary>
-        private Map<Term, Tuple<ProgramName, Node>> factLocations = new Map<Term, Tuple<ProgramName, Node>>(Term.Compare);
+        private Map<Term, Node> factLocations = new Map<Term, Node>(Term.Compare);
 
         /// <summary>
         /// Can be null
@@ -117,7 +117,6 @@
 
         public bool Validate(List<Flag> flags, CancellationToken cancel)
         {
-            var progName = myModuleData.Source.Program.Name;
             var unaliasedNGTerms = new Map<Term, Node>(Term.Compare);
 
             if (!string.IsNullOrEmpty(Model.Node.Domain.Rename))
@@ -207,7 +206,7 @@
                     facts.Add(t);
                     if (IsKeepFactLocations)
                     {
-                        factLocations[t] = new Tuple<ProgramName,Node>(progName, f.Match);
+                        factLocations[t] = f.Match;
                     }
                 }
 
@@ -237,7 +236,7 @@
                     continue;
                 }
 
-                if (!GetData(v, progName, f).TryDefine(progName, f, t, aliases, aliasDataMap, flags))
+                if (!GetData(v, f).TryDefine(f, t, aliases, aliasDataMap, flags))
                 {
                     success.Failed();
                     continue;
@@ -255,7 +254,7 @@
                         facts.Add(exp);
                         if (IsKeepFactLocations)
                         {
-                            factLocations[exp] = new Tuple<ProgramName,Node>(progName, kv.Value);
+                            factLocations[exp] = kv.Value;
                         }
                     }
                 }
@@ -408,19 +407,19 @@
                 return false;
             }
 
-            Tuple<ProgramName, Node> location;
-            if (!factLocations.TryFindValue(t, out location))
+            Node node;
+            if (!factLocations.TryFindValue(t, out node))
             {
                 loc = null;
                 return false;
             }
 
-            var node = location.Item2.NodeKind == NodeKind.ModelFact ? ((ModelFact)location.Item2).Match : location.Item2;
-            loc = new ModelFactLocator(node.Span, location.Item1, node, location.Item1, this);
+            node = node.NodeKind == NodeKind.ModelFact ? ((ModelFact)node).Match : node;
+            loc = new ModelFactLocator(node.Span, node, this);
             return true;
         }
 
-        public bool TryGetLocator(Span nodeSpan, ProgramName nodeProgram, UserCnstSymb symb, out ModelFactLocator loc)
+        public bool TryGetLocator(Span nodeSpan, UserCnstSymb symb, out ModelFactLocator loc)
         {
             Contract.Requires(symb != null && symb.IsSymbolicConstant);
             var localSymb = Index.SymbolTable.Resolve(symb);
@@ -433,7 +432,7 @@
             }
 
             var location = aliasDataMap[localSymb].DefNode;
-            loc = new ModelFactLocator(nodeSpan, nodeProgram, location.Item2, location.Item1, this);
+            loc = new ModelFactLocator(nodeSpan, location, this);
             return true;
         }
 
@@ -613,7 +612,7 @@
                     continue;
                 }
 
-                aliasData = new AliasData(imported, kv.Value.DefNode.Item1, kv.Value.DefNode.Item2);
+                aliasData = new AliasData(imported, kv.Value.DefNode);
                 aliasData.ImportDefinition(
                     Index.MkClone(kv.Value.ExpDefinition, renaming),
                     kv.Value.Type != null ? Index.MkClone(kv.Value.Type, renaming) : null);
@@ -765,12 +764,12 @@
                 {
                     if (aliases != null)
                     {
-                        aliases.Add(GetData((UserSymbol)symb, myModuleData.Source.Program.Name, n).SmbCnst);
+                        aliases.Add(GetData((UserSymbol)symb, n).SmbCnst);
                     }
                     else
                     {
                         //// Ensure there is alias data for every alias.
-                        GetData((UserSymbol)symb, myModuleData.Source.Program.Name, n);
+                        GetData((UserSymbol)symb, n);
                     }
                 }
 
@@ -811,7 +810,7 @@
                     {
                         if (a.Symbol.Kind == SymbolKind.UserCnstSymb && ((UserCnstSymb)a.Symbol).IsSymbolicConstant)
                         {
-                            if (!GetData((UserSymbol)a.Symbol, myModuleData.Source.Program.Name, n).TryRefineType(Index.GetCanonicalTerm(con, i)))
+                            if (!GetData((UserSymbol)a.Symbol, n).TryRefineType(Index.GetCanonicalTerm(con, i)))
                             {
                                 flags.Add(MkBadArgType(n, symb, i));
                                 typed = false;
@@ -1189,7 +1188,7 @@
                 });
         }
 
-        private AliasData GetData(UserSymbol aliasSymb, ProgramName prog, Node node)
+        private AliasData GetData(UserSymbol aliasSymb, Node node)
         {
             Contract.Requires(aliasSymb != null && aliasSymb.Kind == SymbolKind.UserCnstSymb);
             Contract.Requires(((UserCnstSymb)aliasSymb).IsSymbolicConstant);
@@ -1200,7 +1199,7 @@
                 return data;
             }
 
-            data = new AliasData(aliasSymb, prog, node);
+            data = new AliasData(aliasSymb, node);
             aliasDataMap.Add(aliasSymb, data);
             return data;
         }
@@ -1365,7 +1364,7 @@
                     {
                         flag = new Flag(
                             SeverityKind.Error,
-                            kv.Value.DefNode.Item2,
+                            kv.Value.DefNode.Span,
                             Constants.ModelGroundingError.ToString(kv.Value.SmbCnst.PrintableName),
                             Constants.ModelGroundingError.Code);
                         flags.Add(flag);
@@ -1398,7 +1397,7 @@
                             {
                                 flag = new Flag(
                                     SeverityKind.Error,
-                                    vdata.DefNode.Item2,
+                                    vdata.DefNode.Span,
                                     Constants.ModelGroundingError.ToString(vdata.SmbCnst.PrintableName),
                                     Constants.ModelGroundingError.Code);
                                 flags.Add(flag);
@@ -1432,7 +1431,7 @@
                         {
                             flag = new Flag(
                                 SeverityKind.Error,
-                                top.Item1.DefNode.Item2,
+                                top.Item1.DefNode.Span,
                                 Constants.ModelCyclicDefError.ToString(top.Item1.SmbCnst.PrintableName),
                                 Constants.ModelCyclicDefError.Code);
                             flags.Add(flag);
@@ -1517,22 +1516,22 @@
             /// If the alias is never bound in a model fact, then it is some node
             /// where the alias occurs in the model.
             /// </summary>
-            public Tuple<ProgramName, Node> DefNode
+            public Node DefNode
             {
                 get;
                 private set;
             }
 
-            public AliasData(UserSymbol alias, ProgramName prog, Node node)
+            public AliasData(UserSymbol alias, Node node)
             {
                 SmbCnst = alias;
                 IsOriented = LiftedBool.Unknown;
-                DefNode = new Tuple<ProgramName, Node>(prog, node);
+                DefNode = node;
             }
 
-            public bool TryDefine(ProgramName progName, ModelFact node, Term def, Set<UserSymbol> defAliases, Map<UserSymbol, AliasData> aliasMap, List<Flag> flags)
+            public bool TryDefine(ModelFact node, Term def, Set<UserSymbol> defAliases, Map<UserSymbol, AliasData> aliasMap, List<Flag> flags)
             {
-                Contract.Assert(node != null && progName != null && def != null && defAliases != null);
+                Contract.Assert(node != null && def != null && defAliases != null);
                 bool result = true;
                 if (Definition != null)
                 {
@@ -1542,13 +1541,13 @@
                         Constants.DuplicateDefs.ToString(
                             string.Format("model alias {0}", node.Binding.Name),
                             DefNode.GetCodeLocationString(SmbCnst.Namespace.SymbolTable.Env.Parameters),
-                            node.GetCodeLocationString(SmbCnst.Namespace.SymbolTable.Env.Parameters, progName)),
+                            node.GetCodeLocationString(SmbCnst.Namespace.SymbolTable.Env.Parameters)),
                         Constants.DuplicateDefs.Code);
                     flags.Add(flag);
                     result = false;
                 }
 
-                DefNode = new Tuple<ProgramName, Node>(progName, node);
+                DefNode = node;
                 DefAliases = new Set<AliasData>(Compare);
                 Definition = def;
 

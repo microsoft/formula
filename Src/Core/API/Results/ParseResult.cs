@@ -30,8 +30,15 @@
             private set;
         }
 
+        public ProgramName Name
+        {
+            get;
+            private set;
+        }
+
         internal ParseResult(Program program)
         {
+            Name = program.Name;
             Program = new ASTConcr<Program>(program, false);
             Flags = new ImmutableCollection<Flag>(flags);
             Succeeded = true;
@@ -42,7 +49,8 @@
         /// </summary>
         internal ParseResult()
         {
-            Program = new ASTConcr<Program>(new Program(new ProgramName("dummy.4ml")), false);
+            Name = new API.ProgramName("dummy.4ml");
+            Program = new ASTConcr<Program>(new Program(Name), false);
             Flags = new ImmutableCollection<Flag>(flags);
             Succeeded = true;
         }

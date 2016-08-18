@@ -19,17 +19,11 @@
     internal class CompositeLocator : Locator
     {
         private Span span;
-        private ProgramName program;
         private Locator[] args;
 
         public override int Arity
         {
             get { return args.Length; }
-        }
-
-        public override ProgramName Program
-        {
-            get { return program; }
         }
 
         public override Span Span
@@ -46,11 +40,10 @@
             }
         }
 
-        public CompositeLocator(Span span, ProgramName program, Locator[] args)
+        public CompositeLocator(Span span, Locator[] args)
         {
-            Contract.Requires(program != null && args != null);
+            Contract.Requires(args != null);
             this.span = span;
-            this.program = program;
             this.args = args;
         }
     }

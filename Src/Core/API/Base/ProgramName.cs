@@ -9,8 +9,6 @@
 
     public sealed class ProgramName
     {
-        internal static readonly char[] UriSeparators = new char[] { '\\', '/' };
-
         private static readonly Uri envScheme = new Uri("env://", UriKind.Absolute);
 
         private static readonly Uri fileScheme = new Uri("file://", UriKind.Absolute);
@@ -53,8 +51,7 @@
         public ProgramName(string uriString, bool relativeToWorkingDir = true)
         {
             Contract.Requires(uriString != null);
-            uriString = uriString.Trim().ToLowerInvariant().Replace('\\', '/');
-            workingUri = new Uri(string.Format("{0}/", Environment.CurrentDirectory.ToLowerInvariant().Replace('\\', '/')), UriKind.Absolute);
+            workingUri = new Uri(Environment.CurrentDirectory + System.IO.Path.DirectorySeparatorChar, UriKind.Absolute);
             Uri = new Uri(relativeToWorkingDir ? workingUri : envScheme, uriString);
 
             if (!Uri.AbsoluteUri.StartsWith(fileScheme.AbsoluteUri) &&                
@@ -67,13 +64,13 @@
         public ProgramName(string uriString, ProgramName relativeToProgram)
         {
             Contract.Requires(uriString != null && relativeToProgram != null);
-            uriString = uriString.Trim().ToLowerInvariant().Replace('\\', '/');
-            workingUri = new Uri(string.Format("{0}/", Environment.CurrentDirectory.ToLowerInvariant().Replace('\\', '/')), UriKind.Absolute);
+            workingUri = new Uri(string.Format("{0}/", Environment.CurrentDirectory), UriKind.Absolute);
             Uri = new Uri(relativeToProgram.Uri, uriString);
 
             if (!Uri.AbsoluteUri.StartsWith(fileScheme.AbsoluteUri) &&
                 !Uri.AbsoluteUri.StartsWith(envScheme.AbsoluteUri))
             {
+                // Why ?
                 throw new Exception("Invalid program name scheme; must be file or env.");
             }
         }
@@ -88,7 +85,7 @@
 
         public override string ToString()
         {
-            return Uri.AbsoluteUri.ToLowerInvariant();
+            return Uri.IsFile ? Uri.LocalPath : Uri.AbsoluteUri;
         }
 
         public string ToString(EnvParams envParams)
@@ -96,7 +93,7 @@
             if (EnvParams.GetBoolParameter(envParams, EnvParamKind.Msgs_SuppressPaths))
             {
                 var segs = Uri.Segments;
-                return segs[segs.Length - 1].ToLowerInvariant();
+                return segs[segs.Length - 1];
             }
             else
             {
@@ -108,18 +105,19 @@
         {
             return obj == this ||
                    (obj is ProgramName && 
-                    string.CompareOrdinal(((ProgramName)obj).Uri.AbsoluteUri.ToLowerInvariant(), Uri.AbsoluteUri.ToLowerInvariant()) == 0);
+                   Uri.Compare(((ProgramName)obj).Uri, Uri, UriComponents.AbsoluteUri, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase) == 0);
         }
 
         public override int GetHashCode()
         {
-            return Uri.AbsoluteUri.ToLowerInvariant().GetHashCode();
+            return Uri.GetHashCode();
         }
 
         public static int Compare(ProgramName n1, ProgramName n2)
         {
             Contract.Requires(n1 != null && n2 != null);
-            return n1 == n2 ? 0 : string.CompareOrdinal(n1.ToString(), n2.ToString());
+            return n1 == n2 ? 0 :
+                   Uri.Compare(n1.Uri, n2.Uri, UriComponents.AbsoluteUri, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

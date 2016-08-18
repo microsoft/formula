@@ -22,7 +22,6 @@
     {
         private Node locatorNode;
         private Term locatorTerm;
-        private ProgramName locatorProgram;
 
         /// <summary>
         /// Spin lock for args
@@ -37,11 +36,6 @@
         public override int Arity
         {
             get { return locatorTerm.Symbol.Arity; }
-        }
-
-        public override ProgramName Program
-        {
-            get { return locatorProgram; }
         }
 
         public override Span Span
@@ -74,7 +68,7 @@
                         int i = 0;
                         foreach (var a in ftnode.Args)
                         {
-                            args[i] = new NodeTermLocator(a, Program, locatorTerm.Args[i]);
+                            args[i] = new NodeTermLocator(a, locatorTerm.Args[i]);
                             ++i;
                         }
                     }
@@ -82,7 +76,7 @@
                     {
                         for (int i = 0; i < locatorTerm.Args.Length; ++i)
                         {
-                            args[i] = new NodeTermLocator(locatorNode, Program, locatorTerm.Args[i]);
+                            args[i] = new NodeTermLocator(locatorNode, locatorTerm.Args[i]);
                         }
                     }
 
@@ -98,13 +92,12 @@
             }
         }
 
-        public NodeTermLocator(Node node, ProgramName program, Term t)
+        public NodeTermLocator(Node node, Term t)
         {
-            Contract.Requires(node != null && program != null && t != null);
+            Contract.Requires(node != null && t != null);
             Contract.Requires(t.Groundness == Groundness.Ground);
 
             locatorTerm = t;
-            locatorProgram = program;
             locatorNode = ChooseRepresentativeNode(node, t);
         }
 

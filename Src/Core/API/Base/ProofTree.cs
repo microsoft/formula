@@ -75,7 +75,7 @@
             this.factSets = factSets;
             Conclusion = conclusion;
             CoreRule = coreRule;
-            Rule = coreRule == null ? Factory.Instance.MkId("fact", new Span(0, 0, 0, 0)).Node : coreRule.Node;
+            Rule = coreRule == null ? Factory.Instance.MkId("fact", new Span(0, 0, 0, 0, new ProgramName("fact"))).Node : coreRule.Node;
             SetMaxLocationsPerProof(rules);
         }
 
@@ -116,7 +116,6 @@
                         it.MoveNext();
                         locs.AddLast(new NodeTermLocator(
                             it.Current.Value.Model.Node,
-                            it.Current.Value.SourceProgram == null ? Locator.UnknownProgram : it.Current.Value.SourceProgram.Name,
                             Conclusion));
                     }
                 }
@@ -132,7 +131,6 @@
                 var locs = new LinkedList<Locator>();
                 locs.AddLast(new NodeTermLocator(
                     CoreRule.Node,
-                    CoreRule.ProgramName == null ? Locator.UnknownProgram : CoreRule.ProgramName,
                     Conclusion));
                 return locs;
             }
@@ -146,7 +144,6 @@
                     var inputProof = premises.First().Value.Item2;
                     return MkSubRuleLocators(
                         CoreRule.Node,
-                        CoreRule.ProgramName == null ? Locator.UnknownProgram : CoreRule.ProgramName,
                         inputProof.Conclusion,
                         Conclusion,
                         inputProof.ComputeLocators());
@@ -204,7 +201,6 @@
 
                 return MkRuleLocators(
                     NodeTermLocator.ChooseRepresentativeNode(CoreRule.Node, Conclusion),
-                    CoreRule.ProgramName == null ? Locator.UnknownProgram : CoreRule.ProgramName,
                     CoreRule.Head,
                     head2Bindings,
                     bodyTerm2Locs);
@@ -222,7 +218,6 @@
         /// </summary>
         private LinkedList<Locator> MkSubRuleLocators(
             Node subRuleHead,
-            ProgramName subRuleProgram,
             Term input, 
             Term output, 
             LinkedList<Locator> inputLocations)
@@ -233,7 +228,7 @@
             var matchCount = new MutableTuple<int>();
             matchCount.Item1 = 0;
             input.Compute<Unit>(
-                (x, s) => MkSubRuleLocators_Unfold(x, output, placeStack, inputLocations, outputLocs, subRuleHead, subRuleProgram, matchCount),
+                (x, s) => MkSubRuleLocators_Unfold(x, output, placeStack, inputLocations, outputLocs, subRuleHead, matchCount),
                 (x, ch, s) => MkSubRuleLocators_Fold(x, output, placeStack, matchCount));
             Contract.Assert(placeStack.Count == 0 && matchCount.Item1 == 0 && outputLocs.Count > 0);
             return outputLocs;
@@ -246,7 +241,6 @@
             LinkedList<Locator> inputLocations,
             LinkedList<Locator> outputLocations,
             Node subRuleHead,
-            ProgramName subRuleProgram,
             MutableTuple<int> matchCount)
         {        
             ////  t may extend the match (possibly one or more times)
@@ -296,7 +290,7 @@
 
                 foreach (var alocs in Locator.MkPermutations(argLocs, maxLocationsPerProof))
                 {
-                    outputLocations.AddLast(new CompositeLocator(subRuleHead.Span, subRuleProgram, alocs));
+                    outputLocations.AddLast(new CompositeLocator(subRuleHead.Span, alocs));
                 }
 
                 yield break;
@@ -326,7 +320,6 @@
 
         private LinkedList<Locator> MkRuleLocators(
             Node node,
-            ProgramName nodeProgram,
             Term head,
             Map<Term, Set<Term>> head2Bindings,
             Map<Term, LinkedList<Locator>> bodyTerm2Locs)
@@ -345,7 +338,7 @@
             nodeStack.Push(node);
             return head.Compute<LinkedList<Locator>>(
                 (x, s) => MkRuleLocators_Unfold(x, nodeStack, head2Bindings, bodyTerm2Locs),
-                (x, ch, s) => MkRuleLocators_Fold(x, nodeStack, nodeProgram, ch, head2Bindings, bodyTerm2Locs));
+                (x, ch, s) => MkRuleLocators_Fold(x, nodeStack, ch, head2Bindings, bodyTerm2Locs));
         }
 
         private IEnumerable<Term> MkRuleLocators_Unfold(
@@ -395,7 +388,6 @@
         private LinkedList<Locator> MkRuleLocators_Fold(
             Term head,
             Stack<Node> nodeStack,
-            ProgramName nodeProgram,
             IEnumerable<LinkedList<Locator>> children,
             Map<Term, Set<Term>> head2Bindings,
             Map<Term, LinkedList<Locator>> bodyTerm2Locs)
@@ -415,13 +407,13 @@
             {
                 Contract.Assert(terms.Count > 0);
                 locs = new LinkedList<Locator>();
-                locs.AddLast(new NodeTermLocator(node, nodeProgram, terms.GetSomeElement()));
+                locs.AddLast(new NodeTermLocator(node, terms.GetSomeElement()));
                 return locs;
             }
             else if (head.Groundness == Groundness.Ground)
             {
                 locs = new LinkedList<Locator>();
-                locs.AddLast(new NodeTermLocator(node, nodeProgram, head));
+                locs.AddLast(new NodeTermLocator(node, head));
                 return locs;
             }
             else
@@ -429,7 +421,7 @@
                 locs = new LinkedList<Locator>();
                 foreach (var childLocs in Locator.MkPermutations(children, maxLocationsPerProof))
                 {
-                    locs.AddLast(new CompositeLocator(node.Span, nodeProgram, childLocs));
+                    locs.AddLast(new CompositeLocator(node.Span, childLocs));
                 }
 
                 Contract.Assert(locs.Count > 0);

@@ -18,6 +18,7 @@
         private int startCol;
         private int endLine;
         private int endCol;
+        private ProgramName program;
 
         public int StartLine
         {
@@ -39,16 +40,37 @@
             get { return endCol; }
         }
 
-        public Span(int startLine, int startCol, int endLine, int endCol)
+        /// <summary>
+        /// The program where the related span occurs.
+        /// </summary>
+        public ProgramName Program
         {
+            get { return program; }
+        }
+
+        public Span(int startLine, int startCol, int endLine, int endCol, ProgramName program)
+        {
+            if (program == null)
+            {
+                throw new ArgumentNullException("program");
+            }
             this.startLine = startLine;
             this.startCol = startCol;
             this.endLine = endLine;
             this.endCol = endCol;
+            this.program = program;
         }
 
         public static int Compare(Span s, Span t)
         {
+            if (s.program != t.program)
+            {
+                int rc = Uri.Compare(s.program.Uri, t.program.Uri, UriComponents.AbsoluteUri, UriFormat.SafeUnescaped, StringComparison.OrdinalIgnoreCase);
+                if (rc != 0)
+                {
+                    return rc;
+                }
+            }
             if (s.startLine != t.startLine)
             {
                 return s.startLine < t.startLine ? -1 : 1;

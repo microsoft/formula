@@ -222,7 +222,7 @@
         #region Helpers
         private Span ToSpan(LexLocation loc)
         {
-            return new Span(loc.StartLine, loc.StartColumn + 1, loc.EndLine, loc.EndColumn + 1);
+            return new Span(loc.StartLine, loc.StartColumn + 1, loc.EndLine, loc.EndColumn + 1, ((Scanner)this.Scanner).ParseResult.Name);
         }
 
         private void ResetState()
@@ -311,7 +311,7 @@
         private Cnst GetString()
         {
             return new Cnst(
-                new Span(stringStart.StartLine, stringStart.StartCol, stringEnd.EndLine, stringEnd.EndCol),
+                new Span(stringStart.StartLine, stringStart.StartCol, stringEnd.EndLine, stringEnd.EndCol, stringStart.Program),
                 stringBuffer.ToString());
 
         }

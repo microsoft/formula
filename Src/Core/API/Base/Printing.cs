@@ -662,7 +662,7 @@
                 {
                     try
                     {
-                        var rel = envParams.BaseUri.MakeRelativeUri(absolutePath).ToString().ToLowerInvariant();
+                        var rel = envParams.BaseUri.MakeRelativeUri(absolutePath).ToString();
                         if (!string.IsNullOrEmpty(rel))
                         {
                             wr.Write(" at {0}", ASTQueries.ASTSchema.Instance.Encode(rel));
@@ -675,7 +675,7 @@
                     }
                 }
 
-                wr.Write(" at {0}", ASTQueries.ASTSchema.Instance.Encode(absolutePath.ToString().ToLowerInvariant()));
+                wr.Write(" at {0}", ASTQueries.ASTSchema.Instance.Encode(absolutePath.ToString()));
                 yield break;
             }
 

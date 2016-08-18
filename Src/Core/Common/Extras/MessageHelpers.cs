@@ -59,7 +59,7 @@
             }
             else
             {
-                return string.Format("{0} ({1}, {2})", progName.ToString(envParams), span.StartLine, span.StartCol);
+                return string.Format("{0}({1}, {2})", progName.ToString(envParams), span.StartLine, span.StartCol);
             }
         }
 

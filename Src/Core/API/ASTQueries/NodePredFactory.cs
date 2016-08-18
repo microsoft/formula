@@ -138,7 +138,8 @@
             }
             else if (obj is ProgramName)
             {
-                return ((ProgramName)obj).ToString() == name.ToLowerInvariant();
+                //todo: switch the name parameter to Uri so we can use Uri.Compare.
+                return string.Compare(((ProgramName)obj).ToString(), name, StringComparison.OrdinalIgnoreCase) == 0;
             }
             else
             {

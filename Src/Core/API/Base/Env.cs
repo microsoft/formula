@@ -1246,26 +1246,13 @@
             }
 
             //// Rebuild the directory structure
-            string schemeStr;
             var newFileRoot = new ASTConcr<Folder>(new Folder("/"));
             var newEnvRoot = new ASTConcr<Folder>(new Folder("/"));
             foreach (var kv in programs)
             {
-                var path = kv.Key.Uri.AbsoluteUri;
-                if (path.StartsWith(ProgramName.EnvironmentScheme.AbsoluteUri))
-                {
-                    schemeStr = ProgramName.EnvironmentScheme.AbsoluteUri;
-                }
-                else if (path.StartsWith(ProgramName.FileScheme.AbsoluteUri))
-                {
-                    schemeStr = ProgramName.FileScheme.AbsoluteUri;
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
+                var path = kv.Key.Uri.GetComponents(UriComponents.Path, UriFormat.SafeUnescaped);
 
-                var segments = path.Substring(schemeStr.Length).Split(ProgramName.UriSeparators);
+                var segments = path.Split('/');
                 Contract.Assert(segments.Length > 0);
                 if (kv.Key.IsFileProgramName)
                 {
@@ -1387,22 +1374,8 @@
                 RegisterProgramDependencies(p.Program);
 
                 //// Add the program to the folder tree
-                var path = p.Program.Node.Name.Uri.AbsoluteUri;
-                string schemeStr;
-                if (path.StartsWith(ProgramName.EnvironmentScheme.AbsoluteUri))
-                {
-                    schemeStr = ProgramName.EnvironmentScheme.AbsoluteUri;
-                }
-                else if (path.StartsWith(ProgramName.FileScheme.AbsoluteUri))
-                {
-                    schemeStr = ProgramName.FileScheme.AbsoluteUri;
-                }
-                else
-                {
-                    throw new NotImplementedException();
-                }
-
-                var segments = path.Substring(schemeStr.Length).Split(ProgramName.UriSeparators);
+                var path = p.Program.Node.Name.Uri.GetComponents(UriComponents.Path, UriFormat.SafeUnescaped);
+                var segments = path.Split('/');
                 Contract.Assert(segments.Length > 0);
 
                 if (p.Program.Node.Name.IsFileProgramName)

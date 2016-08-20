@@ -1151,6 +1151,7 @@
         private void LockedUninstall(IEnumerable<ProgramName> progs, out InstallResult result)
         {
             result = new InstallResult();
+            result.Succeeded = true;
             if (progs == null)
             {
                 return;

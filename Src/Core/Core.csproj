@@ -353,9 +353,15 @@
     <!--Make sure that the lexer runs before the C# compiler-->
     <CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateCodeFromLex</CoreCompileDependsOn>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <GPLexCmd>"$(GPLexPath)\GPLex45.exe"</GPLexCmd>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
+    <GPLexCmd>mono $(GPLexPath)\GPLex45.exe</GPLexCmd>
+  </PropertyGroup>
   <Target Name="GenerateCodeFromLex" Condition="'$(BuildingProject)'!='false'" Inputs="@(MPLexCompile);$(LexFrameFile)" Outputs="@(MPLexCompile->'$(IntermediateOutputPath)%(FileName).g.cs')" DependsOnTargets="$(GenerateCodeFromLexDependsOn)">
     <!--Run the command line tool that generates the cs files.-->
-    <Exec Command="&quot;$(GPLexPath)\GPLex45.exe&quot; /babel /unicode /out:@(MPLexCompile->'$(IntermediateOutputPath)%(FileName).g.cs') @(MPLexCompile)" />
+    <Exec Command="$(GPLexCmd) /babel /unicode /out:@(MPLexCompile->'$(IntermediateOutputPath)%(FileName).g.cs') @(MPLexCompile)" />
     <!--Add the generated files to the list of the files to compile.-->
     <CreateItem Include="@(MPLexCompile->'$(IntermediateOutputPath)%(FileName).g.cs')">
       <Output TaskParameter="Include" ItemName="Compile" />
@@ -371,9 +377,15 @@
     <GenerateParserCodeFromGrammarDependsOn>$(GenerateParserCodeFromGrammarDependsOn)</GenerateParserCodeFromGrammarDependsOn>
     <CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateParserCodeFromGrammar</CoreCompileDependsOn>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(OS)' == 'Windows_NT'">
+    <GPPGCmd>"$(GPPGPath)\GPPG45.exe"</GPPGCmd>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(OS)' != 'Windows_NT'">
+    <GPPGCmd>mono $(GPPGPath)\GPPG45.exe</GPPGCmd>
+  </PropertyGroup>
   <Target Name="GenerateParserCodeFromGrammar" Condition="'$(BuildingProject)'!='false'" Inputs="@(MPPGCompile)" Outputs="@(MPPGCompile->'$(IntermediateOutputPath)%(FileName).g.cs')" DependsOnTargets="$(GenerateParserCodeFromGrammarDependsOn)">
     <!--Run the command line tool that generates the cs files.-->
-    <Exec Command="&quot;$(GPPGPath)\GPPG45.exe&quot; -babel -gplex -report -verbose -conflicts @(MPPGCompile) &gt; @(MPPGCompile->'$(IntermediateOutputPath)%(FileName).g.cs')" />
+    <Exec Command="$(GPPGCmd) -babel -gplex -report -verbose -conflicts @(MPPGCompile) &gt; @(MPPGCompile->'$(IntermediateOutputPath)%(FileName).g.cs')" />
     <!--Add the generated files to the list of the files to compile.-->
     <CreateItem Include="@(MPPGCompile->'$(IntermediateOutputPath)%(FileName).g.cs')">
       <Output TaskParameter="Include" ItemName="Compile" />

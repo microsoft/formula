@@ -55,10 +55,10 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
-    <None Include="LittleFuncLang.4ml">
+    <EmbeddedResource Include="LittleFuncLang.4ml">
       <Generator>FormulaCodeGenerator</Generator>
       <LastGenOutput>LittleFuncLang.4ml.g.cs</LastGenOutput>
-    </None>
+    </EmbeddedResource>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
@@ -68,11 +68,5 @@
   <Target Name="AfterBuild">
   </Target>
   -->
-  <UsingTask TaskName="FormulaCodeGeneratorTask.FormulaCodeGeneratorTask" AssemblyFile="..\..\..\..\Src\Extensions\FormulaCodeGeneratorTask\bin\x86\FormulaCodeGeneratorTask.dll" />
-  <Target Name="BeforeBuild" Condition="'$(BuildingInsideVisualStudio)' != 'true'">
-    <ItemGroup>
-      <FormulaGenFiles Include="@(None->'%(FullPath)')" Condition="%(None.Generator) == 'FormulaCodeGenerator'" />
-    </ItemGroup>
-    <FormulaCodeGeneratorTask GeneratorInputs="@(FormulaGenFiles->'%(FullPath),%(CustomToolNamespace),%(IsThreadSafe),%(IsObjectGraph),%(IsNewOnly)')" DefaultNamespace="$(RootNamespace)" />
-  </Target>    
+  <Import Project="..\..\..\..\Src\Extensions\FormulaCodeGeneratorTask\FormulaCodeGeneratorTask.Targets" />
 </Project>

@@ -24,6 +24,25 @@
             set;
         }
 
+        public string[] Outputs {
+            get
+            {
+                List<string> outputs = new List<string>();
+                var inputs = GeneratorInputs.Split(inputSplits, StringSplitOptions.None);
+                foreach (var input in inputs)
+                {
+                    var parameters = input.Split(paramSplits, StringSplitOptions.None);
+                    if (parameters.Length > 0)
+                    {
+                        string inputFile = parameters[0];
+                        var outputFile = inputFile + ".g.cs";
+                        outputs.Add(outputFile);
+                    }
+                }
+                return outputs.ToArray();
+            }
+        }
+        
         public override bool Execute()
         {
             var inputs = GeneratorInputs.Split(inputSplits, StringSplitOptions.None);

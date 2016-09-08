@@ -7,11 +7,12 @@
     <FormulaCodeGeneratorPath>$(MSBuildThisFileDirectory)\bin\$(FormulaCodeGeneratorBin)\FormulaCodeGeneratorTask.dll</FormulaCodeGeneratorPath>
   </PropertyGroup>  
   <UsingTask TaskName="FormulaCodeGeneratorTask.FormulaCodeGeneratorTask" AssemblyFile="$(FormulaCodeGeneratorPath)"/>
-  <Target Name="BeforeBuild">                                                            
+  <Target Name="BeforeBuild" Outputs="@(FormulaGenFiles->'%(FullPath).g.cs')">                                                            
     <ItemGroup>
       <FormulaGenFiles Include="@(EmbeddedResource->'%(FullPath)')" Condition="'%(EmbeddedResource.Generator)' == 'FormulaCodeGenerator'" />
     </ItemGroup>
     <Error Condition="!Exists($(FormulaCodeGeneratorPath))" Text="### Please build $(FormulaCodeGeneratorPath)"  />
-    <FormulaCodeGeneratorTask GeneratorInputs="@(FormulaGenFiles->'%(FullPath),%(CustomToolNamespace),%(IsThreadSafe),%(IsObjectGraph),%(IsNewOnly)')" DefaultNamespace="$(RootNamespace)" />
+    <FormulaCodeGeneratorTask GeneratorInputs="@(FormulaGenFiles->'%(FullPath),%(CustomToolNamespace),%(IsThreadSafe),%(IsObjectGraph),%(IsNewOnly)')"
+                              DefaultNamespace="$(RootNamespace)" /> 
   </Target>
 </Project>

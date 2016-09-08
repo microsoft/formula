@@ -14,7 +14,7 @@
                  parent: Subexpr + { NIL }, 
                  loc: { LEFT, RIGHT, NIL }, 
                  let: Subexpr + { NIL }). 
-                 
+                   
     Subexpr(e, p, l, t) :- 
             e is Expr, p = NIL, l = NIL, t = NIL;
             p is Subexpr, e = p.expr.arg1, l = LEFT,  t = p.let;

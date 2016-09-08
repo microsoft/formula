@@ -56,9 +56,11 @@
             IsObjectGraph = isObjectGraph.Trim().ToUpperInvariant() != "FALSE";
             IsNewOnly = isNewOnly.Trim().ToUpperInvariant() != "FALSE";
         }
-
+        
         public bool Generate(FormulaCodeGeneratorTask genTask)
         {
+            var outputFile = InputFile + ".g.cs";
+
             var env = new Env();
             try
             {
@@ -124,7 +126,6 @@
                     return true;
                 }
 
-                var outputFile = InputFile + ".g.cs";
                 try
                 {
                     var outInfo = new System.IO.FileInfo(outputFile);

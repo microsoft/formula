@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CommandLine", "CommandLine.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Core", "..\Core\Core.csproj", "{1B5724EC-FFF1-48D7-A700-AD46F0150AFC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FormulaCodeGeneratorTask", "..\Extensions\FormulaCodeGeneratorTask\FormulaCodeGeneratorTask.csproj", "{3B52B4F5-52F5-4E19-88CD-6A4A78EA0BF1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -31,6 +33,14 @@ Global
 		{1B5724EC-FFF1-48D7-A700-AD46F0150AFC}.Release|x64.Build.0 = Release|x64
 		{1B5724EC-FFF1-48D7-A700-AD46F0150AFC}.Release|x86.ActiveCfg = Release|x86
 		{1B5724EC-FFF1-48D7-A700-AD46F0150AFC}.Release|x86.Build.0 = Release|x86
+		{3B52B4F5-52F5-4E19-88CD-6A4A78EA0BF1}.Debug|x64.ActiveCfg = Debug|x64
+		{3B52B4F5-52F5-4E19-88CD-6A4A78EA0BF1}.Debug|x64.Build.0 = Debug|x64
+		{3B52B4F5-52F5-4E19-88CD-6A4A78EA0BF1}.Debug|x86.ActiveCfg = Debug|x86
+		{3B52B4F5-52F5-4E19-88CD-6A4A78EA0BF1}.Debug|x86.Build.0 = Debug|x86
+		{3B52B4F5-52F5-4E19-88CD-6A4A78EA0BF1}.Release|x64.ActiveCfg = Release|x64
+		{3B52B4F5-52F5-4E19-88CD-6A4A78EA0BF1}.Release|x64.Build.0 = Release|x64
+		{3B52B4F5-52F5-4E19-88CD-6A4A78EA0BF1}.Release|x86.ActiveCfg = Release|x86
+		{3B52B4F5-52F5-4E19-88CD-6A4A78EA0BF1}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

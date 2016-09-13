@@ -11,7 +11,7 @@
     <ItemGroup>
       <FormulaGenFiles Include="@(EmbeddedResource->'%(FullPath)')" Condition="'%(EmbeddedResource.Generator)' == 'FormulaCodeGenerator'" />
     </ItemGroup>
-    <Error Condition="!Exists($(FormulaCodeGeneratorPath))" Text="### Please build $(FormulaCodeGeneratorPath)"  />
+    <Error Condition="!Exists('$(FormulaCodeGeneratorPath)')" Text="### Please build $(FormulaCodeGeneratorPath)"  />
     <FormulaCodeGeneratorTask GeneratorInputs="@(FormulaGenFiles->'%(FullPath),%(CustomToolNamespace),%(IsThreadSafe),%(IsObjectGraph),%(IsNewOnly)')"
                               DefaultNamespace="$(RootNamespace)" /> 
   </Target>

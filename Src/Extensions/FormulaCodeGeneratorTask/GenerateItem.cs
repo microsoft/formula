@@ -72,7 +72,7 @@
                     if (inFile.Exists && inFile.LastWriteTime < outInfo.LastWriteTime)
                     {
                         PrintInfo(genTask, InputFile, string.Format("Generated file is up to date"));
-                        return false;
+                        return true;
                     }
                     else
                     {

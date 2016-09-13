@@ -10,6 +10,7 @@
     using Microsoft.Formula.API.ASTQueries;
     using Microsoft.Formula.API.Nodes;
     using Microsoft.Formula.API.Generators;
+    using Microsoft.Build.Framework;
 
     internal class GenerateItem
     {
@@ -64,6 +65,21 @@
             var env = new Env();
             try
             {
+                var outInfo = new System.IO.FileInfo(outputFile);
+                if (outInfo.Exists)
+                {
+                    var inFile = new System.IO.FileInfo(InputFile);
+                    if (inFile.Exists && inFile.LastWriteTime < outInfo.LastWriteTime)
+                    {
+                        PrintInfo(genTask, InputFile, string.Format("Generated file is up to date"));
+                        return false;
+                    }
+                    else
+                    {
+                        PrintInfo(genTask, InputFile, string.Format("Generated file is not up to date"));
+                    }
+                }
+
                 InstallResult ires;
                 var progName = new ProgramName(InputFile);
                 env.Install(InputFile, out ires);
@@ -128,7 +144,6 @@
 
                 try
                 {
-                    var outInfo = new System.IO.FileInfo(outputFile);
                     if (outInfo.Exists)
                     {
                         outInfo.Delete();
@@ -176,6 +191,11 @@
         private void PrintWarning(FormulaCodeGeneratorTask task, string file, string message)
         {
             task.Log.LogWarning("{0}: {1}", file, message);
+        }
+
+        private void PrintInfo(FormulaCodeGeneratorTask task, string file, string message)
+        {
+            task.Log.LogMessage(MessageImportance.Normal, "{0}: {1}", file, message);
         }
 
         private void PrintFlags(FormulaCodeGeneratorTask task, string file,  IEnumerable<Flag> flags)

@@ -1728,7 +1728,7 @@
                         ++i;
                     }
 
-                    def += string.Format(" }.\n");
+                    def += string.Format(" }}.\n");
                     defCache.Add(def);
                     def = string.Empty;
                     unnTypes.Add(string.Format("{0}_UNN_CNSTS", name));
@@ -1760,19 +1760,24 @@
                 outName = null;
                 if (unnCnsts.Count > 0)
                 {
+                    /*
+                    //// Mangling unclear
                     def += string.Format(
                         "{0}{1}{2}::= {{ ",
                         MkTab(1),
                         name,
                         unnTypes.Count == 0 ? name : string.Format("{0}_UNN_CNSTS", name));
+                    */
+
                     i = 0;
+                    def += string.Format("{0}{1}::= {{ ", MkTab(1), name);
                     foreach (var c in unnCnsts)
                     {
                         def += string.Format("{0}{1}", c, i < unnCnsts.Count - 1 ? ", " : "");
                         ++i;
                     }
 
-                    def += string.Format(" }.\n");
+                    def += string.Format(" }}.\n");
                     defCache.Add(def);
                     def = string.Empty;
 

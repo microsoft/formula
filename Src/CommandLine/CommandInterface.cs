@@ -1,4 +1,5 @@
-﻿namespace Microsoft.Formula.CommandLine
+﻿using System.Diagnostics.Contracts;
+namespace Microsoft.Formula.CommandLine
 {
     using System;
     using System.Collections.Generic;
@@ -56,6 +57,8 @@
         private const string DelVarMsg = "Deleted variable '{0}'";
         private const string ConfigHelpMsg = "Provides help about module configurations and settings";
         private const string WatchMsg = "Use: watch [off | on | prompt] to control watch behavior";
+        private const string CoreMsg = "Prints reduced rule set for domains / transforms. Use: core module_name";
+        private const string DowngradeMsg = "Attempts to downgrade a (partial) model to Formula V1. Use: downgrade module_name";
 
         private SpinLock cmdLock = new SpinLock();
         private bool isCmdLocked = false;
@@ -303,6 +306,14 @@
             var configHelpCmd = new Command("confhelp", "ch", DoConfigHelp, ConfigHelpMsg);
             cmdMap.Add(configHelpCmd.Name, configHelpCmd);
             cmdMap.Add(configHelpCmd.ShortName, configHelpCmd);
+
+            var CoreCmd = new Command("core", "cr", DoCore, CoreMsg);
+            cmdMap.Add(CoreCmd.Name, CoreCmd);
+            cmdMap.Add(CoreCmd.ShortName, CoreCmd);
+
+            var DowngradeCmd = new Command("downgrade", "dg", DoDowngrade, DowngradeMsg);
+            cmdMap.Add(DowngradeCmd.Name, DowngradeCmd);
+            cmdMap.Add(DowngradeCmd.ShortName, DowngradeCmd);
 
             taskManager = new TaskManager();
         }
@@ -1659,6 +1670,58 @@
             }
 
             WriteFlags(progName, renderTask.Result.Flags);
+        }
+
+        private void DoCore(string s)
+        {
+            AST<Node> module;
+            if (!TryResolveModuleByName(s, out module))
+            {
+                return;
+            }
+
+            var progName = ((Program)module.GetPathParent()).Name;
+            string modName;
+            module.Node.TryGetStringAttribute(AttributeKind.Name, out modName);
+
+            Common.Rules.RuleTable rules;
+            List<Flag> flags;
+            if (!env.GetRuleTable(progName, modName, out rules, out flags))
+            {
+                sink.WriteMessageLine(BusyMsg, SeverityKind.Warning);
+                return;
+            }
+
+            if (rules != null)
+            {
+                var bldr = new System.Text.StringBuilder();
+                rules.DumpRules(bldr);
+                Console.WriteLine(bldr);
+            }
+
+            WriteFlags(progName, flags);
+        }
+
+        private void DoDowngrade(string s)
+        {
+            AST<Node> module;
+            if (!TryResolveModuleByName(s, out module))
+            {
+                return;
+            }
+
+            var progName = ((Program)module.GetPathParent()).Name;
+            string modName;
+            module.Node.TryGetStringAttribute(AttributeKind.Name, out modName);
+
+            List<Flag> flags;
+            if (!env.Downgrade(progName, modName, Console.Out, out flags))
+            {
+                sink.WriteMessageLine(BusyMsg, SeverityKind.Warning);
+                return;
+            }
+
+            WriteFlags(progName, flags);
         }
 
         private void DoSave(string s)

@@ -1,3 +1,4 @@
+@echo off
 set Configuration=%1
 set Platform=%2
 
@@ -13,5 +14,5 @@ copy  /Y "%BINDIR%" "%VSDIR%"
 
 goto :eof
 :nobits
-echo That's odd there' snothing in your output dir: %BINDIR%
+echo That's odd there's nothing in your output dir: %BINDIR%
 goto :eof

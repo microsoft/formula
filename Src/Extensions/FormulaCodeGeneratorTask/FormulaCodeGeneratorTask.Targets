@@ -4,8 +4,8 @@
     <Is64BitBuild Condition="$(MSBuildBinPath.EndsWith('amd64'))">true</Is64BitBuild>
     <FormulaCodeGeneratorBin>x86</FormulaCodeGeneratorBin>
     <FormulaCodeGeneratorBin Condition="$(Is64BitBuild)">x64</FormulaCodeGeneratorBin>
-    <FormulaCodeGeneratorPath>$(MSBuildThisFileDirectory)\$(Configuration)\$(FormulaCodeGeneratorBin)\FormulaCodeGeneratorTask.dll</FormulaCodeGeneratorPath>
-    <FormulaCodeGeneratorPath Condition="'$(OS)'=='Windows_NT'">$(MSBuildThisFileDirectory)\$(Configuration)\$(FormulaCodeGeneratorBin)\vs\FormulaCodeGeneratorTask.dll</FormulaCodeGeneratorPath>
+    <FormulaCodeGeneratorPath>$(MSBuildThisFileDirectory)$(Configuration)\$(FormulaCodeGeneratorBin)\FormulaCodeGeneratorTask.dll</FormulaCodeGeneratorPath>
+    <FormulaCodeGeneratorPath Condition="'$(OS)'=='Windows_NT'">$(MSBuildThisFileDirectory)$(Configuration)\$(FormulaCodeGeneratorBin)\vs\FormulaCodeGeneratorTask.dll</FormulaCodeGeneratorPath>
   </PropertyGroup>  
   <UsingTask TaskName="FormulaCodeGeneratorTask.FormulaCodeGeneratorTask" AssemblyFile="$(FormulaCodeGeneratorPath)"/>
   <Target Name="BeforeBuild" Outputs="@(FormulaGenFiles->'%(FullPath).g.cs')">                                                            

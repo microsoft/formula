@@ -179,6 +179,15 @@
             return clone;
         }
 
+        public void DumpRules(StringBuilder builder)
+        {
+            Contract.Requires(builder != null);
+            foreach (var r in Rules)
+            {
+                r.Debug_DumpRule(builder);
+            }
+        }
+
         internal Set<CoreRule> Optimize()
         {
             Contract.Assert(stratificationGraph != null);

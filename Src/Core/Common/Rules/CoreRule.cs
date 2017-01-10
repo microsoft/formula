@@ -897,6 +897,67 @@
             return r1.RuleId - r2.RuleId;
         }
 
+        public virtual void Debug_DumpRule(StringBuilder builder)
+        {
+            Contract.Requires(builder != null);
+            builder.AppendFormat("{2}ID: {0}, Stratum: {1}\n",
+                RuleId,
+                stratum < 0 ? "?" : stratum.ToString(),
+                IsProductRule ? "(PROD) " : string.Empty);
+
+            if (Head.Symbol.PrintableName.StartsWith(SymbolTable.ManglePrefix))
+            {
+                builder.AppendFormat(Head.Debug_GetSmallTermString());
+            }
+            else
+            {
+                builder.AppendFormat(
+                    "{0}: {1}\n",
+                    Head.Debug_GetSmallTermString(),
+                    HeadType.Debug_GetSmallTermString());
+            }
+
+            builder.AppendFormat("  :-");
+            if (!Find1.IsNull)
+            {
+                if (Find1.Binding.Symbol.IsReservedOperation)
+                {
+                    builder.AppendFormat("    [{0}]\n", Find1.Pattern.Debug_GetSmallTermString());
+                }
+                else
+                {
+                    builder.AppendFormat(
+                        "    {0}[{1}: {2}]\n",
+                        Find1.Binding.Debug_GetSmallTermString(),
+                        Find1.Pattern.Debug_GetSmallTermString(),
+                        Find1.Type.Debug_GetSmallTermString());
+                }
+            }
+
+            if (!Find2.IsNull)
+            {
+                if (Find2.Binding.Symbol.IsReservedOperation)
+                {
+                    builder.AppendFormat("    [{0}]\n", Find2.Pattern.Debug_GetSmallTermString());
+                }
+                else
+                {
+                    builder.AppendFormat(
+                        "    {0}[{1}: {2}]\n",
+                        Find2.Binding.Debug_GetSmallTermString(),
+                        Find2.Pattern.Debug_GetSmallTermString(),
+                        Find2.Type.Debug_GetSmallTermString());
+                }
+            }
+
+            foreach (var c in initConstrs)
+            {
+                builder.AppendFormat("    {0}\n", c.Debug_GetSmallTermString());
+            }
+
+            builder.AppendFormat("    .\n");
+        }
+
         public virtual void Debug_PrintRule()
         {
             Console.WriteLine("{2}ID: {0}, Stratum: {1}", 

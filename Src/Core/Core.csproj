@@ -321,7 +321,8 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Solver\CardRange.cs" />
     <Compile Include="Solver\ISolver.cs" />
-    <Compile Condition="'$(SOLVER)'=='SOLVER'" Include="Solver\OldPrinter.cs" />
+    <!-- <Compile Condition="'$(SOLVER)'=='SOLVER'" Include="Solver\OldPrinter.cs" /> -->
+    <Compile Include="Solver\OldPrinter.cs" />
     <Compile Include="Solver\SearchState.cs" />
     <Compile Condition="'$(SOLVER)'=='SOLVER'" Include="Solver\Solver.cs" />
     <Compile Condition="'$(SOLVER)'=='SOLVER'" Include="Solver\Strategies\OATStrategy.cs" />

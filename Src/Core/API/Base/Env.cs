@@ -319,6 +319,65 @@
             return true;
         }
 
+        public bool GetRuleTable(
+                        ProgramName progName,
+                        string moduleName,
+                        out Common.Rules.RuleTable table,
+                        out List<Flag> flags)
+        {
+            Contract.Requires(progName != null && moduleName != null);
+            table = null;
+            flags = new List<Flag>();
+            if (!GetEnvLock())
+            {
+                return false;
+            }
+
+            var rres = new RenderResult();
+            Program program;
+            if (!programs.TryGetValue(progName, out program))
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.UndefinedSymbol.ToString("program", progName.ToString(Parameters)),
+                    Constants.UndefinedSymbol.Code);
+                flags.Add(flag);
+                goto Unlock;
+            }
+
+            var progConf = program.Config.CompilerData as Configuration;
+            Contract.Assert(progConf != null);
+            Location modLoc;
+            if (!progConf.TryResolveLocalModule(moduleName, out modLoc))
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.UndefinedSymbol.ToString("module", moduleName),
+                    Constants.UndefinedSymbol.Code);
+                flags.Add(flag);
+                goto Unlock;
+            }
+
+            var modData = (ModuleData)modLoc.AST.Node.CompilerData;
+            table = modData.FinalOutput as Common.Rules.RuleTable;
+            if (table == null)
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.UndefinedSymbol.ToString("no such module with a rule table", moduleName),
+                    Constants.UndefinedSymbol.Code);
+                flags.Add(flag);
+                goto Unlock;
+            }
+
+            Unlock:
+            ReleaseEnvLock();
+            return true;
+        }
+
         public bool Render(
                         ProgramName progName,
                         string moduleName,
@@ -369,6 +428,74 @@
                 });
         
         Unlock:
+            ReleaseEnvLock();
+            return true;
+        }
+
+        /// <summary>
+        /// Attempts to downgrade a (partial) model to a Formula 1.0 specification.
+        /// </summary>
+        public bool Downgrade(
+                        ProgramName progName,
+                        string moduleName,
+                        System.IO.TextWriter writer,
+                        out List<Flag> flags)
+        {
+            Contract.Requires(progName != null && moduleName != null && writer != null);
+            flags = new List<Flag>();
+            if (!GetEnvLock())
+            {
+                return false;
+            }
+
+            Program program;
+            if (!programs.TryGetValue(progName, out program))
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.UndefinedSymbol.ToString("program", progName.ToString(Parameters)),
+                    Constants.UndefinedSymbol.Code);
+                flags.Add(flag);
+                goto Unlock;
+            }
+
+            var progConf = program.Config.CompilerData as Configuration;
+            Contract.Assert(progConf != null);
+            Location modLoc;
+            if (!progConf.TryResolveLocalModule(moduleName, out modLoc))
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.UndefinedSymbol.ToString("module", moduleName),
+                    Constants.UndefinedSymbol.Code);
+                flags.Add(flag);
+                goto Unlock;
+            }
+
+            var modData = (ModuleData)modLoc.AST.Node.CompilerData;
+            var factset = modData.FinalOutput as FactSet;
+            if (factset == null)
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.UndefinedSymbol.ToString("no such downgradable module", moduleName),
+                    Constants.UndefinedSymbol.Code);
+                flags.Add(flag);
+                goto Unlock;
+            }
+
+            string oldModelName;
+            Solver.OldPrinter.Print(
+                factset,
+                new Map<Common.Terms.UserSymbol, int>(Common.Terms.UserSymbol.Compare),
+                writer,
+                flags,
+                out oldModelName);
+
+            Unlock:
             ReleaseEnvLock();
             return true;
         }

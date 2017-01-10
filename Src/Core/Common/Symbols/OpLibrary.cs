@@ -251,6 +251,14 @@
             return ValidateArity(ft, "strJoin", BinNoCompr, flags);
         }
 
+        internal static bool ValidateUse_StrReplace(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.StrReplace);
+            return ValidateArity(ft, "strReplace", TerNoCompr, flags);
+        }
+
         internal static bool ValidateUse_StrLength(Node n, List<Flag> flags)
         {
             Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
@@ -780,6 +788,31 @@
             else
             {
                 return facts.TermIndex.MkCnst(string.Concat(str1, str2), out wasAdded);
+            }
+        }
+
+        internal static Term Evaluator_StrReplace(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 3);
+            string str1, str2, str3;
+            bool wasAdded;
+            if (!ToStrings(values[0].Binding, out str1) ||
+                !ToStrings(values[1].Binding, out str2) ||
+                !ToStrings(values[2].Binding, out str3))
+            {
+                return null;
+            }
+            else if (string.IsNullOrEmpty(str1))
+            {
+                return facts.TermIndex.MkCnst(str1, out wasAdded);
+            }
+            else if (string.IsNullOrEmpty(str2))
+            {
+                return facts.TermIndex.MkCnst(str1, out wasAdded);
+            }
+            else
+            {
+                return facts.TermIndex.MkCnst(str1.Replace(str2, str3), out wasAdded);
             }
         }
 
@@ -2026,6 +2059,16 @@
         public static Func<TermIndex, Term[], Term[]> TypeApprox_StrJoin_Down
         {
             get { return StrJoinDownwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_StrReplace_Up
+        {
+            get { return StrReplaceUpwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_StrReplace_Down
+        {
+            get { return StrReplaceDownwardApprox.Instance.Approximate; }
         }
 
         public static Func<TermIndex, Term[], Term[]> TypeApprox_StrLength_Up
@@ -5937,6 +5980,134 @@
                     return index.MkCnst(string.Concat(
                                     (string)((BaseCnstSymb)c1.Symbol).Raw, 
                                     (string)((BaseCnstSymb)c2.Symbol).Raw), 
+                                    out wasAdded);
+                }
+                else
+                {
+                    return MkBaseSort(index, BaseSortKind.String);
+                }
+            }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                return ExpandApprox(index, args, PointApprox);
+            }
+        }
+
+        private class StrReplaceDownwardApprox : GaloisApproxTable
+        {
+            private static readonly StrReplaceDownwardApprox theInstance = new StrReplaceDownwardApprox();
+            public static StrReplaceDownwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private StrReplaceDownwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 1);
+                if (args[0] == index.EmptyStringValue)
+                {
+                    return new Term[] { index.EmptyStringValue, index.EmptyStringValue, index.EmptyStringValue };
+                }
+                else
+                {
+                    return new Term[] { MkBaseSort(index, BaseSortKind.String),
+                                        MkBaseSort(index, BaseSortKind.String),
+                                        MkBaseSort(index, BaseSortKind.String)  };
+                }
+            }
+        }
+        private abstract class TerStringUpApprox : GaloisApproxTable
+        {
+            protected TerStringUpApprox(Func<TermIndex, Term[], Term[]> expandApprox)
+                : base(expandApprox)
+            {
+            }
+
+            protected static Term[] ExpandApprox(
+                TermIndex index,
+                Term[] args,
+                Func<TermIndex, Term, Term, Term, Term> pointApprox)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 2);
+                Set<Term> cmps1, cmps2, cmps3;
+                if (!GetStringElements(args[0], index, out cmps1))
+                {
+                    return null;
+                }
+
+                if (!GetStringElements(args[1], index, out cmps2))
+                {
+                    return null;
+                }
+                if (!GetStringElements(args[2], index, out cmps3))
+                {
+                    return null;
+                }
+
+                //// Union the approximations
+                bool wasAdded;
+                Term approx = null;
+                foreach (var e1 in cmps1)
+                {
+                    foreach (var e2 in cmps2)
+                    {
+                        foreach (var e3 in cmps3)
+                        {
+                            if (approx == null)
+                            {
+                                approx = pointApprox(index, e1, e2, e3);
+                            }
+                            else
+                            {
+                                approx = index.MkApply(
+                                    index.SymbolTable.GetOpSymbol(ReservedOpKind.TypeUnn),
+                                    new Term[] { pointApprox(index, e1, e2, e3), approx },
+                                    out wasAdded);
+                            }
+                        }
+                    }
+                }
+
+                return new Term[] { approx };
+            }
+        }
+
+        private class StrReplaceUpwardApprox : TerStringUpApprox
+        {
+            private static readonly StrReplaceUpwardApprox theInstance = new StrReplaceUpwardApprox();
+            public static StrReplaceUpwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private StrReplaceUpwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term PointApprox(TermIndex index, Term c1, Term c2, Term c3)
+            {
+                if (c1 == index.EmptyStringValue)
+                {
+                    return c1;
+                }
+                else if (c2 == index.EmptyStringValue)
+                {
+                    return c1;
+                }
+                else if (c1.Symbol.Kind == SymbolKind.BaseCnstSymb &&
+                         c2.Symbol.Kind == SymbolKind.BaseCnstSymb &&
+                         c3.Symbol.Kind == SymbolKind.BaseCnstSymb)
+                {
+                    bool wasAdded;
+                    return index.MkCnst(
+                                    ((string)((BaseCnstSymb)c1.Symbol).Raw).Replace(
+                                    (string)((BaseCnstSymb)c2.Symbol).Raw,
+                                    (string)((BaseCnstSymb)c3.Symbol).Raw),
                                     out wasAdded);
                 }
                 else

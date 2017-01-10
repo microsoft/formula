@@ -2808,6 +2808,14 @@
                 OpLibrary.Evaluator_StrJoin));
 
             AddBaseOp(new BaseOpSymb(
+                OpKind.StrReplace,
+                3,
+                OpLibrary.ValidateUse_StrReplace,
+                OpLibrary.TypeApprox_StrReplace_Up,
+                OpLibrary.TypeApprox_StrReplace_Down,
+                OpLibrary.Evaluator_StrReplace));
+
+            AddBaseOp(new BaseOpSymb(
                 OpKind.StrLength,
                 1,
                 OpLibrary.ValidateUse_StrLength,

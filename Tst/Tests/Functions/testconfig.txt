@@ -1,0 +1,12 @@
+run: ..\..\..\Bld\Drops\Formula_Debug_x86\Formula.exe
+arg: -v: off -l: "tests.4ml" 
+arg: -wait: on
+arg: -query: "ArithmeticTest TestGreatestCommonDivisor(_)" 
+arg: -query: "ArithmeticTest TestLeastCommonMultiple(_)" 
+arg: -query: "ArithmeticTest TestMaximum(_)" 
+arg: -query: "ArithmeticTest TestMinimum(_)" -truth: "3 _"
+arg: -query: "StringTest TestJoin(_)" 
+arg: -query: "StringTest TestReplace(_)" -truth: "5 _"
+arg: -x
+acc: .\
+dsc: Rules testing various builtin functions

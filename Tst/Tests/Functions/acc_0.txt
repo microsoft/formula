@@ -1,0 +1,64 @@
+=================================
+         Console output          
+=================================
+OUT: 
+OUT: []> v off
+OUT: verbose off
+OUT: 
+OUT: []> l tests.4ml
+OUT: (Compiled) tests.4ml
+OUT: 
+OUT: []> wait on
+OUT: wait on
+OUT: 
+OUT: []> query ArithmeticTest TestGreatestCommonDivisor(_)
+OUT: Started query task with Id 0.
+OUT: 
+OUT: []> query ArithmeticTest TestLeastCommonMultiple(_)
+OUT: Started query task with Id 1.
+OUT: 
+OUT: []> query ArithmeticTest TestMaximum(_)
+OUT: Started query task with Id 2.
+OUT: 
+OUT: []> query ArithmeticTest TestMinimum(_)
+OUT: Started query task with Id 3.
+OUT: 
+OUT: []> truth 3 _
+OUT: Listing all derived values...
+OUT:    ArithmeticFunctions.conforms
+OUT:    ArithmeticTest.ensures
+OUT:    ArithmeticTest.requires
+OUT:    _Query_0000000000000003.ensures
+OUT:    _Query_0000000000000003.requires
+OUT:    GreatestCommonDivisor(12, 18, 6)
+OUT:    LeastCommonMultiple(4, 10, 20)
+OUT:    Maximum(23, 55, 55)
+OUT:    Minimum(23, 49, 23)
+OUT:    TestGreatestCommonDivisor(GreatestCommonDivisor(12, 18, 6))
+OUT:    TestLeastCommonMultiple(LeastCommonMultiple(4, 10, 20))
+OUT:    TestMaximum(Maximum(23, 55, 55))
+OUT:    TestMinimum(Minimum(23, 49, 23))
+OUT: List complete
+OUT: 
+OUT: []> query StringTest TestJoin(_)
+OUT: Started query task with Id 4.
+OUT: 
+OUT: []> query StringTest TestReplace(_)
+OUT: Started query task with Id 5.
+OUT: 
+OUT: []> truth 5 _
+OUT: Listing all derived values...
+OUT:    StringFunctions.conforms
+OUT:    StringTest.ensures
+OUT:    StringTest.requires
+OUT:    _Query_0000000000000005.ensures
+OUT:    _Query_0000000000000005.requires
+OUT:    Join("Foo", "Bar", "FooBar")
+OUT:    Replace("this is a test", " ", "_", "this_is_a_test")
+OUT:    TestJoin(Join("Foo", "Bar", "FooBar"))
+OUT:    TestReplace(Replace("this is a test", " ", "_", "this_is_a_test"))
+OUT: List complete
+OUT: 
+OUT: []> x
+OUT: 
+EXIT: 0

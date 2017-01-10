@@ -22,7 +22,9 @@
     /// the user choice could not be retrieved.
     /// </summary>
     public interface IChooser
-    { 
+    {
+        bool Interactive { get; set; }
+
         bool GetChoice(out DigitChoiceKind choice);
     }
 }

@@ -105,6 +105,7 @@
         StrFind,
         StrGetAt,
         StrJoin,
+        StrReplace,
         StrLength,
         StrLower,
         StrReverse,

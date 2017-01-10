@@ -1194,6 +1194,7 @@
             Register(OpKind.StrFind, "strFind", OpStyleKind.Apply);
             Register(OpKind.StrGetAt, "strGetAt", OpStyleKind.Apply);
             Register(OpKind.StrJoin, "strJoin", OpStyleKind.Apply);
+            Register(OpKind.StrReplace, "strReplace", OpStyleKind.Apply);
             Register(OpKind.StrLength, "strLength", OpStyleKind.Apply);
             Register(OpKind.StrLower, "strLower", OpStyleKind.Apply);
             Register(OpKind.StrReverse, "strReverse", OpStyleKind.Apply);

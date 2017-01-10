@@ -51,8 +51,21 @@
 
         private class ConsoleChooser : IChooser
         {
+            public ConsoleChooser()
+            {
+                Interactive = true;
+            }
+
+            public bool Interactive { get; set; }
+
             public bool GetChoice(out DigitChoiceKind choice)
             {
+                if (!Interactive)
+                {
+                    choice = DigitChoiceKind.Zero;
+                    return true;
+                }
+
                 var key = Console.ReadKey(true);
                 switch (key.KeyChar)
                 {

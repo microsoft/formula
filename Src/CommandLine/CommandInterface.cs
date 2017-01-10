@@ -55,6 +55,7 @@
         private const string ExtractMsg = "Extract and install a result. Use: extract (app_id | solv_id n) output_name [render_class render_dll]";
         private const string DelVarMsg = "Deleted variable '{0}'";
         private const string ConfigHelpMsg = "Provides help about module configurations and settings";
+        private const string InteractiveHelpMsg = "use: interactive [on | off], will stop interactive prompting (useful for automated tests)";
         private const string WatchMsg = "Use: watch [off | on | prompt] to control watch behavior";
 
         private SpinLock cmdLock = new SpinLock();
@@ -303,6 +304,11 @@
             var configHelpCmd = new Command("confhelp", "ch", DoConfigHelp, ConfigHelpMsg);
             cmdMap.Add(configHelpCmd.Name, configHelpCmd);
             cmdMap.Add(configHelpCmd.ShortName, configHelpCmd);
+
+
+            var interactiveCmd = new Command("interactive", "int", DoInteractiveHelp, InteractiveHelpMsg);
+            cmdMap.Add(interactiveCmd.Name, interactiveCmd);
+            cmdMap.Add(interactiveCmd.ShortName, interactiveCmd);
 
             taskManager = new TaskManager();
         }
@@ -1916,6 +1922,25 @@
                         f.Item2.Span.StartCol,
                         f.Item2.Message), f.Item2.Severity);
                 }
+            }
+        }
+
+        private void DoInteractiveHelp(string s)
+        {
+            s = s.Trim();
+            if (string.Compare(s, "on", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                chooser.Interactive = true;
+                sink.WriteMessageLine("interactive on");
+            }
+            else if (string.Compare(s, "off", StringComparison.OrdinalIgnoreCase) == 0)
+            {
+                chooser.Interactive = false;
+                sink.WriteMessageLine("interactive off");
+            }
+            else
+            {
+                sink.WriteMessageLine(InteractiveHelpMsg, SeverityKind.Warning);
             }
         }
 

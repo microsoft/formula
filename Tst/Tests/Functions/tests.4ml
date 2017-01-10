@@ -1,0 +1,52 @@
+domain ArithmeticFunctions
+{
+	GreatestCommonDivisor ::= new (a:Integer, b:Integer, c: Integer).
+	TestGreatestCommonDivisor ::= (GreatestCommonDivisor).
+	TestGreatestCommonDivisor(v) :- v is GreatestCommonDivisor,
+									  v.c = gcd(v.a, v.b).
+
+	LeastCommonMultiple ::= new (a:Integer, b:Integer, c: Integer).
+	TestLeastCommonMultiple ::= (LeastCommonMultiple).
+	TestLeastCommonMultiple(v) :- v is LeastCommonMultiple,
+									  v.c = lcm(v.a, v.b).
+									  
+	Maximum ::= new (a:Integer, b:Integer, c: Integer).
+	TestMaximum ::= (Maximum).
+	TestMaximum(v) :- v is Maximum,
+					  v.c = max(v.a, v.b).
+					  
+	Minimum ::= new (a:Integer, b:Integer, c: Integer).
+	TestMinimum ::= (Minimum).
+	TestMinimum(v) :- v is Minimum,
+					  v.c = min(v.a, v.b).
+}
+
+model ArithmeticTest of ArithmeticFunctions
+{
+    GreatestCommonDivisor(12, 18, 6).
+    LeastCommonMultiple(4,10,20).
+    Maximum(23,55,55).
+	Minimum(23,49,23).
+}
+
+domain StringFunctions
+{
+	Join ::= new (a:String, b:String, c:String).
+
+	TestJoin ::= (Join).
+	TestJoin(v) :- v is Join,
+				   v.c = strJoin(v.a, v.b).
+				   
+
+	Replace ::= new (a:String, b:String, c:String, d:String).
+
+	TestReplace ::= (Replace).
+	TestReplace(v) :- v is Replace,
+				      v.d = strReplace(v.a, v.b, v.c).
+}
+
+model StringTest of StringFunctions
+{
+    Join("Foo","Bar", "FooBar").
+    Replace("this is a test"," ", "_", "this_is_a_test").
+}

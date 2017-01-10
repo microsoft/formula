@@ -166,7 +166,7 @@
                 var aliases = new Map<Term, string>(Term.Compare);
                 foreach (var t in facts)
                 {
-                    BuildFactBody(facts, t, bldr, modelRef, aliasPrefix, aliases, removeRenaming);
+                    BuildFactBody(t, bldr, modelRef, aliasPrefix, aliases, removeRenaming);
                 }
 
                 int count;
@@ -414,7 +414,6 @@
         }
 
         private void BuildFactBody(
-            Set<Term> facts, 
             Term t, 
             Builder bldr, 
             BuilderRef modelRef,
@@ -511,7 +510,7 @@
                     return default(Unit);
                 });
 
-            if (aliasPrefix == null)
+            if (tAliasPrefix == null)
             {
                 bldr.PushAnonModelFact();
                 bldr.Load(modelRef);

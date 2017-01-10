@@ -135,6 +135,20 @@
             string aliasPrefix,
             CancellationToken cancel = default(CancellationToken))
         {
+            return GetOutputModel(outModelName, outProgName, (_ => aliasPrefix), cancel);
+        }
+
+        /// <summary>
+        /// Returns a task that builds an output model. Returns null if there is no output model named outModelName.
+        /// aliasPrefix provides a string for each Symbol kind; if aliasPrefix(s) is null, then no aliasing for terms of symbol s.
+        /// TODO: Support cancellation
+        /// </summary>
+        public Task<AST<Program>> GetOutputModel(
+            string outModelName,
+            ProgramName outProgName,
+            Func<Symbol, string> aliasPrefix,
+            CancellationToken cancel = default(CancellationToken))
+        {
             Contract.Requires(!string.IsNullOrWhiteSpace(outModelName));
             Contract.Requires(outProgName != null);
 
@@ -144,30 +158,29 @@
                 return null;
             }
 
-            aliasPrefix = aliasPrefix == null ? null : aliasPrefix.Trim();
             return Task.Factory.StartNew<AST<Program>>(() =>
+            {
+                var bldr = new Builder();
+                var modelRef = MkModelDecl(outModelName, bldr);
+                var removeRenaming = applyTarget.Source.AST.Node.NodeKind == NodeKind.Transform;
+                var aliases = new Map<Term, string>(Term.Compare);
+                foreach (var t in facts)
                 {
-                    var bldr = new Builder();
-                    var modelRef = MkModelDecl(outModelName, bldr);
-                    var removeRenaming = applyTarget.Source.AST.Node.NodeKind == NodeKind.Transform;
-                    var aliases = new Map<Term, string>(Term.Compare);
-                    foreach (var t in facts)
-                    {
-                        BuildFactBody(facts, t, bldr, modelRef, aliasPrefix, aliases, removeRenaming);
-                    }
+                    BuildFactBody(facts, t, bldr, modelRef, aliasPrefix, aliases, removeRenaming);
+                }
 
-                    int count;
-                    bldr.GetStackCount(out count);
-                    Contract.Assert(count == 0);
-                    bldr.Load(modelRef);
-                    bldr.Close();
-                   
-                    ImmutableArray<AST<Node>> asts;
-                    bldr.GetASTs(out asts);
+                int count;
+                bldr.GetStackCount(out count);
+                Contract.Assert(count == 0);
+                bldr.Load(modelRef);
+                bldr.Close();
 
-                    var prog = Factory.Instance.MkProgram(outProgName);
-                    return Factory.Instance.AddModule(prog, asts[0]);
-                });
+                ImmutableArray<AST<Node>> asts;
+                bldr.GetASTs(out asts);
+
+                var prog = Factory.Instance.MkProgram(outProgName);
+                return Factory.Instance.AddModule(prog, asts[0]);
+            });
         }
 
         /// <summary>
@@ -405,19 +418,20 @@
             Term t, 
             Builder bldr, 
             BuilderRef modelRef,
-            string aliasPrefix,
+            Func<Symbol, string> aliasPrefix,
             Map<Term, string> aliases,
             bool removeRenaming)
         {
             Contract.Assert(t.Symbol.Kind == SymbolKind.ConSymb || t.Symbol.Kind == SymbolKind.MapSymb);
+            string tAliasPrefix = aliasPrefix(t.Symbol);
             string myAlias;
-            if (aliasPrefix == null)
+            if (tAliasPrefix == null)
             {
                 myAlias = null;
             }
             else
             {
-                myAlias = ToAliasName((UserSymbol)t.Symbol, removeRenaming, aliasPrefix, aliases.Count);
+                myAlias = ToAliasName((UserSymbol)t.Symbol, removeRenaming, tAliasPrefix.Trim(), aliases.Count);
                 bldr.PushId(myAlias);
             }
 

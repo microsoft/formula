@@ -1,14 +1,14 @@
 # formula 2.0
 Formal Specifications for Verification and Synthesis
 
-##Building FORMULA
+## Building FORMULA
 
 In order to build FORMULA you must acquire and build dependencies.
 These dependencies are not part of the FORMULA project, though
 the FORMULA build scripts offer assistance in downloading and compiling
 other Codeplex dependencies. 
 
-##Non-Codeplex Dependencies
+## Non-Codeplex Dependencies
 
 You must acquire and install these yourself.
 

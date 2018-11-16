@@ -6,7 +6,9 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+    using System.Net;
     using System.Net.Http;
+    using System.Net.Http.Headers;
     using System.IO;
     using System.IO.Compression;
     using System.Reflection;
@@ -28,6 +30,7 @@
         private const string RegVS32SubKey = "SOFTWARE\\Microsoft\\VisualStudio\\{0}.0\\Setup\\VS";
         private const string RegVS64SubKey = "SOFTWARE\\Wow6432Node\\Microsoft\\VisualStudio\\{0}.0\\Setup\\VS";
         private const string VCVarsAll = "VC\\vcvarsall.bat";
+        private const string Z3Version = "z3-4.4.0";
 
         private static readonly string[] FrameworkLocs = new string[]
         {
@@ -200,17 +203,46 @@
                 // Create a New HttpClient object.
                 Program.WriteInfo("Downloading dependency {0} to {1}...", projVersion.Item1, outputFile.FullName);
                 HttpClient client = new HttpClient();
-                client.DefaultRequestHeaders.Referrer = new Uri(string.Format(ReferrerString, projVersion.Item1));                
-                using (var strm = client.GetStreamAsync(string.Format(DownloadString, projVersion.Item1, projVersion.Item2)).Result)
+
+                // Z3 cannot be downloaded from Codeplex anymore.
+                if (dep == DependencyKind.Z3)
                 {
-                    using (var sw = new System.IO.StreamWriter(outputFile.FullName))
+                    //specify to use TLS 1.2 as default connection
+                    System.Net.ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | SecurityProtocolType.Tls11 | SecurityProtocolType.Tls;
+                    client.DefaultRequestHeaders.Accept.Clear();
+                    string Z3DownloadString = String.Format("https://github.com/Z3Prover/z3/archive/{0}.zip", Z3Version);
+                    using (var strm = client.GetStreamAsync(Z3DownloadString).Result)
                     {
-                        strm.CopyTo(sw.BaseStream);
+                        using (var sw = new System.IO.StreamWriter(outputFile.FullName))
+                        {
+                            strm.CopyTo(sw.BaseStream);
+                        }
+                    }
+                }
+                else
+                {
+                    client.DefaultRequestHeaders.Referrer = new Uri(string.Format(ReferrerString, projVersion.Item1));
+                    using (var strm = client.GetStreamAsync(string.Format(DownloadString, projVersion.Item1, projVersion.Item2)).Result)
+                    {
+                        using (var sw = new System.IO.StreamWriter(outputFile.FullName))
+                        {
+                            strm.CopyTo(sw.BaseStream);
+                        }
                     }
                 }
 
                 Program.WriteInfo("Extracting dependency {0} to {1}...", projVersion.Item1, outputDir.FullName);
-                ZipFile.ExtractToDirectory(outputFile.FullName, outputDir.FullName);                
+
+                // Move z3 source files to directory one level higher
+                if (dep == DependencyKind.Z3)
+                {
+                    ZipFile.ExtractToDirectory(outputFile.FullName, outputDir.Parent.FullName);
+                    System.IO.Directory.Move(Path.Combine(outputDir.Parent.FullName, "z3-" + Z3Version), outputDir.FullName);
+                }
+                else
+                {
+                    ZipFile.ExtractToDirectory(outputFile.FullName, outputDir.FullName);
+                }
             }
             catch (Exception e)
             {

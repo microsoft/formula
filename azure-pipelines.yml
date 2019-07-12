@@ -17,6 +17,10 @@ variables:
 steps:
 - task: NuGetToolInstaller@1
 
+- task: BatchScript@1
+  inputs:
+    filename: 'Src\Java\test.bat'
+
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'

@@ -1,2 +1,2 @@
-javac Hello.java
+javac Src\Java\Hello.java
 echo Compiled Hello.java!

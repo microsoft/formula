@@ -30,3 +30,9 @@ steps:
     solution: '$(solution)'
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
+
+- task: VSBuild@1
+  inputs:
+    solution: 'Tst\Tools\Test\Test.sln'
+    platform: '$(buildPlatform)'
+    configuration: '$(buildConfiguration)'

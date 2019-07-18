@@ -33,7 +33,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Core">
-      <HintPath>..\..\..\..\Bld\Drops\Formula_Debug_x86\Core.dll</HintPath>
+      <HintPath>..\..\..\..\Src\Core\bin\$(PlatformTarget)\$(Configuration)\Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

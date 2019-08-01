@@ -196,6 +196,33 @@
             peek.IncArity();
         }
 
+        private Node MkTerm(int arity = -1)
+        {
+            Contract.Requires(appStack.Count > 0);
+            var funcInfo = appStack.Pop() as FuncApplyInfo;
+            arity = arity < 0 ? funcInfo.Arity : arity;
+
+            Contract.Assert(funcInfo != null);
+            Contract.Assert(argStack.Count >= arity);
+            FuncTerm data;
+
+            if (funcInfo.FuncName is OpKind)
+            {
+                data = new FuncTerm(funcInfo.Span, (OpKind)funcInfo.FuncName);
+            }
+            else
+            {
+                data = new FuncTerm(funcInfo.Span, (Id)funcInfo.FuncName);
+            }
+
+            for (int i = 0; i < arity; ++i)
+            {
+                data.AddArg(argStack.Pop(), false);
+            }
+
+            return data;
+        }
+
         private void AppendModRef(ModRef modRef)
         {
             Contract.Requires(currentModule != null);
@@ -274,6 +301,53 @@
             crntModRefState = ModRefState.None;
         }
 
+        private void StartSentenceConfig(Span span)
+        {
+            Contract.Requires(crntSentConf == null);
+            crntSentConf = new Config(span);
+        }
+
+        private void AppendSetting()
+        {
+            Contract.Requires(argStack.Count >= 2 && argStack.Peek().NodeKind == NodeKind.Cnst);
+            var value = (Cnst)argStack.Pop();
+            Contract.Assert(argStack.Peek().NodeKind == NodeKind.Id);
+            var setting = (Id)argStack.Pop();
+
+            if (currentModule == null)
+            {
+                Contract.Assert(crntSentConf == null);
+                parseResult.Program.Node.Config.AddSetting(new Setting(setting.Span, setting, value));
+                return;
+            }
+            else if (crntSentConf != null)
+            {
+                crntSentConf.AddSetting(new Setting(setting.Span, setting, value));
+                return;
+            }
+
+            switch (currentModule.NodeKind)
+            {
+                case NodeKind.Model:
+                    ((Model)currentModule).Config.AddSetting(new Setting(setting.Span, setting, value));
+                    break;
+                case NodeKind.Domain:
+                    ((Domain)currentModule).Config.AddSetting(new Setting(setting.Span, setting, value));
+                    break;
+                case NodeKind.Transform:
+                    ((Transform)currentModule).Config.AddSetting(new Setting(setting.Span, setting, value));
+                    break;
+                case NodeKind.TSystem:
+                    ((TSystem)currentModule).Config.AddSetting(new Setting(setting.Span, setting, value));
+                    break;
+                case NodeKind.Machine:
+                    ((Machine)currentModule).Config.AddSetting(new Setting(setting.Span, setting, value));
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+        }
+
         private void StartPropContract(ContractKind kind, Span span)
         {
             Contract.Requires(currentModule != null);
@@ -304,6 +378,93 @@
             }
         }
 
+        private void AppendConstraint(Node n)
+        {
+            Contract.Requires(n != null && n.IsConstraint);
+            if (appStack.Count > 0 && appStack.Peek() is ComprApplyInfo)
+            {
+                var cmprInfo = (ComprApplyInfo)appStack.Peek();
+                if (cmprInfo.CurrentBody == null)
+                {
+                    cmprInfo.CurrentBody = new Body(n.Span);
+                }
+
+                cmprInfo.CurrentBody.AddConstr(n);
+            }
+            else
+            {
+                if (crntBody == null)
+                {
+                    crntBody = new Body(n.Span);
+                }
+
+                crntBody.AddConstr(n);
+            }
+        }
+
+        private Find MkFind(bool isBound, Span span)
+        {
+            Contract.Requires(isBound ? argStack.Count > 1 : argStack.Count >= 1);
+            var match = argStack.Pop();
+            var binding = isBound ? (Id)argStack.Pop() : null;
+            return new Find(span, binding, match);
+        }
+
+        private ModelFact MkFact(bool isBound, Span span)
+        {
+            Contract.Requires(isBound ? argStack.Count > 1 : argStack.Count >= 1);
+            var match = argStack.Pop();
+            var binding = isBound ? (Id)argStack.Pop() : null;
+            var mf = new ModelFact(span, binding, match);
+            if (crntSentConf != null)
+            {
+                mf.SetConfig(crntSentConf);
+                crntSentConf = null;
+            }
+
+            return mf;
+        }
+
+        private RelConstr MkRelConstr(bool isNo = false)
+        {
+            Contract.Requires(argStack.Count > 1 && appStack.Count > 0);
+            var app = appStack.Pop() as RelApplyInfo;
+            Contract.Assert(app != null);
+            var arg2 = argStack.Pop();
+            var arg1 = argStack.Pop();
+            return new RelConstr(app.Span, app.Opcode, arg1, arg2);
+        }
+
+        private RelConstr MkNoConstr(Span span)
+        {
+            Contract.Requires(argStack.Count > 0);
+            return new RelConstr(span, RelKind.No, argStack.Pop());
+        }
+
+        private RelConstr MkNoConstr(Span span, bool hasBinding)
+        {
+            Contract.Requires(hasBinding ? argStack.Count > 1 : argStack.Count > 0);
+            var compr = new Compr(span);
+            var body = new Body(span);
+            Node arg;
+            Id binding;
+            if (hasBinding)
+            {
+                arg = argStack.Pop();
+                binding = (Id)argStack.Pop();
+            }
+            else
+            {
+                binding = null;
+                arg = argStack.Pop();
+            }
+
+            body.AddConstr(new Find(span, binding, arg));
+            compr.AddBody(body);
+            compr.AddHead(new Id(span, ASTQueries.ASTSchema.Instance.ConstNameTrue));
+            return new RelConstr(span, RelKind.No, compr);
+        }
+
         private void EndHeads(Span span)
         {
             Contract.Requires(argStack.Count > 0);
@@ -318,6 +479,29 @@
             {
                 crntRule.SetConfig(crntSentConf);
                 crntSentConf = null;
+            }
+        }
+
+        private void AppendBody()
+        {
+            if (appStack.Count > 0 && appStack.Peek() is ComprApplyInfo)
+            {
+                var appInfo = (ComprApplyInfo)appStack.Peek();
+                Contract.Assert(appInfo.CurrentBody != null);
+                appInfo.Comprehension.AddBody(appInfo.CurrentBody);
+                appInfo.CurrentBody = null;
+            }
+            else if (crntRule != null)
+            {
+                Contract.Assert(crntBody != null);
+                crntRule.AddBody(crntBody);
+                crntBody = null;
+            }
+            else if (crntContract != null)
+            {
+                Contract.Assert(crntBody != null);
+                crntContract.AddSpecification(crntBody);
+                crntBody = null;
             }
         }
 
@@ -341,17 +525,14 @@
 
         public override object VisitProgram([NotNull] FormulaParser.ProgramContext context)
         {
-            FormulaParser.ConfigContext config = context.config();
-            FormulaParser.ModuleListContext moduleList = context.moduleList();
-
-            if (config != null)
+            if (context.config() != null)
             {
-                VisitConfig(config);
+                VisitConfig(context.config());
             }
 
-            if (moduleList != null)
+            if (context.moduleList() != null)
             {
-                VisitModuleList(moduleList);
+                VisitModuleList(context.moduleList());
             }
 
             return null;
@@ -376,16 +557,23 @@
             return null;
         }
 
+        public override object VisitSetting([NotNull] FormulaParser.SettingContext context)
+        {
+            VisitId(context.id());
+            VisitConstant(context.constant());
+            AppendSetting();
+
+            return null;
+        }
+
         public override object VisitModuleList([NotNull] FormulaParser.ModuleListContext context)
         {
-            FormulaParser.ModuleContext module = context.module();
-            VisitModule(module);
+            VisitModule(context.module());
+            EndModule();
 
-            FormulaParser.ModuleListContext moduleList = context.moduleList();
-
-            if (moduleList != null)
+            if (context.moduleList() != null)
             {
-                VisitModuleList(moduleList);
+                VisitModuleList(context.moduleList());
             }
 
             return null;
@@ -403,14 +591,39 @@
             }
             else if (context.transform() != null)
             {
-
+                VisitTransform(context.transform());
             }
             else if (context.tSystem() != null)
             {
-
+                VisitTSystem(context.tSystem());
             }
             else
             {
+                VisitMachine(context.machine());
+            }
+
+            return null;
+        }
+
+        public override object VisitModel([NotNull] FormulaParser.ModelContext context)
+        {
+            VisitModelSigConfig(context.modelSigConfig());
+
+            if (context.modelBody() != null)
+            {
+                VisitModelBody(context.modelBody());
+            }
+
+            return null;
+        }
+
+        public override object VisitModelBody([NotNull] FormulaParser.ModelBodyContext context)
+        {
+            VisitModelSentence(context.modelSentence());
+
+            if (context.modelBody() != null)
+            {
+                VisitModelBody(context.modelBody());
             }
 
             return null;
@@ -464,7 +677,7 @@
             }
             else
             {
-                StartPropContract(ContractKind.ConformsProp, ToSpan(context.CONFORMS().Symbol));
+                StartPropContract(ContractKind.ConformsProp, ToSpan(context.Start));
                 VisitBodyList(context.bodyList());
             }
 
@@ -482,6 +695,74 @@
             }
 
             AppendRule();
+            return null;
+        }
+
+        public override object VisitBodyList([NotNull] FormulaParser.BodyListContext context)
+        {
+            VisitBody(context.body());
+            AppendBody();
+
+            if (context.bodyList() != null)
+            {
+                VisitBodyList(context.bodyList());
+            }
+
+            return null;
+        }
+
+        public override object VisitBody([NotNull] FormulaParser.BodyContext context)
+        {
+            VisitConstraint(context.constraint());
+
+            if (context.body() != null)
+            {
+                VisitBody(context.body());
+            }
+
+            return null;
+        }
+
+        public override object VisitConstraint([NotNull] FormulaParser.ConstraintContext context)
+        {
+            if (context.NO() != null)
+            {
+                if (context.compr() != null)
+                {
+                    VisitCompr(context.compr());
+                    AppendConstraint(MkNoConstr(ToSpan(context.Start)));
+                }
+                else if (context.IS() != null)
+                {
+                    VisitId(context.id());
+                    VisitFuncTerm(context.funcTerm(0));
+                    AppendConstraint(MkNoConstr(ToSpan(context.Start), true));
+                }
+                else
+                {
+                    VisitFuncTerm(context.funcTerm(0));
+                    AppendConstraint(MkNoConstr(ToSpan(context.Start), false));
+                }
+            }
+            else if (context.IS() != null)
+            {
+                VisitId(context.id());
+                VisitFuncTerm(context.funcTerm(0));
+                AppendConstraint(MkFind(true, ToSpan(context.Start)));
+            }
+            else if (context.relOp() != null)
+            {
+                VisitFuncTerm(context.funcTerm(0));
+                VisitRelOp(context.relOp());
+                VisitFuncTerm(context.funcTerm(1));
+                AppendConstraint(MkRelConstr());
+            }
+            else
+            {
+                VisitFuncTerm(context.funcTerm(0));
+                AppendConstraint(MkFind(false, ToSpan(context.Start)));
+            }
+
             return null;
         }
 
@@ -518,6 +799,34 @@
             if (context.atom() != null)
             {
                 VisitAtom(context.atom());
+            }
+            else if (context.unOp() != null)
+            {
+                VisitUnOp(context.unOp());
+                VisitFuncTerm(context.funcTerm(0));
+                PushArg(MkTerm(1));
+            }
+            else if (context.binOp() != null)
+            {
+                VisitFuncTerm(context.funcTerm(0));
+                VisitBinOp(context.binOp());
+                VisitFuncTerm(context.funcTerm(1));
+                PushArg(MkTerm(2));
+            }
+            else if (context.funcTermList() != null)
+            {
+                VisitId(context.id());
+                PushSymbol();
+                VisitFuncTermList(context.funcTermList());
+                PushArg(MkTerm());
+            }
+            else if (context.quoteList() != null)
+            {
+                // TODO: implement quotes
+            }
+            else
+            {
+                VisitFuncTerm(context.funcTerm(0));
             }
 
             return null;
@@ -643,7 +952,7 @@
 
         public override object VisitStr([NotNull] FormulaParser.StrContext context)
         {
-            // TODO: reimplement this
+            // TODO: reimplement this with escapes
             string str = null;
             if (context.STRING() != null)
             {
@@ -663,6 +972,7 @@
 
         public override object VisitSentenceConfig([NotNull] FormulaParser.SentenceConfigContext context)
         {
+            StartSentenceConfig(ToSpan(context.Start));
             VisitSettingList(context.settingList());
 
             return null;
@@ -687,7 +997,7 @@
                                       context.INCLUDES() != null ? ComposeKind.Includes :
                                       ComposeKind.None;
 
-            StartDomain(domName, composeKind, ToSpan(context.DOMAIN().Symbol));
+            StartDomain(domName, composeKind, ToSpan(context.Start));
 
             if (context.modRefs() != null)
             {

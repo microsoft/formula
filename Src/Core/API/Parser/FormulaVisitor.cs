@@ -126,6 +126,7 @@
                 return false;
             }
 
+            parseResult.Program.Node.GetNodeHash();
             return result;
         }
 
@@ -220,6 +221,25 @@
 
             var peek = appStack.Peek();
             peek.IncArity();
+        }
+
+        private void AppendQuoteRun(string s, Span span)
+        {
+            Contract.Requires(quoteStack.Count > 0);
+            quoteStack.Peek().AddItem(new QuoteRun(span, s));
+        }
+
+        private void AppendQuoteEscape(string s, Span span)
+        {
+            Contract.Requires(quoteStack.Count > 0 && s.Length == 2);
+            quoteStack.Peek().AddItem(new QuoteRun(span, new string(new char[] { s[1] })));
+        }
+
+        private void AppendUnquote()
+        {
+            Contract.Requires(quoteStack.Count > 0);
+            Contract.Requires(argStack.Count > 0 && argStack.Peek().IsFuncOrAtom);
+            quoteStack.Peek().AddItem(argStack.Pop());
         }
 
         private void PushQuote(Span span)
@@ -1309,6 +1329,25 @@
             if (context.quoteList() != null)
             {
                 VisitQuoteList(context.quoteList());
+            }
+
+            return null;
+        }
+
+        public override object VisitQuoteItem([NotNull] FormulaParser.QuoteItemContext context)
+        {
+            if (context.QRUN() != null)
+            {
+                AppendQuoteRun(context.QRUN().GetText(), ToSpan(context.Start));
+            }
+            else if (context.QESC() != null)
+            {
+                AppendQuoteEscape(context.QESC().GetText(), ToSpan(context.Start));
+            }
+            else
+            {
+                VisitFuncTerm(context.funcTerm());
+                AppendUnquote();
             }
 
             return null;

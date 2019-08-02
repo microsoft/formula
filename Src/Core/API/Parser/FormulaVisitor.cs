@@ -31,6 +31,14 @@
         private Body crntBody = null;
         /*****************************************/
 
+        /******* State for building types and type declarations ********/
+        private string crntTypeDeclName = null;
+        private Span crntTypeDeclSpan = default(Span);
+        private Node crntTypeDecl = null;
+        private Node crntTypeTerm = null;
+        private Nodes.Enum currentEnum = null;
+        /*****************************************/
+
         // Additional parameters
         private EnvParams envParams;
 
@@ -50,6 +58,24 @@
         /******* State for sentence configs ********/
         private Config crntSentConf = null;
         /*************************************/
+
+        private bool IsBuildingNext
+        {
+            get;
+            set;
+        }
+
+        private bool IsBuildingUpdate
+        {
+            get;
+            set;
+        }
+
+        private bool IsBuildingCod
+        {
+            get;
+            set;
+        }
 
         internal bool ParseFile(ProgramName name, string referrer, Span location, System.Threading.CancellationToken ctok, out ParseResult pr)
         {
@@ -196,6 +222,30 @@
             peek.IncArity();
         }
 
+        private void PushQuote(Span span)
+        {
+            quoteStack.Push(new Quote(span));
+        }
+
+        private void EndComprHeads()
+        {
+            Contract.Requires(appStack.Count > 0 && appStack.Peek() is ComprApplyInfo);
+            Contract.Requires(argStack.Count > 0);
+
+            var comprInfo = (ComprApplyInfo)appStack.Peek();
+            Contract.Assert(argStack.Count >= comprInfo.Arity);
+            for (int i = 0; i < comprInfo.Arity; ++i)
+            {
+                comprInfo.Comprehension.AddHead(argStack.Pop(), false);
+            }
+        }
+
+        private Quote PopQuote()
+        {
+            Contract.Requires(quoteStack.Count > 0);
+            return quoteStack.Pop();
+        }
+
         private Node MkTerm(int arity = -1)
         {
             Contract.Requires(appStack.Count > 0);
@@ -221,6 +271,193 @@
             }
 
             return data;
+        }
+
+        private Compr MkCompr()
+        {
+            Contract.Requires(appStack.Count > 0 && appStack.Peek() is ComprApplyInfo);
+            return ((ComprApplyInfo)appStack.Pop()).Comprehension;
+        }
+        private ModApply MkModApply()
+        {
+            Contract.Requires(appStack.Count > 0 && appStack.Peek() is ModApplyInfo);
+            var modInfo = (ModApplyInfo)appStack.Pop();
+            var modApp = new ModApply(modInfo.Span, modInfo.ModRef);
+            for (int i = 0; i < modInfo.Arity; ++i)
+            {
+                modApp.AddArg(argStack.Pop(), false);
+            }
+
+            return modApp;
+        }
+
+        #region Type Term and Declaration Building
+        private void StartEnum(Span span)
+        {
+            Contract.Requires(currentEnum == null);
+            currentEnum = new Nodes.Enum(span);
+        }
+
+        private void AppendEnum(Node n)
+        {
+            Contract.Requires(currentEnum != null);
+            Contract.Requires(n != null);
+            currentEnum.AddElement(n);
+        }
+
+        private void AppendUnion(Node n)
+        {
+            Contract.Requires(n != null);
+            if (crntTypeTerm == null)
+            {
+                crntTypeTerm = n;
+            }
+            else if (crntTypeTerm.NodeKind == NodeKind.Union)
+            {
+                ((Union)crntTypeTerm).AddComponent(n);
+            }
+            else
+            {
+                var unn = new Union(crntTypeTerm.Span);
+                unn.AddComponent(crntTypeTerm);
+                unn.AddComponent(n);
+                crntTypeTerm = unn;
+            }
+        }
+
+        private void EndEnum()
+        {
+            Contract.Requires(currentEnum != null);
+            Contract.Ensures(currentEnum == null);
+
+            if (crntTypeTerm == null)
+            {
+                crntTypeTerm = currentEnum;
+            }
+            else if (crntTypeTerm.NodeKind == NodeKind.Union)
+            {
+                ((Union)crntTypeTerm).AddComponent(currentEnum);
+            }
+            else
+            {
+                var unn = new Union(crntTypeTerm.Span);
+                unn.AddComponent(crntTypeTerm);
+                unn.AddComponent(currentEnum);
+                crntTypeTerm = unn;
+            }
+
+            currentEnum = null;
+        }
+
+
+        private void SaveTypeDeclName(string name, Span span)
+        {
+            crntTypeDeclName = name;
+            crntTypeDeclSpan = span;
+        }
+
+        private void EndUnnDecl()
+        {
+            Contract.Requires(currentModule != null && currentModule.IsDomOrTrans);
+            var unnDecl = new UnnDecl(crntTypeDeclSpan, crntTypeDeclName, crntTypeTerm);
+            crntTypeTerm = null;
+            crntTypeDeclName = null;
+            crntTypeDeclSpan = default(Span);
+
+            switch (currentModule.NodeKind)
+            {
+                case NodeKind.Domain:
+                    ((Domain)currentModule).AddTypeDecl(unnDecl);
+                    break;
+                case NodeKind.Transform:
+                    ((Transform)currentModule).AddTypeDecl(unnDecl);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            if (crntSentConf != null)
+            {
+                unnDecl.SetConfig(crntSentConf);
+                crntSentConf = null;
+            }
+        }
+
+        private void StartConDecl(bool isNew, bool isSub)
+        {
+            Contract.Requires(currentModule != null && currentModule.IsDomOrTrans);
+            Contract.Requires(crntTypeDecl == null);
+            crntTypeDecl = new ConDecl(crntTypeDeclSpan, crntTypeDeclName, isNew, isSub);
+            if (crntSentConf != null)
+            {
+                ((ConDecl)crntTypeDecl).SetConfig(crntSentConf);
+                crntSentConf = null;
+            }
+        }
+
+        private void StartMapDecl(MapKind kind)
+        {
+            Contract.Requires(currentModule != null && currentModule.IsDomOrTrans);
+            Contract.Requires(crntTypeDecl == null);
+            crntTypeDecl = new MapDecl(crntTypeDeclSpan, crntTypeDeclName, kind, true);
+            if (crntSentConf != null)
+            {
+                ((MapDecl)crntTypeDecl).SetConfig(crntSentConf);
+                crntSentConf = null;
+            }
+        }
+
+        private void EndTypeDecl()
+        {
+            Contract.Requires(currentModule != null && currentModule.IsDomOrTrans);
+            Contract.Requires(crntTypeDecl != null);
+            switch (currentModule.NodeKind)
+            {
+                case NodeKind.Domain:
+                    ((Domain)currentModule).AddTypeDecl(crntTypeDecl);
+                    break;
+                case NodeKind.Transform:
+                    ((Transform)currentModule).AddTypeDecl(crntTypeDecl);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            IsBuildingCod = false;
+            crntTypeDecl = null;
+        }
+
+        private void SaveMapPartiality(bool isPartial)
+        {
+            Contract.Requires(crntTypeDecl != null && crntTypeDecl.NodeKind == NodeKind.MapDecl);
+            ((MapDecl)crntTypeDecl).ChangePartiality(isPartial);
+            IsBuildingCod = true;
+        }
+
+        private void AppendField(string name, bool isAny, Span span)
+        {
+            Contract.Requires(crntTypeDecl != null);
+            Contract.Requires(crntTypeTerm != null);
+            var fld = new Field(span, name, crntTypeTerm, isAny);
+            crntTypeTerm = null;
+            switch (crntTypeDecl.NodeKind)
+            {
+                case NodeKind.ConDecl:
+                    ((ConDecl)crntTypeDecl).AddField(fld);
+                    break;
+                case NodeKind.MapDecl:
+                    if (IsBuildingCod)
+                    {
+                        ((MapDecl)crntTypeDecl).AddCodField(fld);
+                    }
+                    else
+                    {
+                        ((MapDecl)crntTypeDecl).AddDomField(fld);
+                    }
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
         }
 
         private void AppendModRef(ModRef modRef)
@@ -684,6 +921,215 @@
             return null;
         }
 
+        public override object VisitTypeDecl([NotNull] FormulaParser.TypeDeclContext context)
+        {
+            string name = context.BAREID().GetText();
+            SaveTypeDeclName(name, ToSpan(context.Start));
+            VisitTypeDeclBody(context.typeDeclBody());
+
+            return null;
+        }
+
+        public override object VisitTypeDeclBody([NotNull] FormulaParser.TypeDeclBodyContext context)
+        {
+            if (context.unnBody() != null)
+            {
+                VisitUnnBody(context.unnBody());
+                EndUnnDecl();
+            }
+            else if (context.SUB() != null)
+            {
+                StartConDecl(false, true);
+                VisitFields(context.fields(0));
+                EndTypeDecl();
+            }
+            else if (context.NEW() != null)
+            {
+                StartConDecl(true, false);
+                VisitFields(context.fields(0));
+                EndTypeDecl();
+            }
+            else if (context.funDecl() != null)
+            {
+                VisitFunDecl(context.funDecl());
+                VisitFields(context.fields(0));
+                VisitMapArrow(context.mapArrow());
+                VisitFields(context.fields(1));
+                EndTypeDecl();
+            }
+            else
+            {
+                StartConDecl(false, false);
+                VisitFields(context.fields(0));
+                EndTypeDecl();
+            }
+
+            return null;
+        }
+
+        public override object VisitFunDecl([NotNull] FormulaParser.FunDeclContext context)
+        {
+            if (context.INJ() != null)
+            {
+                StartMapDecl(MapKind.Inj);
+            }
+            else if (context.BIJ() != null)
+            {
+                StartMapDecl(MapKind.Bij);
+            }
+            else if (context.SUR() != null)
+            {
+                StartMapDecl(MapKind.Sur);
+            }
+            else
+            {
+                StartMapDecl(MapKind.Fun);
+            }
+
+            return null;
+        }
+
+        public override object VisitFields([NotNull] FormulaParser.FieldsContext context)
+        {
+            VisitField(context.field());
+
+            if (context.fields() != null)
+            {
+                VisitFields(context.fields());
+            }
+
+            return null;
+        }
+
+        public override object VisitField([NotNull] FormulaParser.FieldContext context)
+        {
+            if (context.BAREID() != null)
+            {
+                if (context.ANY() != null)
+                {
+                    VisitUnnBody(context.unnBody());
+                    AppendField(context.BAREID().GetText(), true, ToSpan(context.Start));
+                }
+                else
+                {
+                    VisitUnnBody(context.unnBody());
+                    AppendField(context.BAREID().GetText(), false, ToSpan(context.Start));
+                }
+            }
+            else if (context.ANY() != null)
+            {
+                VisitUnnBody(context.unnBody());
+                AppendField(null, true, ToSpan(context.Start));
+            }
+            else
+            {
+                VisitUnnBody(context.unnBody());
+                AppendField(null, false, ToSpan(context.Start));
+            }
+
+            return null;
+        }
+
+        public override object VisitUnnBody([NotNull] FormulaParser.UnnBodyContext context)
+        {
+            VisitUnnCmp(context.unnCmp());
+
+            if (context.unnBody() != null)
+            {
+                VisitUnnBody(context.unnBody());
+            }
+
+            return null;
+        }
+
+        public override object VisitUnnCmp([NotNull] FormulaParser.UnnCmpContext context)
+        {
+            if (context.typeId() != null)
+            {
+                VisitTypeId(context.typeId());
+            }
+            else
+            {
+                StartEnum(ToSpan(context.Start));
+                VisitEnumList(context.enumList());
+                EndEnum();
+            }
+
+            return null;
+        }
+
+        public override object VisitEnumList([NotNull] FormulaParser.EnumListContext context)
+        {
+            VisitEnumCnst(context.enumCnst());
+            if (context.enumList() != null)
+            {
+                VisitEnumList(context.enumList());
+            }
+
+            return null;
+        }
+
+        public override object VisitEnumCnst([NotNull] FormulaParser.EnumCnstContext context)
+        {
+            if (context.DIGITS() != null)
+            {
+                if (context.RANGE() != null)
+                {
+                    AppendEnum(new Nodes.Range(ToSpan(context.Start), ParseNumeric(context.DIGITS(0).GetText()), ParseNumeric(context.DIGITS(1).GetText())));
+                }
+                else
+                {
+                    AppendEnum(ParseNumeric(context.DIGITS(0).GetText(), false, ToSpan(context.Start)));
+                }
+            }
+            else if (context.REAL() != null)
+            {
+                AppendEnum(ParseNumeric(context.REAL().GetText(), false, ToSpan(context.Start)));
+            }
+            else if (context.FRAC() != null)
+            {
+                AppendEnum(ParseNumeric(context.FRAC().GetText(), true, ToSpan(context.Start)));
+            }
+            else if (context.str() != null)
+            {
+                VisitStr(context.str());
+                AppendEnum(GetString(ToSpan(context.Start)));
+            }
+            else if (context.BAREID() != null)
+            {
+                AppendEnum(new Nodes.Id(ToSpan(context.Start), context.BAREID().GetText()));
+            }
+            else
+            {
+                AppendEnum(new Nodes.Id(ToSpan(context.Start), context.QUALID().GetText()));
+            }
+
+            return null;
+        }
+
+        public override object VisitTypeId([NotNull] FormulaParser.TypeIdContext context)
+        {
+            // TODO: verify GetText() works here
+            string name = context.GetText();
+            AppendUnion(new Nodes.Id(ToSpan(context.Start), name));
+
+            return null;
+        }
+
+        public override object VisitMapArrow([NotNull] FormulaParser.MapArrowContext context)
+        {
+            if (context.WEAKARROW() != null)
+            {
+                SaveMapPartiality(true);
+            }
+            else
+            {
+                SaveMapPartiality(false);
+            }
+
+            return null;
+        }
+
         public override object VisitRuleItem([NotNull] FormulaParser.RuleItemContext context)
         {
             VisitFuncTermList(context.funcTermList());
@@ -766,6 +1212,28 @@
             return null;
         }
 
+        public override object VisitCompr([NotNull] FormulaParser.ComprContext context)
+        {
+            PushComprSymbol(ToSpan(context.Start));
+            VisitFuncTermList(context.funcTermList());
+            VisitComprRest(context.comprRest());
+
+            return null;
+        }
+
+        public override object VisitComprRest([NotNull] FormulaParser.ComprRestContext context)
+        {
+            EndComprHeads();
+            if (context.bodyList() != null)
+            {
+                VisitBodyList(context.bodyList());
+            }
+
+            PushArg(MkCompr());
+
+            return null;
+        }
+
         public override object VisitFuncTermList([NotNull] FormulaParser.FuncTermListContext context)
         {
             VisitFuncOrCompr(context.funcOrCompr());
@@ -822,11 +1290,25 @@
             }
             else if (context.quoteList() != null)
             {
-                // TODO: implement quotes
+                PushQuote(ToSpan(context.Start));
+                VisitQuoteList(context.quoteList());
+                PushArg(PopQuote());
             }
             else
             {
                 VisitFuncTerm(context.funcTerm(0));
+            }
+
+            return null;
+        }
+
+        public override object VisitQuoteList([NotNull] FormulaParser.QuoteListContext context)
+        {
+            VisitQuoteItem(context.quoteItem());
+
+            if (context.quoteList() != null)
+            {
+                VisitQuoteList(context.quoteList());
             }
 
             return null;
@@ -1204,3 +1686,4 @@
         #endregion
     }
 }
+#endregion

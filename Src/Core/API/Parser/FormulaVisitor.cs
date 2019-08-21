@@ -39,15 +39,6 @@
         private Nodes.Enum currentEnum = null;
         /*****************************************/
 
-        // Additional parameters
-        private EnvParams envParams;
-
-        /****** Additional parameters *************/
-        private System.Text.StringBuilder stringBuffer = new System.Text.StringBuilder();
-        private Span stringStart;
-        private Span stringEnd;
-        /*************************************/
-
         /******* State for ModRefs, steps, and updates ********/
         private ModRef crntModRef = null;
         private Step crntStep = null;
@@ -57,6 +48,16 @@
 
         /******* State for sentence configs ********/
         private Config crntSentConf = null;
+        /*************************************/
+
+        /****** Additional parameters *************/
+        private EnvParams envParams;
+        /*************************************/
+
+        /****** Additional parameters *************/
+        private System.Text.StringBuilder stringBuffer = new System.Text.StringBuilder();
+        private Span stringStart;
+        private Span stringEnd;
         /*************************************/
 
         private bool IsBuildingNext
@@ -174,6 +175,26 @@
 
             Contract.Assert(result);
             return new Cnst(span, numVal);
+        }
+
+        private int ParseInt(string str, Span span = default(Span))
+        {
+            Contract.Requires(!string.IsNullOrEmpty(str));
+            int numVal;
+            if (!int.TryParse(str, out numVal))
+            {
+                var dummy = new Cnst(span, Rational.Zero);
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    span,
+                    Constants.BadNumeric.ToString(str),
+                    Constants.BadNumeric.Code,
+                    parseResult.Program.Node.Name);
+                parseResult.AddFlag(flag);
+                return 0;
+            }
+
+            return numVal;
         }
 
         private Cnst GetString(Span span)
@@ -369,7 +390,6 @@
             currentEnum = null;
         }
 
-
         private void SaveTypeDeclName(string name, Span span)
         {
             crntTypeDeclName = name;
@@ -454,6 +474,11 @@
             IsBuildingCod = true;
         }
 
+        private void SetModRefState(ModRefState state)
+        {
+            crntModRefState = state;
+        }
+
         private void AppendField(string name, bool isAny, Span span)
         {
             Contract.Requires(crntTypeDecl != null);
@@ -478,6 +503,13 @@
                 default:
                     throw new NotImplementedException();
             }
+        }
+
+        private void SetCompose(ComposeKind kind)
+        {
+            Contract.Requires(currentModule != null);
+            Contract.Requires(currentModule.NodeKind == NodeKind.Model);
+            ((Model)currentModule).SetCompose(kind);
         }
 
         private void AppendModRef(ModRef modRef)
@@ -542,6 +574,49 @@
             }
         }
 
+        private void AppendParam(string name, Span span)
+        {
+            Contract.Requires(currentModule != null);
+            Contract.Requires(crntTypeTerm != null);
+            Contract.Requires(crntModRefState == ModRefState.Input || crntModRefState == ModRefState.Output);
+            switch (crntModRefState)
+            {
+                case ModRefState.Input:
+                    switch (currentModule.NodeKind)
+                    {
+                        case NodeKind.Transform:
+                            ((Transform)currentModule).AddInput(new Param(span, name, crntTypeTerm));
+                            break;
+                        case NodeKind.TSystem:
+                            ((TSystem)currentModule).AddInput(new Param(span, name, crntTypeTerm));
+                            break;
+                        case NodeKind.Machine:
+                            ((Machine)currentModule).AddInput(new Param(span, name, crntTypeTerm));
+                            break;
+                        default:
+                            throw new NotImplementedException();
+                    }
+                    break;
+                case ModRefState.Output:
+                    switch (currentModule.NodeKind)
+                    {
+                        case NodeKind.Transform:
+                            ((Transform)currentModule).AddOutput(new Param(span, name, crntTypeTerm));
+                            break;
+                        case NodeKind.TSystem:
+                            ((TSystem)currentModule).AddOutput(new Param(span, name, crntTypeTerm));
+                            break;
+                        default:
+                            throw new NotImplementedException();
+                    }
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            crntTypeTerm = null;
+        }
+
         private void StartDomain(string name, ComposeKind kind, Span span)
         {
             Contract.Requires(currentModule == null);
@@ -556,6 +631,41 @@
             Contract.Requires(currentModule != null);
             currentModule = null;
             crntModRefState = ModRefState.None;
+        }
+
+        private void StartTransform(string name, Span span)
+        {
+            Contract.Requires(currentModule == null);
+            var trans = new Transform(span, name);
+            parseResult.Program.Node.AddModule(trans);
+            crntModRefState = ModRefState.Input;
+            currentModule = trans;
+        }
+
+        private void StartTSystem(string name, Span span)
+        {
+            Contract.Requires(currentModule == null);
+            var tsys = new TSystem(span, name);
+            parseResult.Program.Node.AddModule(tsys);
+            crntModRefState = ModRefState.Input;
+            currentModule = tsys;
+        }
+
+        private void StartModel(string name, bool isPartial, Span span)
+        {
+            Contract.Requires(currentModule == null);
+            currentModule = new Model(span, name, isPartial);
+            parseResult.Program.Node.AddModule(currentModule);
+            crntModRefState = ModRefState.Other;
+        }
+
+        private void StartMachine(string name, Span span)
+        {
+            Contract.Requires(currentModule == null);
+            var mach = new Machine(span, name);
+            parseResult.Program.Node.AddModule(mach);
+            currentModule = mach;
+            crntModRefState = ModRefState.Input;
         }
 
         private void StartSentenceConfig(Span span)
@@ -632,6 +742,110 @@
             {
                 crntContract.SetConfig(crntSentConf);
                 crntSentConf = null;
+            }
+        }
+
+        private void AppendCardContract(string kind, int cardinality, Span span)
+        {
+            Contract.Requires(currentModule != null && currentModule.NodeKind == NodeKind.Model);
+            Contract.Requires(argStack.Count > 0 && argStack.Peek().NodeKind == NodeKind.Id);
+
+            if (cardinality < 0)
+            {
+                var flag = new Flag(
+                    SeverityKind.Error,
+                    span,
+                    Constants.BadNumeric.ToString(cardinality),
+                    Constants.BadNumeric.Code,
+                    parseResult.Program.Node.Name);
+                parseResult.AddFlag(flag);
+                cardinality = 0;
+            }
+
+            var ci = new ContractItem(span, ToContractKind(kind));
+            ci.AddSpecification(new CardPair(span, (Id)argStack.Pop(), cardinality));
+
+            switch (currentModule.NodeKind)
+            {
+                case NodeKind.Model:
+                    ((Model)currentModule).AddContract(ci);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            if (crntSentConf != null)
+            {
+                ci.SetConfig(crntSentConf);
+                crntSentConf = null;
+            }
+        }
+
+        private void AppendFact(ModelFact p)
+        {
+            Contract.Requires(currentModule is Model);
+            ((Model)currentModule).AddFact(p);
+        }
+
+        private void AppendStep()
+        {
+            Contract.Requires(currentModule != null);
+            Contract.Requires(argStack.Count > 0 && argStack.Peek().NodeKind == NodeKind.ModApply);
+            crntStep.SetRhs((ModApply)argStack.Pop());
+            switch (currentModule.NodeKind)
+            {
+                case NodeKind.TSystem:
+                    ((TSystem)currentModule).AddStep(crntStep);
+                    break;
+                case NodeKind.Machine:
+                    ((Machine)currentModule).AddBootStep(crntStep);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            crntStep = null;
+        }
+
+        private void AppendChoice()
+        {
+            Contract.Requires(crntUpdate != null);
+            Contract.Requires(argStack.Count > 0 && argStack.Peek().NodeKind == NodeKind.ModApply);
+            crntUpdate.AddChoice((ModApply)argStack.Pop());
+        }
+
+        private void AppendLHS()
+        {
+            Contract.Requires(argStack.Count > 0 && argStack.Peek().NodeKind == NodeKind.Id);
+            var id = (Id)argStack.Pop();
+
+            if (IsBuildingUpdate)
+            {
+                if (crntUpdate == null)
+                {
+                    crntUpdate = new Update(id.Span);
+                    if (crntSentConf != null)
+                    {
+                        crntUpdate.SetConfig(crntSentConf);
+                        crntSentConf = null;
+                    }
+                }
+
+                crntUpdate.AddState(id);
+            }
+            else
+            {
+                if (crntStep == null)
+                {
+                    crntStep = new Step(id.Span);
+                    if (crntSentConf != null)
+                    {
+                        crntStep.SetConfig(crntSentConf);
+                        crntSentConf = null;
+                    }
+                }
+
+                crntStep.AddLhs(id);
             }
         }
 
@@ -736,6 +950,21 @@
             {
                 crntRule.SetConfig(crntSentConf);
                 crntSentConf = null;
+            }
+        }
+
+        private static ContractKind ToContractKind(string s)
+        {
+            switch (s)
+            {
+                case "some":
+                    return ContractKind.RequiresSome;
+                case "atleast":
+                    return ContractKind.RequiresAtLeast;
+                case "atmost":
+                    return ContractKind.RequiresAtMost;
+                default:
+                    throw new NotImplementedException();
             }
         }
 
@@ -862,6 +1091,245 @@
             return null;
         }
 
+        public override object VisitTSystem([NotNull] FormulaParser.TSystemContext context)
+        {
+            StartTSystem(context.BAREID().GetText(), ToSpan(context.TRANSFORM().Symbol));
+            VisitTSystemRest(context.tSystemRest());
+
+            return null;
+        }
+
+        public override object VisitTSystemRest([NotNull] FormulaParser.TSystemRestContext context)
+        {
+            VisitTransformSigConfig(context.transformSigConfig());
+            if (context.transSteps() != null)
+            {
+                IsBuildingUpdate = false;
+                SetModRefState(ModRefState.ModApply);
+                VisitTransSteps(context.transSteps());
+            }
+
+            return null;
+        }
+
+        public override object VisitTransSteps([NotNull] FormulaParser.TransStepsContext context)
+        {
+            VisitTransStepConfig(context.transStepConfig());
+            if (context.transSteps() != null)
+            {
+                VisitTransSteps(context.transSteps());
+            }
+
+            return null;
+        }
+
+        public override object VisitTransStepConfig([NotNull] FormulaParser.TransStepConfigContext context)
+        {
+            if (context.sentenceConfig() != null)
+            {
+                VisitSentenceConfig(context.sentenceConfig());
+            }
+
+            VisitStep(context.step());
+
+            return null;
+        }
+
+        public override object VisitStep([NotNull] FormulaParser.StepContext context)
+        {
+            VisitStepOrUpdateLHS(context.stepOrUpdateLHS());
+            VisitModApply(context.modApply());
+            AppendStep();
+
+            return null;
+        }
+
+        public override object VisitModApply([NotNull] FormulaParser.ModApplyContext context)
+        {
+            VisitModRef(context.modRef());
+            if (context.modArgList() != null)
+            {
+                VisitModArgList(context.modArgList());
+            }
+
+            PushArg(MkModApply());
+            return null;
+        }
+
+        public override object VisitModArgList([NotNull] FormulaParser.ModArgListContext context)
+        {
+            VisitModAppArg(context.modAppArg());
+            IncArity();
+            if (context.modArgList() != null)
+            {
+                VisitModArgList(context.modArgList());
+            }
+
+            return null;
+        }
+
+        public override object VisitModAppArg([NotNull] FormulaParser.ModAppArgContext context)
+        {
+            if (context.funcTerm() != null)
+            {
+                VisitFuncTerm(context.funcTerm());
+            }
+            else
+            {
+                PushArg(new Nodes.ModRef(ToSpan(context.BAREID().Symbol), context.BAREID().GetText(), null, context.str().GetText()));
+            }
+
+            return null;
+        }
+
+        public override object VisitStepOrUpdateLHS([NotNull] FormulaParser.StepOrUpdateLHSContext context)
+        {
+            VisitId(context.id());
+            AppendLHS();
+            if (context.stepOrUpdateLHS() != null)
+            {
+                VisitStepOrUpdateLHS(context.stepOrUpdateLHS());
+            }
+
+            return null;
+        }
+
+        public override object VisitTransform([NotNull] FormulaParser.TransformContext context)
+        {
+            string name = context.BAREID().GetText();
+            StartTransform(name, ToSpan(context.TRANSFORM().Symbol));
+            VisitTransformRest(context.transformRest());
+
+            return null;
+        }
+
+        public override object VisitTransformRest([NotNull] FormulaParser.TransformRestContext context)
+        {
+            VisitTransformSigConfig(context.transformSigConfig());
+            if (context.transBody() != null)
+            {
+                VisitTransBody(context.transBody());
+            }
+
+            return null;
+        }
+
+        public override object VisitTransBody([NotNull] FormulaParser.TransBodyContext context)
+        {
+            VisitTransSentenceConfig(context.transSentenceConfig());
+            if (context.transBody() != null)
+            {
+                VisitTransBody(context.transBody());
+            }
+
+            return null;
+        }
+
+        public override object VisitTransSentenceConfig([NotNull] FormulaParser.TransSentenceConfigContext context)
+        {
+            if (context.sentenceConfig() != null)
+            {
+                VisitSentenceConfig(context.sentenceConfig());
+            }
+
+            VisitTransSentence(context.transSentence());
+
+            return null;
+        }
+
+        public override object VisitTransSentence([NotNull] FormulaParser.TransSentenceContext context)
+        {
+            if (context.ruleItem() != null)
+            {
+                VisitRuleItem(context.ruleItem());
+            }
+            else if (context.typeDecl() != null)
+            {
+                VisitTypeDecl(context.typeDecl());
+            }
+            else if (context.ENSURES() != null)
+            {
+                StartPropContract(ContractKind.EnsuresProp, ToSpan(context.ENSURES().Symbol));
+                VisitBodyList(context.bodyList());
+            }
+            else
+            {
+                StartPropContract(ContractKind.RequiresProp, ToSpan(context.REQUIRES().Symbol));
+                VisitBodyList(context.bodyList());
+            }
+
+            return null;
+        }
+
+        public override object VisitTransformSigConfig([NotNull] FormulaParser.TransformSigConfigContext context)
+        {
+            VisitTransformSig(context.transformSig());
+            SetModRefState(ModRefState.None);
+
+            if (context.config() != null)
+            {
+                VisitConfig(context.config());
+            }
+
+            return null;
+        }
+
+        public override object VisitTransformSig([NotNull] FormulaParser.TransformSigContext context)
+        {
+            VisitTransSigIn(context.transSigIn());
+            SetModRefState(ModRefState.Output);
+            VisitModelParamList(context.modelParamList());
+
+            return null;
+        }
+
+        public override object VisitModelParamList([NotNull] FormulaParser.ModelParamListContext context)
+        {
+            VisitModRefRename(context.modRefRename());
+            if (context.modelParamList() != null)
+            {
+                VisitModelParamList(context.modelParamList());
+            }
+
+            return null;
+        }
+
+        public override object VisitTransSigIn([NotNull] FormulaParser.TransSigInContext context)
+        {
+            if (context.vomParamList() != null)
+            {
+                VisitVomParamList(context.vomParamList());
+            }
+
+            return null;
+        }
+
+        public override object VisitVomParamList([NotNull] FormulaParser.VomParamListContext context)
+        {
+            VisitValOrModelParam(context.valOrModelParam());
+            if (context.vomParamList() != null)
+            {
+                VisitVomParamList(context.vomParamList());
+            }
+
+            return null;
+        }
+
+        public override object VisitValOrModelParam([NotNull] FormulaParser.ValOrModelParamContext context)
+        {
+            if (context.unnBody() != null)
+            {
+                VisitUnnBody(context.unnBody());
+                AppendParam(context.BAREID().GetText(), ToSpan(context.BAREID().Symbol));
+            }
+            else
+            {
+                VisitModRefRename(context.modRefRename());
+            }
+
+            return null;
+        }
+
         public override object VisitModel([NotNull] FormulaParser.ModelContext context)
         {
             VisitModelSigConfig(context.modelSigConfig());
@@ -874,6 +1342,57 @@
             return null;
         }
 
+        public override object VisitModelSigConfig([NotNull] FormulaParser.ModelSigConfigContext context)
+        {
+            VisitModelSig(context.modelSig());
+            SetModRefState(ModRefState.None);
+
+            if (context.config() != null)
+            {
+                VisitConfig(context.config());
+            }
+
+            return null;
+        }
+
+        public override object VisitModelSig([NotNull] FormulaParser.ModelSigContext context)
+        {
+            VisitModelIntro(context.modelIntro());
+
+            if (context.INCLUDES() != null)
+            {
+                SetCompose(ComposeKind.Includes);
+                SetModRefState(ModRefState.Input);
+                VisitModRefs(context.modRefs());
+            }
+            else if (context.EXTENDS() != null)
+            {
+                SetCompose(ComposeKind.Extends);
+                SetModRefState(ModRefState.Input);
+                VisitModRefs(context.modRefs());
+            }
+
+            return null;
+        }
+
+        public override object VisitModelIntro([NotNull] FormulaParser.ModelIntroContext context)
+        {
+            string name = context.BAREID().GetText();
+            bool partial = false;
+            Span span = ToSpan(context.MODEL().Symbol);
+
+            if (context.PARTIAL() != null)
+            {
+                partial = true;
+                span = ToSpan(context.PARTIAL().Symbol);
+            }
+
+            StartModel(name, partial, span);
+            VisitModRef(context.modRef());
+
+            return null;
+        }
+
         public override object VisitModelBody([NotNull] FormulaParser.ModelBodyContext context)
         {
             VisitModelSentence(context.modelSentence());
@@ -881,6 +1400,85 @@
             if (context.modelBody() != null)
             {
                 VisitModelBody(context.modelBody());
+            }
+
+            return null;
+        }
+
+        public override object VisitModelSentence([NotNull] FormulaParser.ModelSentenceContext context)
+        {
+            if (context.modelFactList() != null)
+            {
+                VisitModelFactList(context.modelFactList());
+            }
+            else
+            {
+                VisitModelContractConf(context.modelContractConf());
+            }
+
+            return null;
+        }
+
+        public override object VisitModelFactList([NotNull] FormulaParser.ModelFactListContext context)
+        {
+            if (context.sentenceConfig() != null)
+            {
+                VisitSentenceConfig(context.sentenceConfig());
+            }
+
+            VisitModelFact(context.modelFact());
+
+            if (context.modelFactList() != null)
+            {
+                VisitModelFactList(context.modelFactList());
+            }
+
+            return null;
+        }
+
+        public override object VisitModelFact([NotNull] FormulaParser.ModelFactContext context)
+        {
+            if (context.IS() != null)
+            {
+                PushArg(new Nodes.Id(ToSpan(context.BAREID().Symbol), context.BAREID().GetText()));
+                VisitFuncTerm(context.funcTerm());
+                AppendFact(MkFact(true, ToSpan(context.BAREID().Symbol)));
+            }
+
+            return null;
+        }
+
+        public override object VisitModelContractConf([NotNull] FormulaParser.ModelContractConfContext context)
+        {
+            if (context.sentenceConfig() != null)
+            {
+                VisitSentenceConfig(context.sentenceConfig());
+            }
+
+            VisitModelContract(context.modelContract());
+
+            return null;
+        }
+
+        public override object VisitModelContract([NotNull] FormulaParser.ModelContractContext context)
+        {
+            if (context.ENSURES() != null)
+            {
+                StartPropContract(ContractKind.EnsuresProp, ToSpan(context.ENSURES().Symbol));
+                VisitBodyList(context.bodyList());
+            }
+            else if (context.cardSpec() != null)
+            {
+                VisitCardSpec(context.cardSpec());
+                string digits = context.DIGITS().GetText();
+                string cardspec = context.cardSpec().GetText();
+                VisitId(context.id());
+                AppendCardContract(cardspec, ParseInt(digits, ToSpan(context.DIGITS().Symbol)), ToSpan(context.REQUIRES().Symbol));
+            }
+            else
+            {
+                StartPropContract(ContractKind.RequiresProp, ToSpan(context.REQUIRES().Symbol));
+                VisitBodyList(context.bodyList());
             }
 
             return null;

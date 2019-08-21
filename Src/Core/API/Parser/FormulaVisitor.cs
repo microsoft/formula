@@ -39,15 +39,6 @@
         private Nodes.Enum currentEnum = null;
         /*****************************************/
 
-        // Additional parameters
-        private EnvParams envParams;
-
-        /****** Additional parameters *************/
-        private System.Text.StringBuilder stringBuffer = new System.Text.StringBuilder();
-        private Span stringStart;
-        private Span stringEnd;
-        /*************************************/
-
         /******* State for ModRefs, steps, and updates ********/
         private ModRef crntModRef = null;
         private Step crntStep = null;
@@ -57,6 +48,16 @@
 
         /******* State for sentence configs ********/
         private Config crntSentConf = null;
+        /*************************************/
+
+        /****** Additional parameters *************/
+        private EnvParams envParams;
+        /*************************************/
+
+        /****** Additional parameters *************/
+        private System.Text.StringBuilder stringBuffer = new System.Text.StringBuilder();
+        private Span stringStart;
+        private Span stringEnd;
         /*************************************/
 
         private bool IsBuildingNext

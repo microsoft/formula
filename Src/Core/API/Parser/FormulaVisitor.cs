@@ -4,6 +4,7 @@
     using System.Collections.Generic;
     using System.Diagnostics.Contracts;
     using System.Text;
+    using System.Linq;
     using Antlr4.Runtime;
     using Antlr4.Runtime.Misc;
     using Microsoft.Formula.API.Nodes;
@@ -51,13 +52,11 @@
         /*************************************/
 
         /****** Additional parameters *************/
-        private EnvParams envParams;
+        private EnvParams envParams = null;
         /*************************************/
 
         /****** Additional parameters *************/
         private System.Text.StringBuilder stringBuffer = new System.Text.StringBuilder();
-        private Span stringStart;
-        private Span stringEnd;
         /*************************************/
 
         private bool IsBuildingNext
@@ -78,11 +77,66 @@
             set;
         }
 
+        internal System.Diagnostics.Stopwatch sw = null;
+
+        internal void StartTimer()
+        {
+            sw = System.Diagnostics.Stopwatch.StartNew();
+        }
+
+        internal void StopTimer(String msg)
+        {
+            if (sw != null)
+            {
+
+                sw.Stop();
+                Console.WriteLine(msg + " took: " + sw.ElapsedMilliseconds);
+            }
+        }
+
+        internal AST<Node> ParseFuncTerm(string text, out ParseResult pr)
+        {
+            parseResult = new ParseResult();
+            pr = parseResult;
+            bool result = true;
+            this.ResetState();
+            text = string.Format("domain Dummy {{ dummy({0}). }}", text);
+
+            StartTimer();
+            var str = new System.IO.MemoryStream(System.Text.Encoding.ASCII.GetBytes(text));
+            StopTimer("Creating memory stream function term");
+
+            StartTimer();
+            ICharStream charStream = Antlr4.Runtime.CharStreams.fromStream(str);
+            FormulaLexer lexer = new FormulaLexer(charStream);
+            CommonTokenStream tokens = new CommonTokenStream(lexer);
+            FormulaParser parser = new FormulaParser(tokens);
+            FormulaParser.ProgramContext programContext = parser.program();
+            StopTimer("Parsing function term");
+
+            StartTimer();
+            this.VisitProgram(programContext);
+            StopTimer("Visiting function term");
+
+            str.Close();
+
+
+            if (!result)
+            {
+                parseResult.Program.Node.GetNodeHash();
+                return null;
+            }
+
+            parseResult.Program.Node.GetNodeHash();
+            return Factory.Instance.ToAST(((FuncTerm)((Domain)parseResult.Program.Node.Modules.First<Node>()).Rules.First<Nodes.Rule>().Heads.First<Node>()).Args.First<Node>());
+        }
+
         internal bool ParseFile(ProgramName name, string referrer, Span location, System.Threading.CancellationToken ctok, out ParseResult pr)
         {
             parseResult = new ParseResult(new Program(name));
             pr = parseResult;
             bool result = true;
+            this.ResetState();
 
             try
             {
@@ -102,13 +156,27 @@
                     return false;
                 }
 
+                StartTimer();
                 var str = new System.IO.FileStream(name.Uri.AbsolutePath, System.IO.FileMode.Open, System.IO.FileAccess.Read);
+                StopTimer("Creating file stream for file");
+
+                StartTimer();
                 ICharStream charStream = Antlr4.Runtime.CharStreams.fromStream(str);
                 FormulaLexer lexer = new FormulaLexer(charStream);
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
                 FormulaParser parser = new FormulaParser(tokens);
+                StopTimer("Tokenizing for file");
+
+                //parser.RemoveErrorListeners();
+                //parser.AddErrorListener(new Core.API.Parser.FormulaLexerErrorListener());
+
+                StartTimer();
                 FormulaParser.ProgramContext programContext = parser.program();
+                StopTimer("Parsing file");
+
+                StartTimer();
                 this.VisitProgram(programContext);
+                StopTimer("Visiting file");
 
                 str.Close();
             }
@@ -131,9 +199,107 @@
             return result;
         }
 
+        internal bool ParseText(ProgramName name, string programText, Span location, System.Threading.CancellationToken ctok, out ParseResult pr)
+        {
+            parseResult = new ParseResult(new Program(name));
+            pr = parseResult;
+            bool result = true;
+            this.ResetState();
+
+            try
+            {
+                StartTimer();
+                var str = new System.IO.MemoryStream(System.Text.Encoding.ASCII.GetBytes(programText));
+
+                ICharStream charStream = Antlr4.Runtime.CharStreams.fromStream(str);
+                FormulaLexer lexer = new FormulaLexer(charStream);
+                CommonTokenStream tokens = new CommonTokenStream(lexer);
+                FormulaParser parser = new FormulaParser(tokens);
+                //parser.RemoveErrorListeners();
+                //parser.AddErrorListener(new Core.API.Parser.FormulaLexerErrorListener());
+                
+                FormulaParser.ProgramContext programContext = parser.program();
+                StopTimer("Parsing text");
+
+                StartTimer();
+                this.VisitProgram(programContext);
+                StopTimer("Visiting text");
+
+                str.Close();
+            }
+            catch (Exception e)
+            {
+                var badFile = new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.BadFile.ToString(e.Message),
+                    Constants.BadFile.Code,
+                    parseResult.Program.Node.Name);
+                parseResult.AddFlag(badFile);
+                parseResult.Program.Node.GetNodeHash();
+                return false;
+            }
+
+            if (ctok.IsCancellationRequested)
+            {
+                var badFile = new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.OpCancelled.ToString(string.Format("Cancelled parsing of {0}", name.ToString(envParams))),
+                    Constants.OpCancelled.Code,
+                    parseResult.Program.Node.Name);
+                parseResult.AddFlag(badFile);
+                parseResult.Program.Node.GetNodeHash();
+                return false;
+            }
+
+            parseResult.Program.Node.GetNodeHash();
+            return result;
+        }
+
         private Span ToSpan(IToken loc)
         {
             return new Span(loc.Line, loc.Column, loc.Line, loc.StopIndex, this.parseResult.Name);
+        }
+
+        private void ResetState()
+        {
+            currentModule = null;
+            parseResult.ClearFlags();
+            /******* State for building terms ********/
+            appStack.Clear();
+            argStack.Clear();
+            quoteStack.Clear();
+            /*****************************************/
+
+            /******* State for building rules, contracts, and comprehensions ********/
+            crntRule = null;
+            crntContract = null;
+            crntBody = null;
+            /*****************************************/
+
+            /******* State for building types and type declarations ********/
+            crntTypeDeclName = null;
+            crntTypeDeclSpan = default(Span);
+            crntTypeDecl = null;
+            crntTypeTerm = null;
+            currentEnum = null;
+            /*****************************************/
+
+            /******* State for ModRefs, steps, and updates ********/
+            crntModRef = null;
+            crntStep = null;
+            crntUpdate = null;
+            crntModRefState = ModRefState.None;
+            /*************************************/
+
+            /******* State for sentence configs ********/
+            crntSentConf = null;
+            /*************************************/
+
+            IsBuildingNext = false;
+            IsBuildingUpdate = false;
+            IsBuildingCod = false;
         }
 
         /***********************************************************/
@@ -1176,7 +1342,7 @@
             }
             else
             {
-                PushArg(new Nodes.ModRef(ToSpan(context.BAREID().Symbol), context.BAREID().GetText(), null, context.str().GetText()));
+                PushArg(new Nodes.ModRef(ToSpan(context.BAREID().Symbol), context.BAREID().GetText(), null, GetSingleString(context.str().GetText())));
             }
 
             return null;
@@ -1444,6 +1610,11 @@
                 VisitFuncTerm(context.funcTerm());
                 AppendFact(MkFact(true, ToSpan(context.BAREID().Symbol)));
             }
+            else
+            {
+                VisitFuncTerm(context.funcTerm());
+                AppendFact(MkFact(false, ToSpan(context.Start)));
+            }
 
             return null;
         }
@@ -1689,7 +1860,11 @@
 
         public override object VisitEnumCnst([NotNull] FormulaParser.EnumCnstContext context)
         {
-            if (context.DIGITS() != null)
+            if (context.BAREID() != null)
+            {
+                AppendEnum(new Nodes.Id(ToSpan(context.Start), context.BAREID().GetText()));
+            }
+            else if (context.DIGITS()[0] != null)
             {
                 if (context.RANGE() != null)
                 {
@@ -1712,10 +1887,6 @@
             {
                 VisitStr(context.str());
                 AppendEnum(GetString(ToSpan(context.Start)));
-            }
-            else if (context.BAREID() != null)
-            {
-                AppendEnum(new Nodes.Id(ToSpan(context.Start), context.BAREID().GetText()));
             }
             else
             {
@@ -1886,16 +2057,44 @@
             {
                 VisitAtom(context.atom());
             }
-            else if (context.unOp() != null)
+            else if (context.MINUS() != null && context.funcTerm(1) == null)
             {
-                VisitUnOp(context.unOp());
+                PushSymbol(OpKind.Neg, ToSpan(context.Start));
                 VisitFuncTerm(context.funcTerm(0));
                 PushArg(MkTerm(1));
             }
-            else if (context.binOp() != null)
+            else if (context.MUL() != null)
             {
                 VisitFuncTerm(context.funcTerm(0));
-                VisitBinOp(context.binOp());
+                PushSymbol(OpKind.Mul, ToSpan(context.MUL().Symbol));
+                VisitFuncTerm(context.funcTerm(1));
+                PushArg(MkTerm(2));
+            }
+            else if (context.DIV() != null)
+            {
+                VisitFuncTerm(context.funcTerm(0));
+                PushSymbol(OpKind.Div, ToSpan(context.DIV().Symbol));
+                VisitFuncTerm(context.funcTerm(1));
+                PushArg(MkTerm(2));
+            }
+            else if (context.MOD() != null)
+            {
+                VisitFuncTerm(context.funcTerm(0));
+                PushSymbol(OpKind.Mod, ToSpan(context.MOD().Symbol));
+                VisitFuncTerm(context.funcTerm(1));
+                PushArg(MkTerm(2));
+            }
+            else if (context.PLUS() != null)
+            {
+                VisitFuncTerm(context.funcTerm(0));
+                PushSymbol(OpKind.Add, ToSpan(context.PLUS().Symbol));
+                VisitFuncTerm(context.funcTerm(1));
+                PushArg(MkTerm(2));
+            }
+            else if (context.MINUS() != null)
+            {
+                VisitFuncTerm(context.funcTerm(0));
+                PushSymbol(OpKind.Sub, ToSpan(context.MINUS().Symbol));
                 VisitFuncTerm(context.funcTerm(1));
                 PushArg(MkTerm(2));
             }
@@ -2071,20 +2270,85 @@
 
         public override object VisitStr([NotNull] FormulaParser.StrContext context)
         {
-            // TODO: reimplement this with escapes
-            string str = null;
+            stringBuffer.Clear();
+
             if (context.STRING() != null)
             {
-                str = context.STRING().GetText();
-                str = str.Substring(1, str.Length - 2);
+                string str = context.STRING().GetText();
+                char[] arr = str.ToCharArray(1, str.Length - 2);
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    char c = arr[i];
+                    if (c == '\\' && (i < arr.Length - 1))
+                    {
+                        ++i;
+                        char next = arr[i];
+                        switch (next)
+                        {
+                            case 'r':
+                                stringBuffer.Append('\r');
+                                break;
+                            case 'n':
+                                stringBuffer.Append('\n');
+                                break;
+                            case 't':
+                                stringBuffer.Append('\t');
+                                break;
+                            default:
+                                stringBuffer.Append(next);
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        stringBuffer.Append(c);
+                    }
+                }
+
+                //str = context.STRING().GetText();
+                //str = str.Substring(1, str.Length - 2);
             }
             else
             {
-                str = context.STRINGMUL().GetText();
-                str = str.Substring(2, str.Length - 4);
-            }
+                string str = context.STRINGMUL().GetText();
+                char[] arr = str.ToCharArray(2, str.Length - 4);
+                for (int i = 0; i < arr.Length; i++)
+                {
+                    char c = arr[i];
+                    if (c == '\'' && (i < arr.Length - 3))
+                    {
+                        if (arr[i + 1] == '\'' && arr[i + 2] == '"' && arr[i + 3] == '"')
+                        {
+                            stringBuffer.Append("'\"");
+                            i += 3;
+                        }
+                        else
+                        {
+                            stringBuffer.Append("'");
+                        }
+                    }
+                    else if (c == '"' && (i < arr.Length - 3))
+                    {
+                        if (arr[i + 1] == '"' && arr[i + 2] == '\'' && arr[i + 3] == '\'')
+                        {
+                            stringBuffer.Append("\"'");
+                            i += 3;
+                        }
+                        else
+                        {
+                            stringBuffer.Append("\"");
+                        }
+                    }
+                    else
+                    {
+                        stringBuffer.Append(c);
+                    }
 
-            stringBuffer.Append(str);
+                }
+
+                //str = context.STRINGMUL().GetText();
+                //str = str.Substring(2, str.Length - 4);
+            }
 
             return null;
         }
@@ -2156,7 +2420,7 @@
         {
             string rename = context.BAREID(0).GetText();
             string name = context.BAREID(1).GetText();
-            string loc = context.AT() == null ? null : context.str().GetText();
+            string loc = context.AT() == null ? null : GetSingleString(context.str().GetText());
 
             AppendModRef(new Nodes.ModRef(ToSpan(context.BAREID(0).Symbol), name, rename, loc));
 
@@ -2166,11 +2430,89 @@
         public override object VisitModRefNoRename([NotNull] FormulaParser.ModRefNoRenameContext context)
         {
             string name = context.BAREID().GetText();
-            string loc = context.AT() == null ? null : context.str().GetText();
+            string loc = context.AT() == null ? null : GetSingleString(context.str().GetText());
 
             AppendModRef(new Nodes.ModRef(ToSpan(context.BAREID().Symbol), name, null, loc));
 
             return null;
+        }
+
+        public string GetSingleString(string str)
+        {
+            StringBuilder builder = new StringBuilder();
+            char[] arr = str.ToCharArray(1, str.Length - 2);
+            for (int i = 0; i < arr.Length; i++)
+            {
+                char c = arr[i];
+                if (c == '\\' && (i < arr.Length - 1))
+                {
+                    ++i;
+                    char next = arr[i];
+                    switch (next)
+                    {
+                        case 'r':
+                            builder.Append('\r');
+                            break;
+                        case 'n':
+                            builder.Append('\n');
+                            break;
+                        case 't':
+                            builder.Append('\t');
+                            break;
+                        default:
+                            builder.Append(next);
+                            break;
+                    }
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+
+            }
+
+            return builder.ToString();
+        }
+
+        public string GetMultiString(string str)
+        {
+            StringBuilder builder = new StringBuilder();
+            char[] arr = str.ToCharArray(2, str.Length - 4);
+            for (int i = 0; i < arr.Length; i++)
+            {
+                char c = arr[i];
+                if (c == '\'' && (i < arr.Length - 3))
+                {
+                    if (arr[i + 1] == '\'' && arr[i + 2] == '"' && arr[i + 3] == '"')
+                    {
+                        builder.Append("'\"");
+                        i += 3;
+                    }
+                    else
+                    {
+                        builder.Append("'");
+                    }
+                }
+                else if (c == '"' && (i < arr.Length - 3))
+                {
+                    if (arr[i + 1] == '"' && arr[i + 2] == '\'' && arr[i + 3] == '\'')
+                    {
+                        builder.Append("\"'");
+                        i += 3;
+                    }
+                    else
+                    {
+                        builder.Append("\"");
+                    }
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+
+            }
+
+            return builder.ToString();
         }
 
         #region Apply Info classes

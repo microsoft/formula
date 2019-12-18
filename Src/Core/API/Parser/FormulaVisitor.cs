@@ -1220,12 +1220,10 @@
 
         public override object VisitModuleList([NotNull] FormulaParser.ModuleListContext context)
         {
-            VisitModule(context.module());
-            EndModule();
-
-            if (context.moduleList() != null)
+            foreach (var module in context.module())
             {
-                VisitModuleList(context.moduleList());
+                VisitModule(module);
+                EndModule();
             }
 
             return null;
@@ -1561,11 +1559,9 @@
 
         public override object VisitModelBody([NotNull] FormulaParser.ModelBodyContext context)
         {
-            VisitModelSentence(context.modelSentence());
-
-            if (context.modelBody() != null)
+            foreach (var sentence in context.modelSentence())
             {
-                VisitModelBody(context.modelBody());
+                VisitModelSentence(sentence);
             }
 
             return null;

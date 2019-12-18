@@ -425,7 +425,7 @@
                 var arg2 = ((Cnst)stack.Pop()).GetNumericValue();
                 var arg1 = ((Cnst)stack.Pop()).GetNumericValue();
                 
-                stack.Push(new Range(span, arg1, arg2));
+                stack.Push(new Microsoft.Formula.API.Nodes.Range(span, arg1, arg2));
                 return BuilderResultKind.Success;
             });
         }

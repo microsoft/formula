@@ -78,7 +78,7 @@
         /// <summary>
         /// Used to construct a program name representing a caller of the API without any additional context.
         /// </summary>
-        private ProgramName()
+        public ProgramName()
         {
             Uri = apiErrorUri;
         }

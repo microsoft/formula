@@ -856,7 +856,7 @@
 
         private static IEnumerable<Tuple<Node, PrintData>> StartRange(Node node, PrintData data, TextWriter wr, EnvParams envParams)
         {
-            var rr = (Range)node;
+            var rr = (Microsoft.Formula.API.Nodes.Range)node;
             wr.Write("{0}..{1}", rr.Lower, rr.Upper);
             yield break;
         }

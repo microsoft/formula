@@ -1204,6 +1204,29 @@
             return data;
         }
 
+        /// <summary>
+        /// Used to add symbolic constants for cardinality constraints.
+        /// </summary>
+        /// <param name="aliasSymb"></param>
+        /// <param name="node"></param>
+        public void AddAlias(UserSymbol aliasSymb, Node node)
+        {
+            Contract.Requires(aliasSymb != null && aliasSymb.Kind == SymbolKind.UserCnstSymb);
+            Contract.Requires(((UserCnstSymb)aliasSymb).IsSymbolicConstant);
+
+            AliasData data;
+            if (aliasDataMap.TryFindValue(aliasSymb, out data))
+            {
+                return;
+            }
+
+            data = new AliasData(aliasSymb, node);
+            aliasDataMap.Add(aliasSymb, data);
+
+            // TODO: check this
+            data.SetExpDefinition(this.Index, aliasDataMap);
+        }
+
         private bool ValidateUse_UserFunc(FuncTerm ft, Namespace space, out UserSymbol symbol, List<Flag> flags, bool allowDerived = false)
         {
             Contract.Assert(ft.Function is Id);
@@ -1444,6 +1467,11 @@
             }
 
             return result;
+        }
+
+        public void AddSymbolicFact()
+        {
+
         }
 
         private class AliasData

@@ -182,7 +182,7 @@
         public void DumpRules(StringBuilder builder)
         {
             Contract.Requires(builder != null);
-            foreach (var r in Rules)
+            foreach (var r in Rules.OrderBy(x => x.RuleId))
             {
                 r.Debug_DumpRule(builder);
             }

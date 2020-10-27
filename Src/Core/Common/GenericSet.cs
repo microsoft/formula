@@ -10,18 +10,18 @@
     /// Elements are enumerated in sorted order.
     /// </summary>
     /// <typeparam name="T">The type of elements in the set</typeparam>
-    public class Set<T> : IEnumerable<T>
+    public class GenericSet<T> : IEnumerable<T>
     {
-        private Map<T, T> setMap;
+        private GenericMap<T, T> setMap;
 
-        public Set(Comparison<T> comparer)
+        public GenericSet(IComparer<T> comparer)
         {
-            setMap = new Map<T, T>(comparer);
+            setMap = new GenericMap<T, T>(comparer);
         }
 
-        public Set(Comparison<T> comparer, IEnumerable<T> initial)
+        public GenericSet(IComparer<T> comparer, IEnumerable<T> initial)
         {
-            setMap = new Map<T, T>(comparer);
+            setMap = new GenericMap<T, T>(comparer);
 
             foreach (var value in initial)
             {
@@ -29,7 +29,7 @@
             }
         }
 
-        public Comparison<T> Comparer
+        public IComparer<T> Comparer
         {
             get
             {
@@ -202,7 +202,7 @@
             setMap.Clear();
         }
 
-        public Set<T> UnionWith(Set<T> set)
+        public GenericSet<T> UnionWith(GenericSet<T> set)
         {
             if (set == this)
             {
@@ -217,7 +217,7 @@
             return this;
         }
 
-        public Set<T> IntersectWith(Set<T> set)
+        public GenericSet<T> IntersectWith(GenericSet<T> set)
         {
             var stack = new Stack<T>();
             foreach (var e in this)
@@ -242,7 +242,7 @@
         /// </summary>
         /// <param name="set"></param>
         /// <returns></returns>
-        public bool IsSubsetOf(Set<T> set)
+        public bool IsSubsetOf(GenericSet<T> set)
         {
             Contract.Requires(set != null);
             if (set == this)
@@ -271,7 +271,8 @@
         public bool IsSameSet(Set<T> set)
         {
             Contract.Requires(set != null);
-            return IsSameSet(set, (x, y) => Comparer(x, y) == 0);
+            return IsSameSet(set, (x, y) => Comparer.Compare(x, y) == 0);
+            //return IsSameSet(set, (x, y) => Comparer(x, y) == 0);
         }
 
         /// <summary>

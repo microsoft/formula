@@ -957,7 +957,7 @@
                 }
             }
 
-            /*
+            
             foreach (var kv in typeToEmbedding)
             {
                 Console.WriteLine(
@@ -967,7 +967,7 @@
                     kv.Value.DefaultMember.Item2);
                 Console.WriteLine();
             }
-            */
+            
         }
 
         private ITypeEmbedding Register(ITypeEmbedding embedding)

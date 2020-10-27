@@ -6,12 +6,14 @@ namespace Microsoft.Formula.CommandLine
     using System.Diagnostics.Contracts;
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
 
     using API;
     using API.Nodes;
     using Common;
     using Common.Extras;
     using Common.Terms;
+    //using Microsoft.Z3;
 
     /// <summary>
     /// The command interface.
@@ -47,6 +49,7 @@ namespace Microsoft.Formula.CommandLine
         private const string VerboseMsg = "Changes verbosity. Use: verbose (on | off)";
         private const string WaitMsg = "Changes waiting behavior. Use: wait (on | off) to block until task completes";
         private const string QueryMsg = "Start a query task. Use: query model goals";
+        //private const string SolveMsg = "Start a solve task. Use: solve partial_model max_sols goals";
         private const string SolveMsg = "Start a solve task. Use: solve partial_model max_sols goals";
         private const string ApplyMsg = "Start an apply task. Use: apply transformstep";
         private const string StatsMsg = "Prints task statistics. Use: stats task_id [top_k_rule]";
@@ -274,11 +277,9 @@ namespace Microsoft.Formula.CommandLine
             cmdMap.Add(queryCmd.Name, queryCmd);
             cmdMap.Add(queryCmd.ShortName, queryCmd);
 
-#if SOLVER
             var solveCmd = new Command("solve", "sl", DoSolve, SolveMsg);
             cmdMap.Add(solveCmd.Name, solveCmd);
             cmdMap.Add(solveCmd.ShortName, solveCmd);
-#endif
 
             var truthCmd = new Command("truth", "tr", DoTruth, TruthMsg);
             cmdMap.Add(truthCmd.Name, truthCmd);
@@ -692,7 +693,7 @@ namespace Microsoft.Formula.CommandLine
             }
             else if (kind == TaskKind.Apply)
             {
-                var result = ((System.Threading.Tasks.Task<ApplyResult>)task).Result;
+                var result = ((System.Threading.Tasks.Task<API.ApplyResult>)task).Result;
                 List<Flag> flags;
                 if (cmdParts.Length == 1)
                 {
@@ -1197,48 +1198,27 @@ namespace Microsoft.Formula.CommandLine
             }
         }
 
-#if SOLVER
         private void DoSolve(string s)
         {
             var cmdParts = s.Split(cmdSplitChars, 3, StringSplitOptions.RemoveEmptyEntries);
-            if (cmdParts.Length != 3)
+            if (cmdParts.Length != 3 || !(String.Equals(cmdParts[1], "=")))
             {
                 sink.WriteMessageLine(SolveMsg, SeverityKind.Warning);
                 return;
             }
 
-            int maxSols;
-            if (!int.TryParse(cmdParts[1], out maxSols) || maxSols <= 0)
-            {
-                sink.WriteMessageLine("Expected a positive number of solutions", SeverityKind.Warning);
-                return;
-            }
-
-            var cmdLineName = new ProgramName("CommandLine.4ml");
-            var parse = Factory.Instance.ParseText(
-                cmdLineName,
-                string.Format("domain Dummy {{q :-\n{0}\n.}}", cmdParts[2]));
-            parse.Wait();
-
-            WriteFlags(cmdLineName, parse.Result.Flags);
-            if (!parse.Result.Succeeded)
-            {
-                sink.WriteMessageLine("Could not parse goal", SeverityKind.Warning);
-                return;
-            }
-
-            var rule = parse.Result.Program.FindAny(
-                new API.ASTQueries.NodePred[]
-                {
-                    API.ASTQueries.NodePredFactory.Instance.Star,
-                    API.ASTQueries.NodePredFactory.Instance.MkPredicate(NodeKind.Rule),
-                });
-            Contract.Assert(rule != null);
-            var bodies = ((Rule)rule.Node).Bodies;
-
+            string modelName = cmdParts[2];
             AST<Node> module;
-            if (!TryResolveModuleByName(cmdParts[0], out module))
+            if (!TryResolveModuleByName(modelName, out module))
             {
+                return;
+            }
+
+            var model = module.Node as API.Nodes.Model;
+            if (module.Node.NodeKind != NodeKind.Model ||
+                !model.IsPartial)
+            {
+                sink.WriteMessageLine(modelName + " is not a partial model");
                 return;
             }
 
@@ -1252,46 +1232,18 @@ namespace Microsoft.Formula.CommandLine
                 }
             }
 
-            string name;
-            module.Node.TryGetStringAttribute(AttributeKind.Name, out name);
-
             List<Flag> flags;
-            System.Threading.Tasks.Task<SolveResult> task;
-            var solveCancel = new CancellationTokenSource();
-            var goals = new AST<Body>[bodies.Count];
-            int i = 0;
-            foreach (var b in bodies)
-            {
-                goals[i++] = (AST<Body>)Factory.Instance.ToAST(b);
-            }
+            Task<SolveResult> task;
+            int numSols = 10;
 
-            var result = env.Solve(
+            env.Solve(
                 progName,
-                name,
-                goals,
-                maxSols,
+                modelName,
+                numSols,
                 out flags,
-                out task,
-                solveCancel.Token);
-
-            if (!result)
-            {
-                sink.WriteMessageLine("Could not start operation; environment is busy", SeverityKind.Warning);
-                return;
-            }
-
-            WriteFlags(cmdLineName, flags);
-            if (task != null)
-            {
-                var id = taskManager.StartTask(task, new Common.Rules.ExecuterStatistics(null), solveCancel);
-                sink.WriteMessageLine(string.Format("Started solve task with Id {0}.", id), SeverityKind.Info);
-            }
-            else
-            {
-                sink.WriteMessageLine("Failed to start solved task.", SeverityKind.Warning);
-            }
+                out task
+                );
         }
-#endif
 
         private void DoDetails(string s)
         {

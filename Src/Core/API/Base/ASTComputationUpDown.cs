@@ -71,7 +71,10 @@
         public T Compute(S initVal)
         {
             T result = default(T);
-            enumState.Push(new ComputationState(start, initVal, unfold(start, initVal)));
+
+            IEnumerable<Tuple<Node, S>> initUnfold = unfold(start, initVal);
+            enumState.Push(new ComputationState(start, initVal, initUnfold));
+            //enumState.Push(new ComputationState(start, initVal, unfold(start, initVal)));
             while (enumState.Count > 0)
             {
                 var top = enumState.Peek();

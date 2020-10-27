@@ -112,13 +112,16 @@
         /// It is assumed that two nodes of the same kind in the same context can always
         /// be replaced.
         /// </summary>
-        private Set<ReplaceData> replaceables = new Set<ReplaceData>(ReplaceData.Compare);
+        private GenericSet<ReplaceData> replaceables = new GenericSet<ReplaceData>(Common.ReplaceDataComparer.GetReplaceDataComparer());
+        //private Set<ReplaceData> replaceables = new Set<ReplaceData>(ReplaceData.Compare);
+
 
         private Map<string, OpKind> namedFuncs = new Map<string, OpKind>(string.Compare);
 
         private Tuple<string, OpStyleKind>[] opKindStrings;
 
-        private Set<string> reservedWords = new Set<string>(string.CompareOrdinal);
+        //private Set<string> reservedWords = new Set<string>(string.CompareOrdinal);
+        private GenericSet<string> reservedWords = new GenericSet<string>(Common.StringComparer.GetStringComparer());
 
         private string[] relKindStrings;
 
@@ -1298,9 +1301,10 @@
             contrKindStrings[(int)kind] = name;
         }
 
-        private class SearchState
+        public class SearchState
         {
-            private Set<Pair> seen = new Set<Pair>(Pair.Compare);
+            //private Set<Pair> seen = new Set<Pair>(Pair.Compare);
+            private GenericSet<Pair> seen = new GenericSet<Pair>(Common.PairComparer.GetPairComparer());
 
             public bool this[NodeKind k, ChildContextKind c]
             {
@@ -1322,7 +1326,7 @@
                 }            
             }
 
-            private struct Pair
+            public struct Pair
             {
                 public NodeKind nodeKind;
                 public ChildContextKind context;
@@ -1345,7 +1349,7 @@
             }
         }
 
-        private struct ReplaceData
+        public struct ReplaceData
         {
             public NodeKind parentKind;
             public ChildContextKind context;

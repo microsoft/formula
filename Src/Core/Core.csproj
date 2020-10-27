@@ -18,12 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.7.2" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="Microsoft.Z3">
-      <HintPath>..\..\Ext\Z3\Microsoft.Z3.dll</HintPath>
-    </Reference>
+    <PackageReference Include="Microsoft.Z3.x64" Version="4.8.7" />
   </ItemGroup>
 
 </Project>

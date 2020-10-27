@@ -412,6 +412,19 @@
         }
 
         /// <summary>
+        /// Makes a fresh symbolic constant. Used for creating cardinality constraints.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="wasAdded"></param>
+        /// <returns>A term whose args are symbolic constants.</returns>
+        public Term MkSymbolicConstant(string name, out UserCnstSymb s, out AST<Id> id)
+        {
+            s = this.SymbolTable.ModuleSpace.AddFreshSymbolicConstant(name, out id);
+            bool wasAdded;
+            return MkApply(s, EmptyArgs, out wasAdded);
+        }
+
+        /// <summary>
         /// Makes a fresh constant for internal use only.
         /// </summary>
         public UserCnstSymb MkFreshConstant(bool isDerived)

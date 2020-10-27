@@ -2,7 +2,7 @@
 {
     using System;
 
-    internal class MutableTuple<T1>
+    public class MutableTuple<T1>
     {
         public T1 Item1
         {

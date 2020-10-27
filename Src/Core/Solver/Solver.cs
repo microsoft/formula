@@ -50,6 +50,12 @@
             get { return PartialModel.Index.SymbolTable; }
         }
 
+        public Env Env
+        {
+            get;
+            private set;
+        }
+
         internal IEnumerable<Flag> Flags
         {
             get { return solverFlags; }
@@ -100,7 +106,7 @@
             set;
         }
 
-        internal Solver(FactSet partialModel, Model source, CancellationToken cancel)
+        internal Solver(FactSet partialModel, Model source, Env env, CancellationToken cancel)
         {
             Contract.Requires(partialModel != null);
             Contract.Requires(source != null);
@@ -108,6 +114,8 @@
 
             Source = source;
             PartialModel = partialModel;
+
+            Env = env;
 
             //// Step 1. Create Z3 Context and Solver
             CreateContextAndSolver();

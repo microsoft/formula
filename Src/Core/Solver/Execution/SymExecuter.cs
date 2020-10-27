@@ -18,6 +18,7 @@
 
     using Z3Expr = Microsoft.Z3.Expr;
     using Z3BoolExpr = Microsoft.Z3.BoolExpr;
+    using System.Numerics;
 
     internal class SymExecuter
     {
@@ -90,6 +91,62 @@
             private set;
         }
 
+        public void ExtendPartialModel()
+        {
+            //// Introduce Terms for cardinality constraints
+            ProgramName programName = new ProgramName("env:///dummy.4ml");
+            AST<Program> program = Factory.Instance.MkProgram(programName);
+
+            string domLoc = Solver.Source.Domain.Span.Program.ToString();
+            string modLoc = Solver.Source.Span.Program.ToString();
+
+            ModRef modRef = new ModRef(Span.Unknown, Solver.Source.Domain.Name, null, domLoc);
+            AST<Model> model = Factory.Instance.MkModel("dummy", true, new ASTConcr<ModRef>(modRef), ComposeKind.Extends); // new model
+
+            //AST<Model> model = Factory.Instance.MkModel("dummy", true, new ASTConcr<ModRef>(Solver.Source.Domain), ComposeKind.Extends);
+            AST<ModRef> origModel = Factory.Instance.MkModRef(Solver.Source.Name, null, modLoc, Solver.Source.Span);
+            model = Factory.Instance.AddModelCompose(model, origModel);
+            model.Print(Console.Out);
+
+            foreach (var entry in Solver.Cardinalities.SolverState)
+            {
+                foreach (var item in entry)
+                {
+                    var cardVar = item.Key;
+                    var cardLower = item.Value.Item1.Lower;
+
+                    if (cardVar.Symbol.IsDataConstructor &&
+                        cardVar.IsLFPCard &&
+                        cardLower > 0)
+                    {
+                        for (BigInteger i = 0; i < (BigInteger)cardLower; i++)
+                        {
+                            int arity = cardVar.Symbol.Arity;
+                            AST<Node>[] args = new AST<Node>[arity];
+
+                            for (int j = 0; j < arity; j++)
+                            {
+                                args[j] = Factory.Instance.MkId("sc" + symbCnstId++);
+                            }
+
+                            AST<FuncTerm> match = Factory.Instance.MkFuncTerm(Factory.Instance.MkId(cardVar.Symbol.Name), Span.Unknown, args);
+                            AST<ModelFact> fact = Factory.Instance.MkModelFact(null, match);
+                            model = Factory.Instance.AddFact(model, fact);
+                        }
+                    }
+                }
+            }
+
+            program.Node.AddModule(model.Node);
+
+            InstallResult result;
+            Solver.Env.Install(program, out result);
+            if (!result.Succeeded)
+            {
+                System.Console.WriteLine("Error installing partial model!");
+            }
+        }
+
         public SymExecuter(Solver solver)
         {
             Contract.Requires(solver != null);
@@ -97,6 +154,9 @@
             Rules = solver.PartialModel.Rules;
             Index = solver.PartialModel.Index;
             Encoder = new TermEncIndex(solver);
+
+            ExtendPartialModel();
+
             solver.PartialModel.ConvertSymbCnstsToVars(out varFacts, out aliasMap);
 
             //// Need to pre-register all aliases with the encoder.
@@ -142,7 +202,7 @@
 
             foreach (var f in varFacts)
             {
-                //// IndexFact(ExtendLFP(f), null, -1);
+                IndexFact(ExtendLFP(f), null, -1);
             }
 
             Term scTerm;
@@ -154,7 +214,7 @@
                     new Term[] { sc, aliasMap[(UserCnstSymb)sc.Symbol]  },
                     out wasAdded);
 
-                //// IndexFact(ExtendLFP(scTerm), null, -1);
+                IndexFact(ExtendLFP(scTerm), null, -1);
             }
         }
 
@@ -188,7 +248,7 @@
             return e;
         }
 
-        /*
+        
         private void IndexFact(SymElement t, Set<Activation> pending, int stratum)
         {
             LinkedList<ShapeTrie> subindices;
@@ -202,7 +262,7 @@
                 index.TryAdd(t, pending, stratum);
             }
         }
-        */
+        
         /// <summary>
         /// Register a rule without any finds.
         /// </summary>
@@ -365,6 +425,25 @@
                 {
                     args[i] = Index.MkVar(PatternVarUnboundPrefix + i.ToString(), true, out wasAdded);
                 }
+            }
+
+            return Index.MkApply(s, args, out wasAdded);
+        }
+
+        private uint symbCnstId = 0;
+
+        private Term MkSymbolicTerm(Symbol s)
+        {
+            Contract.Requires(s != null);
+            bool wasAdded;
+            var args = new Term[s.Arity];
+            
+            for (int i = 0; i < s.Arity; ++i)
+            {
+                UserCnstSymb symbCnst;
+                AST<Id> id;
+                args[i] = Index.MkSymbolicConstant("sc" + symbCnstId++, out symbCnst, out id);
+                Solver.PartialModel.AddAlias(symbCnst, id.Node);
             }
 
             return Index.MkApply(s, args, out wasAdded);

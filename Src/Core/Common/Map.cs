@@ -199,7 +199,8 @@
                 while (crnt != null)
                 {
                     enumState.Push(crnt);
-                    crnt = (crnt.Left is Phantom) ? null : crnt.Left;
+                    //crnt = (crnt.Left is Phantom) ? null : crnt.Left;
+                    crnt = (crnt.Left is null || crnt.Left.IsPhantomNode()) ? null : crnt.Left;
                 }
 
                 while (enumState.Count > 0)
@@ -210,7 +211,8 @@
                     while (crnt != null)
                     {
                         enumState.Push(crnt);
-                        crnt = (crnt.Left is Phantom) ? null : crnt.Left;
+                        //crnt = (crnt.Left is Phantom) ? null : crnt.Left;
+                        crnt = (crnt.Left is null || crnt.Left.IsPhantomNode()) ? null : crnt.Left;
                     }
 
                     yield return result;

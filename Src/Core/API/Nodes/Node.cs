@@ -458,7 +458,7 @@
             }
 
             var qpath = new LinkedList<ChildInfo>(pathToNode);
-            var ctok = cancel == default(CancellationToken) ? null : ASTComputationBase.MkControlToken(cancel, CancelCheckFreq);
+            var ctok = cancel == default(CancellationToken) ? null : ASTComputationBase.MkControlToken(cancel, CancelCheckFreq); // why null here?
             var astComp = new ASTComputationUpDown<int, bool>(
                 this,
                 (n, pos) => FindAllUnfold(n == this, n, pos, query, qpath, visitor),
@@ -546,6 +546,13 @@
                                                     ASTComputationBase.IControlToken ctok,
                                                     LinkedList<ChildInfo> path)
         {
+            // DB code
+            /*String kind = n.NodeKind.ToString();
+            String name = null;
+            n.TryGetStringAttribute(AttributeKind.Name, out name);
+            System.Console.WriteLine("FindAnyUnfold: {0} {1}", kind, name == null ? "" : name);*/
+            // DB code end
+
             var next = GetNextNonStar(query, pos);
             if (isStartNode && pos == 0 && query[pos].PredicateKind == NodePredicateKind.Star && next < query.Length)
             {
@@ -603,6 +610,13 @@
                                                     LinkedList<ChildInfo> path,
                                                     Action<IEnumerable<ChildInfo>, Node> visitor)
         {
+            // DB code
+            /*String kind = n.NodeKind.ToString();
+            String name = null;
+            n.TryGetStringAttribute(AttributeKind.Name, out name);
+            System.Console.WriteLine("FindAllUnfold: {0} {1}", kind, name == null ? "" : name);*/
+            // DB code end
+
             var next = GetNextNonStar(query, pos);
             if (isStartNode && pos == 0 && query[pos].PredicateKind == NodePredicateKind.Star && next < query.Length)
             {
@@ -669,6 +683,31 @@
             }
 
             return pos;
-        }   
+        }
+
+        public static void PrintTree(Node node, int depth)
+        {
+            String name = null;
+            String kind = node.NodeKind.ToString();
+
+            for (int i = 0; i < depth; i++)
+            {
+                System.Console.Write(" ");
+            }
+
+            System.Console.Write(kind);
+
+            if (node.TryGetStringAttribute(AttributeKind.Name, out name))
+            {
+                System.Console.Write(", " + name);
+            }
+
+            System.Console.WriteLine();
+
+            foreach (var item in node.Children)
+            {
+                PrintTree(item, depth + 4);
+            }
+        }
     }
 }

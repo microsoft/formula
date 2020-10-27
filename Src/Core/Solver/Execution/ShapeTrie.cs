@@ -69,7 +69,6 @@
         /// Attempts to insert a symbolic element t.
         /// Returns true if the element t satisfies the pattern and was inserted into the index. 
         /// </summary>
-        /*
         public bool TryAdd(SymElement t, Set<Activation> pending, int stratum)
         {
             Contract.Requires(t != null && t.Term.Groundness != Groundness.Type);
@@ -85,7 +84,7 @@
                     {
                         foreach (var trig in triggered)
                         {
-                            pending.Add(new Activation(trig.Item1, trig.Item2, t));
+                            //pending.Add(new Activation(trig.Item1, trig.Item2, t));
                         }
                     }
                 }
@@ -121,14 +120,13 @@
                 {
                     foreach (var trig in triggered)
                     {
-                        pending.Add(new Activation(trig.Item1, trig.Item2, t));
+                        //pending.Add(new Activation(trig.Item1, trig.Item2, t));
                     }
                 }
             }
 
             return true;
         }
-        */
 
         public void AddTrigger(CoreRule rule, int findNumber)
         {

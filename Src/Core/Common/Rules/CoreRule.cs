@@ -907,7 +907,7 @@
 
             if (Head.Symbol.PrintableName.StartsWith(SymbolTable.ManglePrefix))
             {
-                builder.AppendFormat(Head.Debug_GetSmallTermString());
+                builder.AppendFormat("{0}\n", Head.Debug_GetSmallTermString());
             }
             else
             {
@@ -917,7 +917,7 @@
                     HeadType.Debug_GetSmallTermString());
             }
 
-            builder.AppendFormat("  :-");
+            builder.AppendFormat("  :-\n");
             if (!Find1.IsNull)
             {
                 if (Find1.Binding.Symbol.IsReservedOperation)
@@ -955,7 +955,7 @@
                 builder.AppendFormat("    {0}\n", c.Debug_GetSmallTermString());
             }
 
-            builder.AppendFormat("    .\n");
+            builder.AppendFormat("  .\n\n");
         }
 
         public virtual void Debug_PrintRule()

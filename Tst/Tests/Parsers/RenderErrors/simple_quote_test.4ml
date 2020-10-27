@@ -1,0 +1,61 @@
+[
+parsers.ListParser = '"ListParser at ..\ListParser\bin\Debug\ListParser.dll"',
+parse_ActiveParser = "ListParser"
+]
+
+domain Lists
+{
+   Cons ::= new (right: any Cons + Natural + { NIL }, left: any Cons + Natural + { NIL } ).     
+}
+
+model M1 of Lists
+{
+
+   `1 2 $ Cons(5, NIL) $ 3 4 5$$`.
+
+}
+
+model M2 of Lists
+{
+
+   `$NIL$1 
+    2 $ Cons(5, 
+             NIL) $ 3 
+    
+    a4
+    
+     
+    5`.   
+}
+
+model M3 of Lists
+{
+    `1 $`2 $ Cons(NIL, ` `` `) $`$`.   
+}
+
+model M4 of Lists
+{
+    `1 
+        $
+            `2 $ 
+                  NIL $b`$`.   
+}
+
+model M5 of Lists
+{
+
+    `1 $`2 $ 3 $`$
+    $NIL$1 
+    2 $ Cons(5, 
+             NIL) $ 3 
+    
+              a4
+    
+     
+    5    
+    
+    `.   
+
+}
+
+

@@ -91,22 +91,36 @@
             private set;
         }
 
+        private BuilderRef MkModelDecl(string modelName, string modelRefName, string modelLocName, Builder bldr)
+        {
+            BuilderRef result;
+            var domLoc = (Location)Solver.PartialModel.Model.Node.Domain.CompilerData;
+
+            // 1. PushModRef to the model we are extending
+            bldr.PushModRef(modelRefName, null, modelLocName);
+
+            // 2. PushModRef to the domain of the model
+            bldr.PushModRef(((Domain)domLoc.AST.Node).Name, null, ((Program)domLoc.AST.Root).Name.ToString());
+
+            // 3. Push the new model that will extend the previous model
+            bldr.PushModel(modelName, true, ComposeKind.Extends);
+
+            // Now bldr.AddModelCompose
+            bldr.AddModelCompose();
+
+            bldr.Store(out result);
+            return result;
+        }
+
+        // Introduce Terms for cardinality constraints
         public void ExtendPartialModel()
         {
-            //// Introduce Terms for cardinality constraints
             ProgramName programName = new ProgramName("env:///dummy.4ml");
-            AST<Program> program = Factory.Instance.MkProgram(programName);
+            AST<Program> prog = Factory.Instance.MkProgram(programName);
 
-            string domLoc = Solver.Source.Domain.Span.Program.ToString();
+            Builder bldr = new Builder();
             string modLoc = Solver.Source.Span.Program.ToString();
-
-            ModRef modRef = new ModRef(Span.Unknown, Solver.Source.Domain.Name, null, domLoc);
-            AST<Model> model = Factory.Instance.MkModel("dummy", true, new ASTConcr<ModRef>(modRef), ComposeKind.Extends); // new model
-
-            //AST<Model> model = Factory.Instance.MkModel("dummy", true, new ASTConcr<ModRef>(Solver.Source.Domain), ComposeKind.Extends);
-            AST<ModRef> origModel = Factory.Instance.MkModRef(Solver.Source.Name, null, modLoc, Solver.Source.Span);
-            model = Factory.Instance.AddModelCompose(model, origModel);
-            model.Print(Console.Out);
+            var modelRef = MkModelDecl("dummy", Solver.Source.Name, modLoc, bldr);
 
             foreach (var entry in Solver.Cardinalities.SolverState)
             {
@@ -114,6 +128,7 @@
                 {
                     var cardVar = item.Key;
                     var cardLower = item.Value.Item1.Lower;
+                    int arity = cardVar.Symbol.Arity;
 
                     if (cardVar.Symbol.IsDataConstructor &&
                         cardVar.IsLFPCard &&
@@ -121,26 +136,38 @@
                     {
                         for (BigInteger i = 0; i < (BigInteger)cardLower; i++)
                         {
-                            int arity = cardVar.Symbol.Arity;
-                            AST<Node>[] args = new AST<Node>[arity];
+                            for (int j = 0; j < arity; j++)
+                            {
+                                bldr.PushId("sc" + symbCnstId++);
+                            }
+
+                            bldr.PushId(cardVar.Symbol.Name);
+                            bldr.PushFuncTerm();
 
                             for (int j = 0; j < arity; j++)
                             {
-                                args[j] = Factory.Instance.MkId("sc" + symbCnstId++);
+                                bldr.AddFuncTermArg();
                             }
 
-                            AST<FuncTerm> match = Factory.Instance.MkFuncTerm(Factory.Instance.MkId(cardVar.Symbol.Name), Span.Unknown, args);
-                            AST<ModelFact> fact = Factory.Instance.MkModelFact(null, match);
-                            model = Factory.Instance.AddFact(model, fact);
+                            bldr.PushModelFactNoBinding();
+                            bldr.Load(modelRef);
+                            bldr.AddModelFact();
+                            bldr.Pop();
                         }
                     }
                 }
             }
 
-            program.Node.AddModule(model.Node);
+            bldr.Load(modelRef);
+            bldr.Close();
+
+            ImmutableArray<AST<Node>> asts;
+            bldr.GetASTs(out asts);
+
+            prog = Factory.Instance.AddModule(prog, asts[0]);
 
             InstallResult result;
-            Solver.Env.Install(program, out result);
+            Solver.Env.Install(prog, out result);
             if (!result.Succeeded)
             {
                 System.Console.WriteLine("Error installing partial model!");

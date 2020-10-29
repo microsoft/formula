@@ -529,6 +529,31 @@
         /// 
         /// Performs the following operations
         /// 1. Pops x0
+        /// 2. t = MkModelFact(null, x0)
+        /// 3. Pushes t 
+        /// </summary>
+        public BuilderResultKind PushModelFactNoBinding(Span span = default(Span))
+        {
+            return Modify(() =>
+            {
+                if (!VerifyStack(IsFuncOrAtom))
+                {
+                    return BuilderResultKind.Fail_BadArgs;
+                }
+
+                var arg1 = stack.Pop();
+
+                stack.Push(new ModelFact(span, null, arg1));
+                return BuilderResultKind.Success;
+            });
+        }
+
+        /// <summary>
+        /// The stack should be in the configuration:
+        /// 0: x0, s.t. x0.IsFuncOrAtom
+        /// 
+        /// Performs the following operations
+        /// 1. Pops x0
         /// 2. t = MkFind(null, x0)
         /// 3. Pushes t 
         /// </summary>

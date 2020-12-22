@@ -67,6 +67,9 @@
         private Map<Term, SymElement> lfp = 
             new Map<Term, SymElement>(Term.Compare);
 
+        private List<Z3BoolExpr> pendingConstraints =
+            new List<Z3BoolExpr>();
+
         public RuleTable Rules
         {
             get;
@@ -91,87 +94,17 @@
             private set;
         }
 
-        private BuilderRef MkModelDecl(string modelName, string modelRefName, string modelLocName, Builder bldr)
+        public Map<Term, Term> varToTypeMap =
+            new Map<Term, Term>(Term.Compare);
+
+        public bool Exists(Term t)
         {
-            BuilderRef result;
-            var domLoc = (Location)Solver.PartialModel.Model.Node.Domain.CompilerData;
-
-            // 1. PushModRef to the model we are extending
-            bldr.PushModRef(modelRefName, null, modelLocName);
-
-            // 2. PushModRef to the domain of the model
-            bldr.PushModRef(((Domain)domLoc.AST.Node).Name, null, ((Program)domLoc.AST.Root).Name.ToString());
-
-            // 3. Push the new model that will extend the previous model
-            bldr.PushModel(modelName, true, ComposeKind.Extends);
-
-            // Now bldr.AddModelCompose
-            bldr.AddModelCompose();
-
-            bldr.Store(out result);
-            return result;
+            return lfp.ContainsKey(t);
         }
 
-        // Introduce Terms for cardinality constraints
-        public void ExtendPartialModel()
+        public void PendConstraint(Z3BoolExpr expr)
         {
-            ProgramName programName = new ProgramName("env:///dummy.4ml");
-            AST<Program> prog = Factory.Instance.MkProgram(programName);
-
-            Builder bldr = new Builder();
-            string modLoc = Solver.Source.Span.Program.ToString();
-            var modelRef = MkModelDecl("dummy", Solver.Source.Name, modLoc, bldr);
-
-            foreach (var entry in Solver.Cardinalities.SolverState)
-            {
-                foreach (var item in entry)
-                {
-                    var cardVar = item.Key;
-                    var cardLower = item.Value.Item1.Lower;
-                    int arity = cardVar.Symbol.Arity;
-
-                    if (cardVar.Symbol.IsDataConstructor &&
-                        cardVar.IsLFPCard &&
-                        cardLower > 0)
-                    {
-                        for (BigInteger i = 0; i < (BigInteger)cardLower; i++)
-                        {
-                            for (int j = 0; j < arity; j++)
-                            {
-                                bldr.PushId("sc" + symbCnstId++);
-                            }
-
-                            bldr.PushId(cardVar.Symbol.Name);
-                            bldr.PushFuncTerm();
-
-                            for (int j = 0; j < arity; j++)
-                            {
-                                bldr.AddFuncTermArg();
-                            }
-
-                            bldr.PushModelFactNoBinding();
-                            bldr.Load(modelRef);
-                            bldr.AddModelFact();
-                            bldr.Pop();
-                        }
-                    }
-                }
-            }
-
-            bldr.Load(modelRef);
-            bldr.Close();
-
-            ImmutableArray<AST<Node>> asts;
-            bldr.GetASTs(out asts);
-
-            prog = Factory.Instance.AddModule(prog, asts[0]);
-
-            InstallResult result;
-            Solver.Env.Install(prog, out result);
-            if (!result.Succeeded)
-            {
-                System.Console.WriteLine("Error installing partial model!");
-            }
+            this.pendingConstraints.Add(expr);
         }
 
         public SymExecuter(Solver solver)
@@ -182,28 +115,226 @@
             Index = solver.PartialModel.Index;
             Encoder = new TermEncIndex(solver);
 
-            ExtendPartialModel();
-
             solver.PartialModel.ConvertSymbCnstsToVars(out varFacts, out aliasMap);
+
+            Map<ConSymb, List<Term>> cardTerms = new Map<ConSymb, List<Term>>(ConSymb.Compare);
+            foreach (var fact in varFacts)
+            {
+                if (solver.PartialModel.CheckIfCardTerm(fact))
+                {
+                    List<Term> termList;
+                    if (!cardTerms.TryFindValue((ConSymb)fact.Symbol, out termList))
+                    {
+                        termList = new List<Term>();
+                        cardTerms.Add((ConSymb)fact.Symbol, termList);
+                    }
+                    termList.Add(fact);
+                }
+            }
 
             //// Need to pre-register all aliases with the encoder.
             bool wasAdded;
             foreach (var kv in aliasMap)
             {
-                Encoder.GetVarEnc(Index.SymbCnstToVar(kv.Key, out wasAdded), Solver.PartialModel.GetSymbCnstType(kv.Key));
+                Term vTerm = Index.SymbCnstToVar(kv.Key, out wasAdded);
+                Term tTerm = Solver.PartialModel.GetSymbCnstType(kv.Key);
+                if (!varToTypeMap.ContainsKey(vTerm))
+                {
+                    varToTypeMap.Add(vTerm, tTerm);
+                }
+                var expr = Encoder.GetVarEnc(vTerm, tTerm);
             }
 
             InitializeExecuter();
 
-            foreach (var ti in trigIndices.Values)
+            foreach (var kvp in cardTerms)
             {
-                ti.Debug_Print();
+                var inequalities = kvp.Value.ToArray();
+                for (int i = 0; i < inequalities.Length - 1; i++)
+                {
+                    Term first = inequalities[i];
+
+                    SymElement firstEnc, secondEnc;
+                    if (!lfp.TryFindValue(first, out firstEnc))
+                    {
+                        // flag error
+                        continue;
+                    }
+
+                    for (int j = i + 1; j < inequalities.Length; j++)
+                    {
+                        Term second = inequalities[j];
+                        if (!lfp.TryFindValue(second, out secondEnc))
+                        {
+                            // flag error
+                            continue;
+                        }
+
+                        Z3BoolExpr boolExpr = Solver.Context.MkNot(Solver.Context.MkEq(firstEnc.Encoding, secondEnc.Encoding));
+                        firstEnc.ExtendSideConstraint(0, boolExpr, Solver.Context);
+                        Solver.Z3Solver.Add(boolExpr);
+                    }
+                }
+
             }
+
+            Execute();
+
+            foreach (var elem in lfp)
+            {
+                foreach (var currConstr in elem.Value.SideConstraints)
+                {
+                    Solver.Z3Solver.Assert(currConstr.Value);
+                }
+            }
+
+            var status = Solver.Z3Solver.Check();
+            if (status == Z3.Status.SATISFIABLE)
+            {
+                var model = Solver.Z3Solver.Model;
+                foreach (var kvp in lfp)
+                {
+                    var s = GetModelInterpretation(kvp.Key, model);
+                    Console.WriteLine(s);
+                }
+            }
+            else if (status == Z3.Status.UNSATISFIABLE)
+            {
+                Console.WriteLine("Model not solvable");
+            }
+        }
+
+        public void Execute()
+        {
+            Activation act;
+            var pendingAct = new Set<Activation>(Activation.Compare);
+            Set<Term> pendingFacts = new Set<Term>(Term.Compare);
+            LinkedList<CoreRule> untrigList;
+            for (int i = 0; i < Rules.StratificationDepth; ++i)
+            {
+                if (untrigRules.TryFindValue(i, out untrigList))
+                {
+                    foreach (var r in untrigList)
+                    {
+                        Term normalized;
+                        Z3Expr enc = Encoder.GetTerm(Index.FalseValue, out normalized);
+                        SymElement symFalse = new SymElement(normalized, enc, Solver.Context);
+                        pendingAct.Add(new Activation(r, -1, symFalse));
+                    }
+                }
+
+                foreach (var kv in trigIndices)
+                {
+                    kv.Value.PendAll(pendingAct, i);
+                }
+
+                while (pendingAct.Count > 0)
+                {
+                    act = pendingAct.GetSomeElement();
+                    pendingAct.Remove(act);
+                    act.Rule.Execute(act.Binding1.Term, act.FindNumber, this, pendingFacts);
+                    foreach (var pending in pendingFacts)
+                    {
+                        IndexFact(ExtendLFP(pending), pendingAct, i);
+                    }
+
+                    pendingConstraints.Clear();
+                    pendingFacts.Clear();
+                }
+            }
+        }
+
+        public string GetModelInterpretation(Term t, Z3.Model model)
+        {
+            Queue<string> pieces = new Queue<string>();
+            return t.Compute<string>(
+                (x, s) => x.Args,
+                (x, ch, s) =>
+                {
+                    if (x.Symbol.Arity == 0)
+                    {
+                        if (x.Symbol.Kind == SymbolKind.UserCnstSymb && x.Symbol.IsVariable)
+                        {
+                            string str;
+                            var expr = Encoder.GetVarEnc(x, varToTypeMap[x]);
+                            var interp = model.ConstInterp(expr);
+                            if (interp == null)
+                            {
+                                // If there were no constraints on the term, use the default
+                                str = Solver.TypeEmbedder.GetEmbedding(expr.Sort).DefaultMember.Item2.ToString();
+                            }
+                            else
+                            {
+                                str = interp.ToString();
+                            }
+
+                            pieces.Enqueue(str);
+                            return str;
+                        }
+                        else if (x.Symbol.Kind == SymbolKind.BaseCnstSymb)
+                        {
+                            string str = x.Symbol.PrintableName;
+                            pieces.Enqueue(str);
+                            return str;
+                        }
+
+                        return "";
+                    }
+                    else if (x.Symbol.Kind == SymbolKind.BaseOpSymb)
+                    {
+                        switch (((BaseOpSymb)x.Symbol).OpKind)
+                        {
+                            case OpKind.Add:
+                                int arg1, arg2;
+                                if (!Int32.TryParse(pieces.Dequeue(), out arg1) ||
+                                    !Int32.TryParse(pieces.Dequeue(), out arg2))
+                                {
+                                    throw new NotImplementedException();
+                                }
+                                int res = arg1 + arg2;
+                                string str = "" + res;
+                                pieces.Enqueue(str);
+                                return str;
+
+                            default:
+                                throw new NotImplementedException();
+                        }
+                    }
+                    else if (x.Symbol.IsDataConstructor)
+                    {
+                        string str = x.Symbol.PrintableName;
+                        str += "(";
+                        for (int i = 0; i < ch.Count(); i++)
+                        {
+                            str += pieces.Dequeue();
+                            str += i == ch.Count() - 1 ? "" : ",";
+                        }
+                        str += ")";
+                        pieces.Enqueue(str);
+                        return str;
+                    }
+                    else
+                    {
+                        throw new NotImplementedException();
+                    }
+                });
         }
 
         private void InitializeExecuter()
         {
-            foreach (var r in Rules.Rules)
+            var optRules = Rules.Optimize();
+
+            /*foreach (var rule in optRules.OrderBy(x => x.Stratum))
+            {
+                System.Console.WriteLine("Stratum = {0}, Rule id = {1}, head = {2}, find = {3}",
+                    rule.Stratum,
+                    rule.RuleId,
+                    rule.Head.Debug_GetSmallTermString(),
+                    rule.Find1.Pattern == null ? "" : rule.Find1.Pattern.Debug_GetSmallTermString()
+                    );
+            }*/
+
+            foreach (var r in optRules)
             {
                 foreach (var s in r.ComprehensionSymbols)
                 {
@@ -272,9 +403,13 @@
                 lfp.Add(t, e);
             }
 
+            foreach (var constr in pendingConstraints)
+            {
+                e.ExtendSideConstraint(0, constr, Solver.Context);
+            }
+
             return e;
         }
-
         
         private void IndexFact(SymElement t, Set<Activation> pending, int stratum)
         {
@@ -474,6 +609,27 @@
             }
 
             return Index.MkApply(s, args, out wasAdded);
+        }
+
+        // TODO: implement the ShapeTrie query operation
+        public IEnumerable<Term> Query(Term comprTerm, out int nResults)
+        {
+            Contract.Requires(comprTerm != null);
+            var subIndex = comprIndices[comprTerm.Symbol];
+            var projection = new Term[comprTerm.Symbol.Arity - 1];
+
+            //// Console.Write("Query {0}: [", subIndex.Pattern.Debug_GetSmallTermString());
+            for (int i = 0; i < comprTerm.Symbol.Arity - 1; ++i)
+            {
+                //// Console.Write(" " + comprTerm.Args[i].Debug_GetSmallTermString());
+                projection[i] = comprTerm.Args[i];
+            }
+
+            //// Console.WriteLine(" ]");
+
+            nResults = 0;
+            return null;
+            //return subIndex.Query(projection, out nResults);
         }
     }
 }

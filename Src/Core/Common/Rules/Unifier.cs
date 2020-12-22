@@ -28,7 +28,7 @@
         //// Then t is tracked; only one such t is tracked per class.
         private const int Track_FreeApply = 0;
 
-        public static bool IsUnifiable(Term tA, Term tB, bool standardize = true)
+        public static bool IsUnifiable(Term tA, Term tB, bool standardize = true, Map<Term, Term> bindings = null)
         {
             Contract.Requires(tA != null && tB != null);
             Contract.Requires(tA.Owner == tB.Owner);
@@ -112,7 +112,76 @@
                 return false;
             }
 
-            return OccursCheck(allVars, eqs);
+            if (!OccursCheck(allVars, eqs))
+            {
+                return false;
+            }
+
+            if (bindings != null)
+            {
+                var partitions = eqs.GetBindings();
+
+                Set<Term> lhsVars = new Set<Term>(Term.Compare);
+                tA.Compute<Term>(
+                    (x, s) => x.Groundness == Groundness.Variable ? x.Args : null,
+                    (x, ch, s) =>
+                    {
+                        if (x.Groundness != Groundness.Variable)
+                        {
+                            return null;
+                        }
+                        else if (x.Symbol.IsVariable)
+                        {
+                            lhsVars.Add(x);
+                        }
+                        else
+                        {
+                            foreach (var t in x.Args)
+                            {
+                                if (t.Symbol.IsVariable)
+                                {
+                                    lhsVars.Add(t);
+                                }
+                            }
+                        }
+
+                        return null;
+                    });
+
+                foreach (var kv in partitions)
+                {
+                    var termSet = kv.Value.Select<StdTerm, Term>(
+                        (stdTerm) => stdTerm.term
+                        );
+
+                    // find the intersection
+                    var intersect = termSet.Intersect(lhsVars);
+
+                    // find the rhs
+                    Term rhs = null;
+                    foreach (var x in termSet)
+                    {
+                        if (!lhsVars.Contains(x))
+                        {
+                            rhs = x;
+                            break;
+                        }
+                    }
+
+                    // every term in the lhs is bound to the rhs
+                    foreach (var lhs in intersect)
+                    {
+                        bindings.Add(lhs, rhs);
+                    }
+
+                }
+
+                /*eqs.Debug_PrintRelation(x => {
+                    return x.term.Debug_GetSmallTermString();
+                });*/
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -301,7 +370,7 @@
 
             var index = bindee.term.Owner;
             Contract.Assert(bindee.term.Symbol == index.SelectorSymbol || bindee.term.Symbol.IsVariable);
-            Contract.Assert(binding.term.Symbol == index.SelectorSymbol || binding.term.Symbol.IsVariable || binding.term.Symbol.IsDataConstructor || binding.term.Symbol.IsNonVarConstant);
+            //Contract.Assert(binding.term.Symbol == index.SelectorSymbol || binding.term.Symbol.IsVariable || binding.term.Symbol.IsDataConstructor || binding.term.Symbol.IsNonVarConstant);
 
             RegisterSelectors(allVars, eqs, bindee);
             if (binding.term.Symbol.IsDataConstructor || binding.term.Symbol.IsNonVarConstant)
@@ -345,7 +414,7 @@
                 t = t.Args[0];
             }
 
-            Contract.Assert(t.Symbol.IsVariable);
+            //Contract.Assert(t.Symbol.IsVariable);
             allVars.Add(t.Standardize(stdterm.label));
         }
 

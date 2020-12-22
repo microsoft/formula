@@ -58,6 +58,35 @@
             }
         }
 
+  /*      public IEnumerable<Term> Query(Term[] projection)
+        {
+            Set<Term> subindex;
+            if (!facts.TryFindValue(projection, out subindex))
+            {
+                yield break;
+            }
+
+            foreach (var t in subindex)
+            {
+                yield return t;
+            }
+        }*/
+
+        /*public IEnumerable<Term> Query(Term[] projection, out int nResults)
+        {
+            Set<Term> subindex;
+            if (!facts.TryFindValue(projection, out subindex))
+            {
+                nResults = 0;
+            }
+            else
+            {
+                nResults = subindex.Count;
+            }
+
+            return Query(projection);
+        }*/
+
         public void Debug_Print()
         {
             Console.WriteLine("Trie {0} : {1}", Pattern.Debug_GetSmallTermString(), entryMap.Count);
@@ -84,7 +113,7 @@
                     {
                         foreach (var trig in triggered)
                         {
-                            //pending.Add(new Activation(trig.Item1, trig.Item2, t));
+                            pending.Add(new Activation(trig.Item1, trig.Item2, t));
                         }
                     }
                 }
@@ -120,12 +149,29 @@
                 {
                     foreach (var trig in triggered)
                     {
-                        //pending.Add(new Activation(trig.Item1, trig.Item2, t));
+                        pending.Add(new Activation(trig.Item1, trig.Item2, t));
                     }
                 }
             }
 
             return true;
+        }
+
+        public void PendAll(Set<Activation> pending, int stratum)
+        {
+            LinkedList<Tuple<CoreRule, int>> triggered;
+            if (!triggers.TryFindValue(stratum, out triggered))
+            {
+                return;
+            }
+
+            foreach (var kv in entryMap)
+            {
+                foreach (var trig in triggered)
+                {
+                    pending.Add(new Activation(trig.Item1, trig.Item2, kv.Key));
+                }
+            }
         }
 
         public void AddTrigger(CoreRule rule, int findNumber)

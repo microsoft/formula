@@ -963,6 +963,19 @@
             return true;
         }
 
+        public Program GetProgram(string name)
+        {
+            foreach (var prog in Programs)
+            {
+                if (String.Equals(name, prog.Key.ToString()))
+                {
+                    return prog.Value;
+                }
+            }
+
+            return null;
+        }
+
         public bool Solve(ProgramName progName,
                           string modelName,
                           int maxSols,
@@ -1053,7 +1066,6 @@
             return true;
         }
 
-        //#if SOLVER
         /// <summary>
         /// Tries to solve a model for a disjunction of goals. Currently reduces this to
         /// old formula, so this interface is under-defined.
@@ -1188,7 +1200,6 @@
             ReleaseEnvLock();
             return true;
         }
-//#endif
                                                           
         public bool Install(string filename, out InstallResult result)
         {

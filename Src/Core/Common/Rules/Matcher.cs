@@ -54,7 +54,7 @@
         }
 
         /// <summary>
-        /// Tries to match t with pattern and returns true if successfull. CurrentBindings
+        /// Tries to match t with pattern and returns true if successful. CurrentBindings
         /// holds the most recent variable bindings, which may be null if the match failed.
         /// </summary>
         /// <param name="t"></param>

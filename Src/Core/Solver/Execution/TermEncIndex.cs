@@ -14,6 +14,7 @@
     using Common.Terms;
 
     using Z3Expr = Microsoft.Z3.Expr;
+    using Z3ArithExpr = Microsoft.Z3.ArithExpr;
 
     /// <summary>
     /// And index of encodings from Formula to Z3 terms.
@@ -44,7 +45,8 @@
             }
 
             var typEmb = Solver.TypeEmbedder.ChooseRepresentation(type);
-            varEnc = Solver.Context.MkFreshConst(((UserCnstSymb)v.Symbol).FullName, typEmb.Representation);
+            //varEnc = Solver.Context.MkFreshConst(((UserCnstSymb)v.Symbol).FullName, typEmb.Representation);
+            varEnc = Solver.Context.MkConst(((UserCnstSymb)v.Symbol).FullName, typEmb.Representation);
             encodings.Add(v, varEnc);
             return varEnc;
         }
@@ -118,6 +120,18 @@
                         encp = conEmb.MkGround(x.Symbol, args);
                         encodings.Add(x, encp);
                         return encp;
+                    }
+                    else if (x.Symbol.Kind == SymbolKind.BaseOpSymb)
+                    {
+                        switch (((BaseOpSymb)x.Symbol).OpKind)
+                        {
+                            case OpKind.Add:
+                                encp = Solver.TypeEmbedder.Context.MkAdd((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
+                                encodings.Add(x, encp);
+                                return encp;
+                            default:
+                                throw new NotImplementedException();
+                        }
                     }
                     else
                     {

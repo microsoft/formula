@@ -240,6 +240,26 @@
             }
         }
 
+        public Map<T, Set<T>> GetBindings()
+        {
+            T rep;
+            Set<T> part;
+            var partitions = new Map<T, Set<T>>(comparer);
+            foreach (var kv in nodes)
+            {
+                rep = kv.Value.Find().Element;
+                if (!partitions.TryFindValue(rep, out part))
+                {
+                    part = new Set<T>(comparer);
+                    partitions.Add(rep, part);
+                }
+
+                part.Add(kv.Key);
+            }
+
+            return partitions;
+        }
+
         public void Debug_PrintRelation(Func<T, string> toString)
         {
             T rep;

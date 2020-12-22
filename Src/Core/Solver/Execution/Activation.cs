@@ -24,6 +24,13 @@
             private set;
         }
 
+        // Could also look this up in the Rule
+        public int FindNumber
+        {
+            get;
+            private set;
+        }
+
         public SymElement Binding1
         {
             get;
@@ -36,22 +43,25 @@
             private set;
         }
 
-        public Activation(CoreRule rule)
+        public Activation(CoreRule rule, int findNumber)
         {
             Rule = rule;
+            FindNumber = findNumber;
             Binding1 = Binding2 = null;
         }
 
-        public Activation(CoreRule rule, SymElement binding)
+        public Activation(CoreRule rule, int findNumber, SymElement binding)
         {
             Rule = rule;
+            FindNumber = findNumber;
             Binding1 = binding;
             Binding2 = null;
         }
 
-        public Activation(CoreRule rule, SymElement binding1, SymElement binding2)
+        public Activation(CoreRule rule, int findNumber, SymElement binding1, SymElement binding2)
         {
             Rule = rule;
+            FindNumber = findNumber;
             Binding1 = binding1;
             Binding2 = binding2;
         }

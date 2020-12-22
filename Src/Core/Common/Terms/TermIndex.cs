@@ -444,6 +444,10 @@
             string name = string.Format("{0}{1}", SymbolTable.ManglePrefix, nextSymbolId);
             var symb = new ConSymb(SymbolTable.Root, name, arity);
             symb.Id = nextSymbolId++;
+            // TODO: check if this is needed
+            //UserSortSymb userSort = new UserSortSymb(symb); 
+            //userSort.Id = nextSymbolId++;
+            //symb.SortSymbol = userSort;
             return symb;
         }
 

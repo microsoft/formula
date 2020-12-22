@@ -550,6 +550,25 @@
                 new SuccessToken());
         }
 
+        public bool CheckIfCardTerm(Term t)
+        {
+            bool isCardTerm = false;
+            return t.Compute<bool>(
+                (x, s) => x.Args,
+                (x, ch, s) =>
+                {
+                    if (x.Symbol.Arity == 0)
+                    {
+                        if (x.Symbol.Kind == SymbolKind.UserCnstSymb && x.Symbol.IsVariable)
+                        {
+                            isCardTerm = ((UserCnstSymb)(x.Symbol)).Name.EndsWith("SCNew");
+                        }
+                    }
+
+                    return isCardTerm;
+                });
+        }
+
         private Term RewriteSymbCnstsToVars(Term t)
         {
             int i;

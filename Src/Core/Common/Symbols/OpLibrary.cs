@@ -980,37 +980,36 @@
             Term t1 = values[0].Binding;
             Term t2 = values[1].Binding;
 
+            // Create the Term that we will return
             bool wasAdded;
             BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Add);
             Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
 
-            Z3Expr expr1, expr2;
-
+            // If we're a UserCnstSymb variable, then we lookup our Type in the SymExecuter
+            Term normalized;
             if (t1.Symbol.Kind == SymbolKind.UserCnstSymb && t1.Symbol.IsVariable)
             {
                 var tTerm = facts.varToTypeMap[t1];
                 Contract.Assert(tTerm != null);
-                expr1 = facts.Encoder.GetVarEnc(t1, tTerm);
+                facts.Encoder.GetVarEnc(t1, tTerm);
             }
             else
             {
-                Term normalizedTerm1;
-                expr1 = facts.Encoder.GetTerm(t1, out normalizedTerm1);
+                facts.Encoder.GetTerm(t1, out normalized);
             }
 
             if (t2.Symbol.Kind == SymbolKind.UserCnstSymb && t2.Symbol.IsVariable)
             {
                 var tTerm = facts.varToTypeMap[t2];
                 Contract.Assert(tTerm != null);
-                expr2 = facts.Encoder.GetVarEnc(t2, tTerm);
+                facts.Encoder.GetVarEnc(t2, tTerm);
             }
             else
             {
-                Term normalizedTerm2;
-                expr2 = facts.Encoder.GetTerm(t2, out normalizedTerm2);
+                facts.Encoder.GetTerm(t2, out normalized);
             }
 
-            Term normalized;
+            // Encode the Term with Z3
             facts.Encoder.GetTerm(res, out normalized);
             return res;
         }

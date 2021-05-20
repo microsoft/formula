@@ -15,8 +15,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FormulaCodeGeneratorTaskDot
 		{30118BE8-B84A-4BA3-833A-555E96FD1A95} = {30118BE8-B84A-4BA3-833A-555E96FD1A95}
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Tests", "..\Tests\Tests.csproj", "{DE6FC0E7-EA10-47EF-BCAA-FF0DFF7640D9}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,14 +47,6 @@ Global
 		{2E46C514-7F32-421A-9E58-B2EF9E00E5AF}.Release|Any CPU.Build.0 = Release|Any CPU
 		{2E46C514-7F32-421A-9E58-B2EF9E00E5AF}.Release|x64.ActiveCfg = Release|x64
 		{2E46C514-7F32-421A-9E58-B2EF9E00E5AF}.Release|x64.Build.0 = Release|x64
-		{DE6FC0E7-EA10-47EF-BCAA-FF0DFF7640D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DE6FC0E7-EA10-47EF-BCAA-FF0DFF7640D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DE6FC0E7-EA10-47EF-BCAA-FF0DFF7640D9}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{DE6FC0E7-EA10-47EF-BCAA-FF0DFF7640D9}.Debug|x64.Build.0 = Debug|Any CPU
-		{DE6FC0E7-EA10-47EF-BCAA-FF0DFF7640D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DE6FC0E7-EA10-47EF-BCAA-FF0DFF7640D9}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DE6FC0E7-EA10-47EF-BCAA-FF0DFF7640D9}.Release|x64.ActiveCfg = Release|Any CPU
-		{DE6FC0E7-EA10-47EF-BCAA-FF0DFF7640D9}.Release|x64.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

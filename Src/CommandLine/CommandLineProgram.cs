@@ -8,7 +8,29 @@
 
     internal class CommandLineProgram
     {
+        // dotnet publish CommandLine.csproj -c Release -r win-x64 --self-contained true
         public static void Main(string[] args)
+        {
+            var sink = new ConsoleSink();
+            var chooser = new ConsoleChooser();
+            var envParams = new EnvParams();
+            var ci = new CommandInterface(sink, chooser, envParams);
+            Console.WriteLine(args[0]);
+            // All commands must be wrapped in double quotes
+            var args_str = args[0];
+            //var args_str = string.Join(" ", args);
+            var commands = args_str.Split("|");
+            
+            // Turn on wait on by default
+            ci.DoCommand("wait on");
+            foreach (string command in commands)
+            {
+                Console.WriteLine("Executing command: {0}", command);
+                ci.DoCommand(command);
+            }
+        }
+
+        public static void OldMain(string[] args)
         {
             var sink = new ConsoleSink();
             var chooser = new ConsoleChooser();

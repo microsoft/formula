@@ -12,6 +12,7 @@
 
   <PropertyGroup>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <StartupObject>Microsoft.Formula.CommandLine.CommandLineProgram</StartupObject>
   </PropertyGroup>
 
 </Project>

@@ -1,0 +1,9 @@
+{
+  "profiles": {
+    "CommandLine": {
+      "commandName": "Project",
+      "commandLineArgs": "\"load graph.4ml | qr m Path(a, b)\"",
+      "remoteDebugEnabled": false
+    }
+  }
+}

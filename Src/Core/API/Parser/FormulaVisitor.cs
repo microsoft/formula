@@ -102,24 +102,22 @@
             this.ResetState();
             text = string.Format("domain Dummy {{ dummy({0}). }}", text);
 
-            StartTimer();
             var str = new System.IO.MemoryStream(System.Text.Encoding.ASCII.GetBytes(text));
-            StopTimer("Creating memory stream function term");
 
-            StartTimer();
             ICharStream charStream = Antlr4.Runtime.CharStreams.fromStream(str);
             FormulaLexer lexer = new FormulaLexer(charStream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             FormulaParser parser = new FormulaParser(tokens);
             FormulaParser.ProgramContext programContext = parser.program();
-            StopTimer("Parsing function term");
+            
+            if (parser.NumberOfSyntaxErrors != 0)
+            {
+                parseResult.Program.Node.GetNodeHash();
+                return null;
+            }
 
-            StartTimer();
             this.VisitProgram(programContext);
-            StopTimer("Visiting function term");
-
             str.Close();
-
 
             if (!result)
             {

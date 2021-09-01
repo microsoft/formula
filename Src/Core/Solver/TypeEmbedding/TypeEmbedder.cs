@@ -100,6 +100,7 @@
             RegisterSymbolicConstants(Index.SymbolTable.Root);
         }
 
+        // TODO: review whether we need to register symbolic constants
         private void RegisterSymbolicConstants(Namespace ns)
         {
             foreach (var s in ns.Symbols)
@@ -115,10 +116,6 @@
                             ITypeEmbedding factor = new SingletonEmbedding(this, s);
                             Register(factor);
                         }
-                    }
-                    else
-                    {
-                        int x = 1;
                     }
                 }
             }

@@ -72,7 +72,7 @@
             Z3BoolExpr crntConstr;
             if (SideConstraints.TryFindValue(index, out crntConstr))
             {
-                SideConstraints[index] = context.MkOr(crntConstr, constr);
+                SideConstraints[index] = context.MkAnd(crntConstr, constr);
             }
             else
             {

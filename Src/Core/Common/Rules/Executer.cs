@@ -587,13 +587,13 @@
 
             foreach (var r in optRules)
             {
-                System.Console.Write("Rule id {0}, kind {1}, head {2}, headType {3}, trigger1 {4}, trigger2 {5}, " +
+               /* System.Console.Write("Rule id {0}, kind {1}, head {2}, headType {3}, trigger1 {4}, trigger2 {5}, " +
                     "Find1 {6}, Find2 {7}\n", 
                     r.RuleId, r.Kind, r.Head.Debug_GetSmallTermString(), r.HeadType.Debug_GetSmallTermString(), 
                     r.Trigger1 == null ? "" : r.Trigger1.Debug_GetSmallTermString(),
                     r.Trigger2 == null ? "" : r.Trigger2.Debug_GetSmallTermString(),
                     r.Find1.IsNull ? "" : r.Find1.Pattern.Debug_GetSmallTermString(),
-                    r.Find2.IsNull ? "" : r.Find2.Pattern.Debug_GetSmallTermString());
+                    r.Find2.IsNull ? "" : r.Find2.Pattern.Debug_GetSmallTermString());*/
 
                 foreach (var s in r.ComprehensionSymbols)
                 {

@@ -107,6 +107,11 @@
             this.pendingConstraints.Add(expr);
         }
 
+        public void PendEqualityConstraint(Z3Expr expr1, Z3Expr expr2)
+        {
+            this.pendingConstraints.Add(Solver.Context.MkEq(expr1, expr2));
+        }
+
         public SymExecuter(Solver solver)
         {
             Contract.Requires(solver != null);
@@ -630,6 +635,64 @@
             nResults = 0;
             return null;
             //return subIndex.Query(projection, out nResults);
+        }
+
+        public IEnumerable<Term> Query(Term pattern, Term[] projection)
+        {
+            /*
+            Console.Write("Query {0}: [", pattern.Debug_GetSmallTermString());
+            foreach (var t in projection)
+            {
+                Console.Write(" " + t.Debug_GetSmallTermString());
+            }
+
+            Console.WriteLine(" ]");
+            */
+
+            yield break;
+            //return trigIndices[pattern].Query(projection);
+        }
+
+        public IEnumerable<Term> Query(Term type, Term binding)
+        {
+            /*
+            if (binding == null)
+            {
+                Console.WriteLine("Query type {0}", type.Debug_GetSmallTermString());
+            }
+            else
+            {
+                Console.WriteLine("Query type {0} = {1}", type.Debug_GetSmallTermString(), binding.Debug_GetSmallTermString());
+            }
+            */
+
+            var patterns = typesToTriggersMap[type];
+            if (binding != null)
+            {
+                foreach (var p in patterns)
+                {
+                    if (p.Symbol == binding.Symbol && Exists(binding))
+                    {
+                        yield return binding;
+                        yield break;
+                    }
+                }
+
+                yield break;
+            }
+
+            // TODO: implement the functionality below
+
+            /*foreach (var p in patterns)
+            {
+                var results = trigIndices[p].Query(SubIndex.EmptyProjection);
+                foreach (var t in results)
+                {
+                    yield return t;
+                }
+            }*/
+
+            yield break;
         }
     }
 }

@@ -980,6 +980,18 @@
             Term t1 = values[0].Binding;
             Term t2 = values[1].Binding;
 
+            if (t1.Groundness == Groundness.Ground && t2.Groundness == Groundness.Ground)
+            {
+                Rational r1, r2;
+                bool added;
+                if (!ToNumerics(values[0].Binding, values[1].Binding, out r1, out r2))
+                {
+                    return null;
+                }
+
+                return facts.Index.MkCnst(r1 + r2, out added);
+            }
+
             // Create the Term that we will return
             bool wasAdded;
             BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Add);

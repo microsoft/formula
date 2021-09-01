@@ -774,6 +774,47 @@
 
                 return;
             }
+
+            Term pattern;
+            FindData otherFind;
+            Matcher otherMatcher;
+            ConstraintNode[] projVector;
+            switch (findNumber)
+            {
+                case 0:
+                    pattern = Trigger2;
+                    otherFind = Find2;
+                    projVector = projVector2;
+                    otherMatcher = matcher2;
+                    break;
+                case 1:
+                    pattern = Trigger1;
+                    otherFind = Find1;
+                    projVector = projVector1;
+                    otherMatcher = matcher1;
+                    break;
+                default:
+                    throw new Impossible();
+            }
+
+            //// Query the pattern and enumerate over all bindings.
+            IEnumerable<Term> queryResults;
+            if (pattern.Symbol.IsVariable)
+            {
+                queryResults = index.Query(otherFind.Type, nodes[otherFind.Pattern].Binding);
+            }
+            else
+            {
+                var projection = new Term[projVector.Length];
+                for (int i = 0; i < projection.Length; ++i)
+                {
+                    Contract.Assert(projVector[i].Binding != null);
+                    projection[i] = projVector[i].Binding;
+                }
+
+                queryResults = index.Query(pattern, projection);
+            }
+
         }
 
         public virtual void Execute(
@@ -1166,13 +1207,138 @@
             }
         }
 
+        private Map<Term, Term> GetBindings(SymExecuter facts, Term tA, Term tB, Map<Term, Set<Term>> partitions)
+        {
+            Map<Term, Term> bindings = new Map<Term, Term>(Term.Compare);
+            Set<Term> lhsVars = new Set<Term>(Term.Compare);
+            Set<Term> rhsVars = new Set<Term>(Term.Compare);
+
+            // Collect all variables in the LHS term
+            tA.Compute<Term>(
+                (x, s) => x.Groundness == Groundness.Variable ? x.Args : null,
+                (x, ch, s) =>
+                {
+                    if (x.Groundness != Groundness.Variable)
+                    {
+                        return null;
+                    }
+                    else if (x.Symbol.IsVariable)
+                    {
+                        lhsVars.Add(x);
+                    }
+                    else
+                    {
+                        foreach (var t in x.Args)
+                        {
+                            if (t.Symbol.IsVariable)
+                            {
+                                lhsVars.Add(t);
+                            }
+                        }
+                    }
+
+                    return null;
+                });
+
+            // Collect all variables in the RHS term
+            tB.Compute<Term>(
+                (x, s) =>
+                {
+                    if (x.Symbol.Kind == SymbolKind.BaseOpSymb)
+                    {
+                        return null; // don't descend into base op symbols
+                        }
+                    else
+                    {
+                        return x.Groundness == Groundness.Variable ? x.Args : null;
+                    }
+                },
+                (x, ch, s) =>
+                {
+                    if (x.Groundness != Groundness.Variable)
+                    {
+                        return null;
+                    }
+                    else if (x.Symbol.IsVariable || x.Symbol.Kind == SymbolKind.BaseOpSymb)
+                    {
+                        rhsVars.Add(x);
+                    }
+                    else
+                    {
+                        foreach (var t in x.Args)
+                        {
+                            if (t.Symbol.IsVariable)
+                            {
+                                rhsVars.Add(t);
+                            }
+                        }
+                    }
+
+                    return null;
+                });
+
+            foreach (var part in partitions)
+            {
+                Set<Term> constants = new Set<Term>(Term.Compare);
+                Set<Term> lhsPartVars = new Set<Term>(Term.Compare);
+                Set<Term> rhsPartVars = new Set<Term>(Term.Compare);
+
+                foreach (var term in part.Value)
+                {
+                    if (term.Symbol.IsNonVarConstant)
+                    {
+                        constants.Add(term);
+                    }
+                    else if (lhsVars.Contains(term))
+                    {
+                        lhsPartVars.Add(term);
+                    }
+                    else if (rhsVars.Contains(term))
+                    {
+                        rhsPartVars.Add(term);
+                    }
+                }
+
+                if (!constants.IsEmpty())
+                {
+                    Term normalized;
+                    Term constant = constants.First();
+                    foreach (var rhs in rhsPartVars)
+                    {
+                        var expr1 = facts.Encoder.GetTerm(rhs, out normalized);
+                        var expr2 = facts.Encoder.GetTerm(constant, out normalized);
+                        facts.PendEqualityConstraint(expr1, expr2);
+                    }
+                }
+
+                if (!rhsPartVars.IsEmpty())
+                {
+                    foreach (var lhsVar in lhsPartVars)
+                    {
+                        bindings.Add(lhsVar, rhsPartVars.First());
+                    }
+                }
+                else if (!constants.IsEmpty())
+                {
+                    foreach (var lhsVar in lhsPartVars)
+                    {
+                        bindings.Add(lhsVar, constants.First());
+                    }
+                }
+            }
+
+            return bindings;
+        }
+
         private bool ApplyMatch(SymExecuter facts, Matcher m, Term t, int bindingLevel)
         {
             Term pattern = m.Pattern;
-            Map<Term, Term> bindings = new Map<Term, Term>(Term.Compare);
+            Map<Term, Set<Term>> partitions = new Map<Term, Set<Term>>(Term.Compare);
             bool result = true;
-            if (Unifier.IsUnifiable(pattern, t, true, bindings))
+
+            if (Unifier.IsUnifiable(pattern, t, true, partitions))
             {
+                var bindings = GetBindings(facts, pattern, t, partitions);
                 foreach (var kv in bindings)
                 {
                     if (!Propagate(facts, kv.Key, kv.Value, bindingLevel))
@@ -1425,6 +1591,78 @@
                     }
 
                     stack.Push(kv.Value);
+                }
+            }
+
+            bool canEval;
+            ConstraintNode top, arg;
+            while (stack.Count > 0)
+            {
+                top = stack.Pop();
+                foreach (var u in top.UseList)
+                {
+                    if (u.Item1.IsEvaluated)
+                    {
+                        continue;
+                    }
+
+                    if (u.Item1.Kind == ConstrainNodeKind.EqRel)
+                    {
+                        arg = u.Item1[u.Item2 == 0 ? 1 : 0];
+                        if (arg.Binding == null)
+                        {
+                            if (!arg.TryBind(top.Binding, ConstraintNode.BLInit))
+                            {
+                                return false;
+                            }
+
+                            // If symbolic binding, an equality constraint may be asserted later
+                            arg.SetSymbolicBinding();
+                            stack.Push(arg);
+                        }
+                    }
+
+                    canEval = true;
+                    for (int i = 0; i < u.Item1.NArgs; ++i)
+                    {
+                        if (u.Item1[i].Binding == null)
+                        {
+                            canEval = false;
+                            break;
+                        }
+                    }
+
+                    if (canEval)
+                    {
+                        if (!u.Item1.TryEval(facts, ConstraintNode.BLInit))
+                        {
+                            return false;
+                        }
+
+                        stack.Push(u.Item1);
+                    }
+                }
+
+                if (top.Term.Groundness == Groundness.Variable &&
+                    top.Term.Symbol.IsDataConstructor)
+                {
+                    for (int i = 0; i < top.NArgs; ++i)
+                    {
+                        arg = top[i];
+                        if (arg.Binding == null)
+                        {
+                            if (!arg.TryBind(top.Binding.Args[i], ConstraintNode.BLInit))
+                            {
+                                return false;
+                            }
+
+                            stack.Push(arg);
+                        }
+                        else if (!arg.TryBind(top.Binding.Args[i], ConstraintNode.BLInit))
+                        {
+                            return false;
+                        }
+                    }
                 }
             }
 
@@ -1865,6 +2103,8 @@
             protected LinkedList<Tuple<ConstraintNode, int>> useList =
                 new LinkedList<Tuple<ConstraintNode, int>>();
 
+            protected bool isSymbolicBinding = false;
+
             public Term Term
             {
                 get;
@@ -1918,6 +2158,9 @@
                 {
                     Binding = null;
                     BindingLevel = BLUnbound;
+
+                    // TODO: ensure that we don't need to always remove the symbolic binding
+                    RemoveSymbolicBinding();
                 }
 
                 if (EvaluationLevel >= bindingLevel)
@@ -1943,6 +2186,16 @@
             {
                 Contract.Requires(n != null && index >= 0 && index < n.Term.Args.Length);
                 useList.AddLast(new Tuple<ConstraintNode, int>(n, index));
+            }
+
+            public void SetSymbolicBinding()
+            {
+                isSymbolicBinding = true;
+            }
+
+            public void RemoveSymbolicBinding()
+            {
+                isSymbolicBinding = true;
             }
 
             /// <summary>
@@ -2346,6 +2599,18 @@
                 }
                 else if (Binding == null)
                 {
+                    Binding = result;
+                    BindingLevel = bindingLevel;
+                    return true;
+                }
+                else if (isSymbolicBinding)
+                {
+                    // Assert an equality constraint between the previous binding and new binding
+                    Term normalized;
+                    var expr1 = facts.Encoder.GetTerm(result, out normalized);
+                    var expr2 = facts.Encoder.GetTerm(Binding, out normalized);
+                    facts.PendEqualityConstraint(expr1, expr2);
+
                     Binding = result;
                     BindingLevel = bindingLevel;
                     return true;

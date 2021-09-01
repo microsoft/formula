@@ -257,7 +257,7 @@
             Contract.Requires(source != null);
             this.cancel = cancel;
 
-            // Source and PartialModel will be updated by ExtendPartialModel()
+            // Source and PartialModel may be updated by ExtendPartialModel()
             Source = source;
             PartialModel = partialModel;
             Env = env;

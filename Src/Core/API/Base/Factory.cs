@@ -17,6 +17,8 @@
 
         private static readonly char[] Whitespaces = new char[] { ' ', '\t', '\n' };
 
+        private static bool USE_ANTLR = true;
+
         public static Factory Instance
         {
             get { return instance; }
@@ -1353,8 +1355,6 @@
             clone.GetHashCode();
             return clone;
         }
-
-        private static bool USE_ANTLR = true;
 
         /***********************************************************/
         /****************       Parsing          *******************/

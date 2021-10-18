@@ -1259,7 +1259,7 @@
                     {
                         return null;
                     }
-                    else if (x.Symbol.IsVariable || x.Symbol.Kind == SymbolKind.BaseOpSymb)
+                    else if (x.Symbol.IsVariable || x.Symbol.Kind == SymbolKind.BaseOpSymb || x.Symbol.Kind == SymbolKind.ConSymb)
                     {
                         rhsVars.Add(x);
                     }

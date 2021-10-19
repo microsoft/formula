@@ -1,0 +1,30 @@
+name: .NET
+
+on:
+  push:
+    branches: [ unit_testing ]
+  pull_request:
+    branches: [ unit_testing ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.operating-system }}
+      strategy:
+        fail-fast: false
+        matrix:
+          operating-system: [ ubuntu-latest, windows-latest, macOS-latest ]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 5.0.x
+    - name: Restore dependencies
+      working-directory: ./Src/CommandLine
+      run: dotnet restore
+    - name: Build
+      working-directory: ./Src/CommandLine
+      run: dotnet build --no-restore
+    - name: Test
+      working-directory: ./Src/Tests
+      run: dotnet test --no-build --verbosity normal

@@ -1,0 +1,109 @@
+domain Digraphs
+{
+   V ::= new (lbl: Integer).
+   E ::= new (src: V, dst: V).
+   Thing ::= V + E.
+}
+
+domain DAGs extends Digraphs
+{
+   path ::= (V, V).
+   path(u, w) :- E(u, w); E(u, v), path(v, w).  
+   conforms no path(u, u).
+}
+
+domain Trees extends DAGs
+{
+   conforms no { w | E(u, w), E(v, w), u != v }.
+}
+
+domain IsoDAGs extends Left::DAGs, Right::DAGs
+{
+   Iso ::= bij (left: Left.V => right: Right.V).
+
+   conforms no { e | 
+      e is Left.E(u, w), Iso(u, u'), Iso(w, w'), no Right.E(u', w') }. 
+   conforms no { e | 
+      e is Right.E(u', w'), Iso(u, u'), Iso(w, w'), no Left.E(u, w) }. 
+}
+
+
+partial model PDAG of DAGs
+{
+  requires atleast 5 E.
+  requires atleast 5 V.
+}
+
+model LittleCycle of DAGs
+{
+   v1 is V(1).
+   v2 is V(2).
+   E(v1, v2).
+   E(v2, v1).
+}
+
+model Path10 of DAGs
+{
+   v0 is V(0),
+   v1 is V(1),
+   v2 is V(2),
+   v3 is V(3),
+   v4 is V(4),
+   v5 is V(5),
+   v6 is V(6),
+   v7 is V(7),
+   v8 is V(8),
+   v9 is V(9).
+   
+   E(v0, v1),
+   E(v1, v2),
+   E(v2, v3),
+   E(v3, v4),
+   E(v4, v5),
+   E(v5, v6),
+   E(v6, v7),
+   E(v7, v8),
+   E(v8, v9).
+}
+
+model Pair of IsoDAGs includes Left::LittleCycle, Right::LittleCycle
+{
+   Iso(Left.v1, Right.v1).
+   Iso(Left.v2, Right.v2).   
+}
+
+transform Add (id: Integer, GraphIn:: DAGs) 
+returns (GraphOut:: DAGs)
+{
+   GraphOut.V(%id).
+   GraphOut.V(x) :- GraphIn.V(x).
+   GraphOut.E(x, y) :- GraphIn.E(x, y).
+}
+
+transform Del (id: Integer, GraphIn:: DAGs) 
+returns (GraphOut:: DAGs)
+{
+   GraphOut.V(x) :- GraphIn.V(x), x != %id.
+   GraphOut.E(x, y) :- GraphIn.E(x, y), x.lbl != %id, y.lbl != %id.
+}
+
+transform Complete (GraphIn:: DAGs) 
+returns (GraphOut:: DAGs)
+{
+   GraphOut.V(x)    :- GraphIn.V(x).
+   GraphOut.E(x, y) :- GraphIn.path(x, y).
+}
+
+transform UglyCopy (GraphIn:: DAGs) 
+returns (GraphOut:: DAGs)
+{
+   GraphOut.V(x) :- GraphIn.V(x).
+   GraphOut.E(x, y) :- GraphIn.E(x, y).
+}
+
+transform PrettyCopy (GraphIn:: DAGs) 
+returns (GraphOut:: DAGs)
+{
+   Frame ::= GraphIn.V + GraphIn.E.
+   GraphOut._(x) :- x is Frame.
+}

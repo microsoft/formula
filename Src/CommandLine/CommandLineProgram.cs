@@ -6,7 +6,7 @@
     using API;
     using Common;
 
-    internal class CommandLineProgram
+    public sealed class CommandLineProgram
     {
         public static void Main(string[] args)
         {
@@ -49,7 +49,7 @@
             }
         }
 
-        private class ConsoleChooser : IChooser
+        public sealed class ConsoleChooser : IChooser
         {
             public ConsoleChooser()
             {
@@ -88,7 +88,7 @@
             }
         }
 
-        private class ConsoleSink : IMessageSink
+        public sealed class ConsoleSink : IMessageSink
         {
             private bool printedErr = false;
             private SpinLock printedErrLock = new SpinLock();

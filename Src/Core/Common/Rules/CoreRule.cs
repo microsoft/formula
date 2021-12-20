@@ -1282,6 +1282,7 @@
                 Set<Term> constants = new Set<Term>(Term.Compare);
                 Set<Term> lhsPartVars = new Set<Term>(Term.Compare);
                 Set<Term> rhsPartVars = new Set<Term>(Term.Compare);
+                Set<Term> rhsPartGround = new Set<Term>(Term.Compare);
 
                 foreach (var term in part.Value)
                 {
@@ -1296,6 +1297,10 @@
                     else if (rhsVars.Contains(term))
                     {
                         rhsPartVars.Add(term);
+                    }
+                    else if (term.Symbol.IsDataConstructor && term.Groundness == Groundness.Ground)
+                    {
+                        rhsPartGround.Add(term);
                     }
                 }
 
@@ -1323,6 +1328,13 @@
                     foreach (var lhsVar in lhsPartVars)
                     {
                         bindings.Add(lhsVar, constants.First());
+                    }
+                }
+                else if (!rhsPartGround.IsEmpty())
+                {
+                    foreach (var lhsVar in lhsPartVars)
+                    {
+                        bindings.Add(lhsVar, rhsPartGround.First());
                     }
                 }
             }

@@ -448,6 +448,13 @@
             }
         }
 
+        public override string ToString()
+        {
+            StringWriter sw = new StringWriter();
+            TermPrinting.PrintTerm(this, sw, default(System.Threading.CancellationToken), null);
+            return sw.ToString();
+        }
+
         public override int GetHashCode()
         {
             return uid.GetHashCode();

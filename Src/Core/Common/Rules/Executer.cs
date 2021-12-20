@@ -660,6 +660,19 @@
             }
         }
 
+        private void PrintSymbToIndexMap()
+        {
+            foreach (var kvp in this.symbToIndexMap)
+            {
+                System.Console.WriteLine("Symbol: {0}", kvp.Key.PrintableName);
+                foreach (var index in kvp.Value)
+                {
+
+                    System.Console.WriteLine("  Index pattern term: {0}", index.Pattern.ToString());
+                }
+            }
+        }
+
         private void IndexFact(Term t, IEnumerable<Derivation> drs, Set<PendingActivation> pending, int stratum)
         {
             Set<Derivation> dervs;
@@ -700,6 +713,7 @@
                 index.TryAdd(t, pending, stratum);
             }
         }
+        
 
         private ProofTree MkProof(ProofState root, Term goal)
         {

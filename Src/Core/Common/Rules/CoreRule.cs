@@ -815,6 +815,23 @@
                 queryResults = index.Query(pattern, projection);
             }
 
+            foreach (var tp in queryResults)
+            {
+                if (ApplyMatch(index, otherMatcher, tp, ConstraintNode.BLSecond))
+                {
+                    Contract.Assert(headNode.Binding != null);
+                    Pend(
+                        index,
+                        pending,
+                        headNode.Binding,
+                        findNumber == 0 ? binding : tp,
+                        findNumber == 1 ? binding : tp);
+
+                    UndoPropagation(ConstraintNode.BLSecond);
+                }
+            }
+
+            UndoPropagation(ConstraintNode.BLFirst);
         }
 
         public virtual void Execute(

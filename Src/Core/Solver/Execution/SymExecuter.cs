@@ -634,7 +634,7 @@
 
             nResults = 0;
             return null;
-            //return subIndex.Query(projection, out nResults);
+            return subIndex.Query(projection, out nResults);
         }
 
         public IEnumerable<Term> Query(Term pattern, Term[] projection)
@@ -649,8 +649,7 @@
             Console.WriteLine(" ]");
             */
 
-            yield break;
-            //return trigIndices[pattern].Query(projection);
+            return trigIndices[pattern].Query(projection);
         }
 
         public IEnumerable<Term> Query(Term type, Term binding)
@@ -681,16 +680,14 @@
                 yield break;
             }
 
-            // TODO: implement the functionality below
-
-            /*foreach (var p in patterns)
+            foreach (var p in patterns)
             {
-                var results = trigIndices[p].Query(SubIndex.EmptyProjection);
+                var results = trigIndices[p].Query(new Term[0]);
                 foreach (var t in results)
                 {
                     yield return t;
                 }
-            }*/
+            }
 
             yield break;
         }

@@ -58,34 +58,29 @@
             }
         }
 
-  /*      public IEnumerable<Term> Query(Term[] projection)
+        public IEnumerable<Term> Query(Term[] projection)
         {
-            Set<Term> subindex;
-            if (!facts.TryFindValue(projection, out subindex))
+            // Temporarily ignore the projection
+            foreach (var sym in entryMap)
             {
-                yield break;
+                yield return sym.Key.Term;
             }
+        }
 
-            foreach (var t in subindex)
-            {
-                yield return t;
-            }
-        }*/
-
-        /*public IEnumerable<Term> Query(Term[] projection, out int nResults)
+        public IEnumerable<Term> Query(Term[] projection, out int nResults)
         {
-            Set<Term> subindex;
-            if (!facts.TryFindValue(projection, out subindex))
+            // Temporarily ignore the projection
+            if (entryMap.IsEmpty())
             {
                 nResults = 0;
             }
             else
             {
-                nResults = subindex.Count;
+                nResults = entryMap.Count();
             }
 
             return Query(projection);
-        }*/
+        }
 
         public void Debug_Print()
         {

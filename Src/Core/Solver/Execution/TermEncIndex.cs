@@ -51,6 +51,39 @@
             return varEnc;
         }
 
+        // Checks whether Term t contains any temporary ConSymb elements for which no TypeEmbedding is available
+        public bool CanGetEncoding(Term t)
+        {
+            Z3Expr enc;
+            if (encodings.TryFindValue(t, out enc))
+            {
+                return true;
+            }
+
+            bool hasEncoding = true;
+
+            t.Compute<Unit>(
+                (x, s) =>
+                {
+                    if (x.Symbol.Kind == SymbolKind.ConSymb && ((ConSymb)x.Symbol).SortSymbol != null)
+                    {
+                        return x.Args;
+                    }
+                    else
+                    {
+                        hasEncoding = false;
+                        return null;
+                    }
+                },
+                (x, ch, s) =>
+                {
+                    return default(Unit);
+                }
+                );
+
+            return hasEncoding;
+        }
+
         /// <summary>
         /// Returns an encoding of this term, possibly after applying some normalizing rewrites. 
         /// </summary>

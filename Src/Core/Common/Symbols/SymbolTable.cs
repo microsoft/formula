@@ -2702,7 +2702,9 @@
                 OpLibrary.ValidateUse_Sum,
                 OpLibrary.TypeApprox_Sum_Up,
                 OpLibrary.TypeApprox_Sum_Down,
-                OpLibrary.Evaluator_Sum));
+                OpLibrary.Evaluator_Sum,
+                null,
+                OpLibrary.SymEvaluator_Sum));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.Sign,
@@ -3043,7 +3045,8 @@
                 OpLibrary.ValidateUse_Reserved,
                 OpLibrary.TypeApprox_Sel_Up,
                 OpLibrary.TypeApprox_Sel_Down,
-                OpLibrary.Evaluator_Select));
+                OpLibrary.Evaluator_Select,
+                OpLibrary.SymEvaluator_Select));
 
             AddBaseOp(new BaseOpSymb(
                 ReservedOpKind.Relabel, 

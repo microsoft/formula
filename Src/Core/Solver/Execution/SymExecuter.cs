@@ -240,7 +240,15 @@
                     act.Rule.Execute(act.Binding1.Term, act.FindNumber, this, pendingFacts);
                     foreach (var pending in pendingFacts)
                     {
-                        IndexFact(ExtendLFP(pending), pendingAct, i);
+                        if (Encoder.CanGetEncoding(pending))
+                        {
+                            IndexFact(ExtendLFP(pending), pendingAct, i);
+                        }
+                        else
+                        {
+                            SymElement sym = new SymElement(pending, null, Solver.Context);
+                            IndexFact(sym, pendingAct, i);
+                        }
                     }
 
                     pendingConstraints.Clear();
@@ -632,8 +640,6 @@
 
             //// Console.WriteLine(" ]");
 
-            nResults = 0;
-            return null;
             return subIndex.Query(projection, out nResults);
         }
 

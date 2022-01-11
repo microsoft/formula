@@ -13,6 +13,7 @@
     using Compiler;
     using Extras;
     using Terms;
+    using Solver;
 
     internal class CoreSubRule : CoreRule
     {
@@ -91,6 +92,24 @@
                 newHead,
                 index.MkVar(((UserSymbol)Find1.Binding.Symbol).Name, true, out wasAdded),
                 Matcher.Clone(index));
+        }
+
+        public override void Execute(Term binding, int findNumber, SymExecuter index, Set<Term> pending)
+        {
+            bool wasAdded;
+            Term[] args;
+            // TODO: Check the matching for the symbolic case
+            foreach (var match in Matcher.EnumerateMatches(binding))
+            {
+                args = new Term[match.Length];
+                match.CopyTo(args, 0);
+                Pend(
+                    index,
+                    pending,
+                    Index.MkApply(Head.Symbol, args, out wasAdded),
+                    binding,
+                    Index.FalseValue);
+            }
         }
 
         public override void Execute(Term binding, int findNumber, Executer index, bool keepDerivations, Map<Term, Set<Derivation>> pending)

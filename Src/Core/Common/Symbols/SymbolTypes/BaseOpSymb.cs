@@ -166,7 +166,8 @@
             List<Flag>, bool> validator,
             Func<TermIndex, Term[], Term[]> upApprox,
             Func<TermIndex, Term[], Term[]> downApprox,
-            Func<Executer, Bindable[], Term> evaluator)
+            Func<Executer, Bindable[], Term> evaluator,
+            Func<SymExecuter, Bindable[], Term> symEvaluator = null)
         {
             Contract.Requires(validator != null);
             OpKind = opKind;
@@ -174,6 +175,7 @@
             UpwardApprox = upApprox;
             DownwardApprox = downApprox;
             Evaluator = evaluator;
+            SymEvaluator = symEvaluator;
             this.arity = arity;
         }
 

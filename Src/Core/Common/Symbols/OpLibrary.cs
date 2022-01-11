@@ -1594,6 +1594,35 @@
             }
         }
 
+        internal static Term SymEvaluator_Select(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            var target = values[0].Binding;
+            if (!target.Symbol.IsDataConstructor)
+            {
+                return null;
+            }
+
+            //// This cast should succeed, because second argument to selector should
+            //// always be a string.
+            var label = (string)((BaseCnstSymb)values[1].Binding.Symbol).Raw;
+            int index;
+            bool labelExists;
+            switch (target.Symbol.Kind)
+            {
+                case SymbolKind.ConSymb:
+                    labelExists = ((ConSymb)target.Symbol).GetLabelIndex(label, out index);
+                    break;
+                case SymbolKind.MapSymb:
+                    labelExists = ((MapSymb)target.Symbol).GetLabelIndex(label, out index);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            return labelExists ? target.Args[index] : null;
+        }
+
         internal static Term Evaluator_Select(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1621,6 +1650,89 @@
             }
 
             return labelExists ? target.Args[index] : null;
+        }
+
+        internal static Term SymEvaluator_Sum(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            int nResults;
+            var acc = Rational.Zero;
+            bool hasNumeric = false;
+            Symbol symb;
+            BaseCnstSymb bsymb;
+
+            IEnumerable<Term> terms = facts.Query(values[1].Binding, out nResults);
+            if (nResults == 0)
+            {
+                return values[0].Binding;
+            }
+
+            bool hasVariables = false;
+            foreach (var term in terms)
+            {
+                symb = term.Args[term.Symbol.Arity - 1].Symbol;
+                if (symb.Kind == SymbolKind.UserCnstSymb && symb.IsVariable)
+                {
+                    hasVariables = true;
+                    break;
+                }
+            }
+
+            if (hasVariables)
+            {
+                Term currExpr = null;
+                Term normalized;
+
+                foreach (var term in terms)
+                {
+                    Term currTerm = term.Args[term.Symbol.Arity - 1];
+                    if (currTerm.Symbol.Kind == SymbolKind.UserCnstSymb && currTerm.Symbol.IsVariable)
+                    {
+                        var typeTerm = facts.varToTypeMap[currTerm];
+                        Contract.Assert(typeTerm != null);
+                        facts.Encoder.GetVarEnc(currTerm, typeTerm);
+                    }
+                    else
+                    {
+                        facts.Encoder.GetTerm(currTerm, out normalized);
+                    }
+
+                    if (currExpr == null)
+                    {
+                        currExpr = currTerm;
+                    }
+                    else
+                    {
+                        bool wasAdded;
+                        BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Add);
+                        currExpr = facts.Index.MkApply(bos, new Term[] { currExpr, currTerm }, out wasAdded);
+                    }
+                }
+
+                facts.Encoder.GetTerm(currExpr, out normalized);
+                return currExpr;
+            }
+            else
+            {
+                foreach (var term in terms)
+                {
+                    symb = term.Args[term.Symbol.Arity - 1].Symbol;
+                    if (symb.Kind != SymbolKind.BaseCnstSymb)
+                    {
+                        continue;
+                    }
+
+                    bsymb = (BaseCnstSymb)symb;
+                    if (bsymb.CnstKind == CnstKind.Numeric)
+                    {
+                        hasNumeric = true;
+                        acc += ((Rational)bsymb.Raw);
+                    }
+                }
+
+                bool wasAdded;
+                return hasNumeric ? facts.Index.MkCnst(acc, out wasAdded) : values[0].Binding;
+            }
         }
 
         internal static Term Evaluator_Sum(Executer facts, Bindable[] values)

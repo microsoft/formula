@@ -2301,7 +2301,59 @@
 
             public override bool TryEval(SymExecuter facts, int bindingLevel)
             {
-                return true;
+                Contract.Assert(!IsEvaluated);
+                EvaluationLevel = bindingLevel;
+
+                Term typeTerm;
+                BaseCnstSymb cs;
+                var bindSymb = arg.Binding.Symbol;
+                switch (bindSymb.Kind)
+                {
+                    case SymbolKind.UserCnstSymb:
+                        break;
+                    case SymbolKind.ConSymb:
+                        bindSymb = ((ConSymb)bindSymb).SortSymbol;
+                        break;
+                    case SymbolKind.MapSymb:
+                        bindSymb = ((MapSymb)bindSymb).SortSymbol;
+                        break;
+                    case SymbolKind.BaseCnstSymb:
+                        cs = (BaseCnstSymb)bindSymb;
+                        if (cs.CnstKind == CnstKind.Numeric)
+                        {
+                            bindSymb = zero.Symbol;
+                        }
+                        else if (cs.CnstKind == CnstKind.String)
+                        {
+                            bindSymb = emptyString.Symbol;
+                        }
+                        else
+                        {
+                            throw new NotImplementedException();
+                        }
+
+                        break;
+                }
+
+                if (!typeBins.TryFindValue(bindSymb, out typeTerm))
+                {
+                    return false;
+                }
+                else if (!typeTerm.Owner.IsGroundMember(typeTerm, arg.Binding))
+                {
+                    // TODO: this may be ok for symbolic terms
+                    return false;
+                }
+                else if (Binding == null)
+                {
+                    Binding = typeTerm.Owner.TrueValue;
+                    BindingLevel = bindingLevel;
+                    return true;
+                }
+                else
+                {
+                    return Binding == typeTerm.Owner.TrueValue;
+                }
             }
 
             public override bool TryEval(Executer facts, int bindingLevel)

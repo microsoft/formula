@@ -1312,61 +1312,51 @@
             return cmp >= 0 ? facts.TermIndex.TrueValue : facts.TermIndex.FalseValue;
         }
 
-        // TODO: redo this method
         internal static Term SymEvaluator_Gt(SymExecuter facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
 
             Term t1 = values[0].Binding;
             Term t2 = values[1].Binding;
-            Term freshType = null;
 
-            Z3Expr expr1, expr2;
+            if (t1.Groundness == Groundness.Ground && t2.Groundness == Groundness.Ground)
+            {
+                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
+                return cmp > 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
 
+            // Create the Term that we will return
+            bool wasAdded;
+            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Gt);
+            Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+            // If we're a UserCnstSymb variable, then we lookup our Type in the SymExecuter
+            Term normalized;
             if (t1.Symbol.Kind == SymbolKind.UserCnstSymb && t1.Symbol.IsVariable)
             {
                 var tTerm = facts.varToTypeMap[t1];
                 Contract.Assert(tTerm != null);
-                freshType = tTerm;
-                expr1 = facts.Encoder.GetVarEnc(t1, tTerm);
+                facts.Encoder.GetVarEnc(t1, tTerm);
             }
             else
             {
-                Term normalizedTerm1;
-                expr1 = facts.Encoder.GetTerm(t1, out normalizedTerm1);
+                facts.Encoder.GetTerm(t1, out normalized);
             }
 
             if (t2.Symbol.Kind == SymbolKind.UserCnstSymb && t2.Symbol.IsVariable)
             {
                 var tTerm = facts.varToTypeMap[t2];
                 Contract.Assert(tTerm != null);
-                freshType = tTerm;
-                expr2 = facts.Encoder.GetVarEnc(t2, tTerm);
+                facts.Encoder.GetVarEnc(t2, tTerm);
             }
             else
             {
-                Term normalizedTerm2;
-                expr2 = facts.Encoder.GetTerm(t2, out normalizedTerm2);
+                facts.Encoder.GetTerm(t2, out normalized);
             }
 
-            if (freshType == null)
-            {
-                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
-                return cmp > 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
-            }
-
-            // 1. Make a variable term and its Z3 encoding
-            bool wasAdded;
-            var freshVar = facts.Index.MkVar("NEWVAR" + varId++, true, out wasAdded);
-            var encoding = facts.Encoder.GetVarEnc(freshVar, facts.Index.TrueValue);
-            facts.varToTypeMap.Add(freshVar, facts.Index.TrueValue);
-
-            // 2. Make a constraint
-            var ctx = facts.Solver.Context;
-            facts.PendConstraint(ctx.MkGt((ArithExpr)expr1, (ArithExpr)expr2));
-
-            // 3. If t1 > t2, the variable is true, otherwise false
-            return freshVar;
+            // Encode the Term with Z3
+            facts.PendConstraint((Z3.BoolExpr)facts.Encoder.GetTerm(res, out normalized));
+            return res;
         }
 
         internal static Term Evaluator_Gt(Executer facts, Bindable[] values)
@@ -1518,7 +1508,17 @@
         {
             Contract.Requires(values.Length == 1);
             int nResults;
-            facts.Query(values[0].Binding, out nResults);
+            var res = facts.Query(values[0].Binding, out nResults);
+            if (nResults == 0)
+            {
+                return facts.Index.TrueValue;
+            }
+
+            // TODO: if the results have side constraints, conjoin them and return true
+            foreach (var item in res)
+            {
+            }
+
             return nResults == 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
         }
 

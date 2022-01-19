@@ -162,6 +162,9 @@
                                 encp = Solver.TypeEmbedder.Context.MkAdd((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
                                 encodings.Add(x, encp);
                                 return encp;
+                            case RelKind.Gt:
+                                encp = Solver.TypeEmbedder.Context.MkGt((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
+                                return encp;
                             default:
                                 throw new NotImplementedException();
                         }

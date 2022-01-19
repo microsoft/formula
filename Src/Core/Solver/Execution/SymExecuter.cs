@@ -104,12 +104,38 @@
 
         public void PendConstraint(Z3BoolExpr expr)
         {
-            this.pendingConstraints.Add(expr);
+            pendingConstraints.Add(expr);
+        }
+
+        public void CopySideConstraints(Term t)
+        {
+            SymElement e;
+            if (lfp.TryFindValue(t, out e))
+            {
+                if (e.HasSideConstraints())
+                {
+                    Z3BoolExpr expr = null;
+                    foreach (var kvp in e.SideConstraints)
+                    {
+                        var constraint = kvp.Value;
+                        if (expr == null)
+                        {
+                            expr = constraint;
+                        }
+                        else
+                        {
+                            expr = Solver.Context.MkAnd(expr, constraint);
+                        }
+                    }
+
+                    PendConstraint(expr);
+                }
+            }
         }
 
         public void PendEqualityConstraint(Z3Expr expr1, Z3Expr expr2)
         {
-            this.pendingConstraints.Add(Solver.Context.MkEq(expr1, expr2));
+            pendingConstraints.Add(Solver.Context.MkEq(expr1, expr2));
         }
 
         public SymExecuter(Solver solver)
@@ -199,8 +225,9 @@
                 var model = Solver.Z3Solver.Model;
                 foreach (var kvp in lfp)
                 {
-                    var s = GetModelInterpretation(kvp.Key, model);
-                    Console.WriteLine(s);
+                    
+                var s = GetModelInterpretation(kvp.Key, model);
+                Console.WriteLine(s);
                 }
             }
             else if (status == Z3.Status.UNSATISFIABLE)
@@ -240,15 +267,8 @@
                     act.Rule.Execute(act.Binding1.Term, act.FindNumber, this, pendingFacts);
                     foreach (var pending in pendingFacts)
                     {
-                        if (Encoder.CanGetEncoding(pending))
-                        {
-                            IndexFact(ExtendLFP(pending), pendingAct, i);
-                        }
-                        else
-                        {
-                            SymElement sym = new SymElement(pending, null, Solver.Context);
-                            IndexFact(sym, pendingAct, i);
-                        }
+                        CopySideConstraints(act.Binding1.Term);
+                        IndexFact(ExtendLFP(pending), pendingAct, i);
                     }
 
                     pendingConstraints.Clear();
@@ -260,6 +280,10 @@
         public string GetModelInterpretation(Term t, Z3.Model model)
         {
             Queue<string> pieces = new Queue<string>();
+            if (t.Groundness == Groundness.Ground)
+            {
+                return t.ToString();
+            }
             return t.Compute<string>(
                 (x, s) => x.Args,
                 (x, ch, s) =>
@@ -400,12 +424,16 @@
                 return e;
             }
 
-            Term normalized;
-            var enc = Encoder.GetTerm(t, out normalized);
-
-            if (lfp.TryFindValue(normalized, out e))
+            Term normalized = t;
+            Z3Expr enc = null;
+            if (Encoder.CanGetEncoding(t))
             {
-                return e;
+                enc = Encoder.GetTerm(t, out normalized);
+
+                if (lfp.TryFindValue(normalized, out e))
+                {
+                    return e;
+                }
             }
 
             //// Neither t nor a normalized version of t has been seen.
@@ -416,9 +444,9 @@
                 lfp.Add(t, e);
             }
 
-            foreach (var constr in pendingConstraints)
+            foreach (var c in pendingConstraints)
             {
-                e.ExtendSideConstraint(0, constr, Solver.Context);
+                e.ExtendSideConstraint(0, c, Solver.Context);
             }
 
             return e;

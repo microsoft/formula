@@ -45,6 +45,11 @@
             private set;
         }
 
+        public bool HasSideConstraints()
+        {
+            return !SideConstraints.IsEmpty();
+        }
+
         /// <summary>
         ///  The earliest index at which the side constraint is known to be a tautology.
         /// </summary>
@@ -63,7 +68,7 @@
         }
 
         /// <summary>
-        /// Disjoins the current side constraint with constr
+        /// Conjoins the current side constraint with constr
         /// </summary>
         /// <param name="constr"></param>
         /// <param name="context"></param>

@@ -555,23 +555,13 @@ funcOrCompr			:	funcTerm
 					|	compr
 					;
 
-funcTerm			:	atom
-					|	MINUS
+funcTerm			:	MINUS
 						funcTerm
 					|	funcTerm
-						MUL
+						(MUL | DIV | MOD)
 						funcTerm
 					|	funcTerm
-						DIV
-						funcTerm
-					|	funcTerm
-						MOD
-						funcTerm
-					|	funcTerm
-						PLUS
-						funcTerm
-					|	funcTerm
-						MINUS
+						(PLUS | MINUS)
 						funcTerm
 					|	id
 						LPAREN
@@ -583,6 +573,7 @@ funcTerm			:	atom
 					|	LPAREN
 						funcTerm
 						RPAREN
+					|	atom
 					;
 
 quoteList			:	quoteItem

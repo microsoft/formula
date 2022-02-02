@@ -65,13 +65,20 @@
             t.Compute<Unit>(
                 (x, s) =>
                 {
-                    if (x.Symbol.Kind == SymbolKind.ConSymb && ((ConSymb)x.Symbol).SortSymbol != null)
+                    if (x.Symbol.Kind == SymbolKind.ConSymb)
                     {
-                        return x.Args;
+                        if (((ConSymb)x.Symbol).SortSymbol == null)
+                        {
+                            hasEncoding = false;
+                            return null;
+                        }
+                        else
+                        {
+                            return x.Args;
+                        }
                     }
                     else
                     {
-                        hasEncoding = false;
                         return null;
                     }
                 },

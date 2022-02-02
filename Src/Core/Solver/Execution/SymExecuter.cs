@@ -107,6 +107,8 @@
             pendingConstraints.Add(expr);
         }
 
+
+
         public void CopySideConstraints(Term t)
         {
             SymElement e;
@@ -225,9 +227,11 @@
                 var model = Solver.Z3Solver.Model;
                 foreach (var kvp in lfp)
                 {
-                    
-                var s = GetModelInterpretation(kvp.Key, model);
-                Console.WriteLine(s);
+                    if (Encoder.CanGetEncoding(kvp.Key))
+                    {
+                        var s = GetModelInterpretation(kvp.Key, model);
+                        Console.WriteLine(s);
+                    }
                 }
             }
             else if (status == Z3.Status.UNSATISFIABLE)

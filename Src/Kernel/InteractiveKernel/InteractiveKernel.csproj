@@ -2,15 +2,10 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Jupyter.Core" Version="1.5.157285" />
-    <PackageReference Include="NetMQ" Version="4.0.1.8" />
   </ItemGroup>
 
   <ItemGroup>
     <None Remove="res\" />
-    <None Remove="Core" />
-    <None Remove="CommandLine" />
-    <None Remove="Antlr4.Runtime.Standard" />
-    <None Remove="Microsoft.Z3" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="res\" />

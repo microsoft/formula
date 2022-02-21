@@ -35,7 +35,7 @@ namespace Microsoft.Jupyter.Core
             {
                 _ci.DoCommand(cell_output[i]);
             }
-
+            
             channel.Display(_sink.GetStdOut());
 
             channel.Stderr(_sink.GetStdErr());
@@ -60,8 +60,8 @@ namespace Microsoft.Jupyter.Core
             var cell_output = input.Split("\n");
             Regex rx = new Regex(@"\b^[0-9]+\b", RegexOptions.Compiled | RegexOptions.IgnoreCase);
             for (int i = 0;i < cell_output.Length;++i)
-            { 
-                if(cell_output[i].Length > 0)
+            {
+                if (cell_output[i].Length > 0)
                 {
                     MatchCollection matches = rx.Matches(cell_output[i]);
                     if (matches.Count > 0)
@@ -79,6 +79,9 @@ namespace Microsoft.Jupyter.Core
             channel.Stderr(_sink.GetStdErr());
             
             _sink.Clear();
+
+            _chooser.SetChoice(0);
+
             if (_sink.PrintedError)
             {
                 return ExecuteStatus.Error.ToExecutionResult();

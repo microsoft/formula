@@ -18,10 +18,12 @@ namespace Microsoft.Jupyter.Core
             if(_choice != -1)
             {
                 choice = (DigitChoiceKind)_choice;
-                return true;
             }
-            choice = DigitChoiceKind.Zero;
-            return false;
+            else
+            {
+                choice = DigitChoiceKind.Zero;
+            }
+            return true;
         }
 
         public void SetChoice(int num)

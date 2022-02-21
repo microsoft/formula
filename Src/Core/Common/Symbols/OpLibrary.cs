@@ -1250,61 +1250,83 @@
             return cmp <= 0 ? facts.TermIndex.TrueValue : facts.TermIndex.FalseValue;
         }
 
-        // TODO: redo this method
         internal static Term SymEvaluator_Lt(SymExecuter facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
 
             Term t1 = values[0].Binding;
             Term t2 = values[1].Binding;
-            Term freshType = null;
 
-            Z3Expr expr1, expr2;
+            if (t1.Groundness == Groundness.Ground && t2.Groundness == Groundness.Ground)
+            {
+                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
+                return cmp < 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
 
+            // Create the Term that we will return
+            bool wasAdded;
+            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Lt);
+            Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+            Z3ArithExpr lhs, rhs;
+
+            // If we're a UserCnstSymb variable, then we lookup our Type in the SymExecuter
+            Term normalized;
             if (t1.Symbol.Kind == SymbolKind.UserCnstSymb && t1.Symbol.IsVariable)
             {
                 var tTerm = facts.varToTypeMap[t1];
                 Contract.Assert(tTerm != null);
-                freshType = tTerm;
-                expr1 = facts.Encoder.GetVarEnc(t1, tTerm);
+                lhs = (Z3ArithExpr)facts.Encoder.GetVarEnc(t1, tTerm);
+            }
+            else if (t1.Symbol.Kind == SymbolKind.BaseOpSymb &&
+                     ((BaseOpSymb)t1.Symbol).IsSymCount)
+            {
+                Z3ArithExpr[] exprs = new Z3ArithExpr[t1.Args.Length];
+
+                exprs[0] = (Z3ArithExpr)facts.Encoder.GetTerm(t1.Args[0], out normalized);
+                for (int i = 1; i < t1.Args.Count(); i++)
+                {
+                    Z3BoolExpr boolExpr = facts.GetSideConstraints(t1.Args[i]);
+                    exprs[i] = (Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr,
+                                                                     facts.Solver.Context.MkInt(1),
+                                                                     facts.Solver.Context.MkInt(0));
+                }
+
+                lhs = facts.Solver.Context.MkAdd(exprs);
             }
             else
             {
-                Term normalizedTerm1;
-                expr1 = facts.Encoder.GetTerm(t1, out normalizedTerm1);
+                lhs = (Z3ArithExpr)facts.Encoder.GetTerm(t1, out normalized);
             }
 
             if (t2.Symbol.Kind == SymbolKind.UserCnstSymb && t2.Symbol.IsVariable)
             {
                 var tTerm = facts.varToTypeMap[t2];
                 Contract.Assert(tTerm != null);
-                freshType = tTerm;
-                expr2 = facts.Encoder.GetVarEnc(t2, tTerm);
+                rhs = (Z3ArithExpr)facts.Encoder.GetVarEnc(t2, tTerm);
+            }
+            else if (t2.Symbol.Kind == SymbolKind.BaseOpSymb) // If we are a symbolic count
+            {
+                Z3ArithExpr[] exprs = new Z3ArithExpr[t2.Args.Length];
+
+                exprs[0] = (Z3ArithExpr)facts.Encoder.GetTerm(t2.Args[0], out normalized);
+                for (int i = 1; i < t2.Args.Count(); i++)
+                {
+                    Z3BoolExpr boolExpr = facts.GetSideConstraints(t2.Args[i]);
+                    exprs[i] = (Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr,
+                                                                     facts.Solver.Context.MkInt(1),
+                                                                     facts.Solver.Context.MkInt(0));
+                }
+
+                rhs = facts.Solver.Context.MkAdd(exprs);
             }
             else
             {
-                Term normalizedTerm2;
-                expr2 = facts.Encoder.GetTerm(t2, out normalizedTerm2);
+                rhs = (Z3ArithExpr)facts.Encoder.GetTerm(t2, out normalized);
             }
 
-            if (freshType == null)
-            {
-                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
-                return cmp > 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
-            }
-
-            // 1. Make a variable term and its Z3 encoding
-            bool wasAdded;
-            var freshVar = facts.Index.MkVar("NEWVAR" + varId++, true, out wasAdded);
-            var encoding = facts.Encoder.GetVarEnc(freshVar, facts.Index.TrueValue);
-            facts.varToTypeMap.Add(freshVar, facts.Index.TrueValue);
-
-            // 2. Make a constraint
-            var ctx = facts.Solver.Context;
-            facts.PendConstraint(ctx.MkLt((Z3ArithExpr)expr1, (Z3ArithExpr)expr2));
-
-            // 3. If t1 > t2, the variable is true, otherwise false
-            return freshVar;
+            facts.PendConstraint(facts.Solver.Context.MkLt(lhs, rhs));
+            return res;
         }
 
         internal static Term Evaluator_Lt(Executer facts, Bindable[] values)

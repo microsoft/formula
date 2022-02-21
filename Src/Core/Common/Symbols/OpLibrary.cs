@@ -1268,64 +1268,8 @@
             BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Lt);
             Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
 
-            Z3ArithExpr lhs, rhs;
-
-            // If we're a UserCnstSymb variable, then we lookup our Type in the SymExecuter
             Term normalized;
-            if (t1.Symbol.Kind == SymbolKind.UserCnstSymb && t1.Symbol.IsVariable)
-            {
-                var tTerm = facts.varToTypeMap[t1];
-                Contract.Assert(tTerm != null);
-                lhs = (Z3ArithExpr)facts.Encoder.GetVarEnc(t1, tTerm);
-            }
-            else if (t1.Symbol.Kind == SymbolKind.BaseOpSymb &&
-                     ((BaseOpSymb)t1.Symbol).IsSymCount)
-            {
-                Z3ArithExpr[] exprs = new Z3ArithExpr[t1.Args.Length];
-
-                exprs[0] = (Z3ArithExpr)facts.Encoder.GetTerm(t1.Args[0], out normalized);
-                for (int i = 1; i < t1.Args.Count(); i++)
-                {
-                    Z3BoolExpr boolExpr = facts.GetSideConstraints(t1.Args[i]);
-                    exprs[i] = (Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr,
-                                                                     facts.Solver.Context.MkInt(1),
-                                                                     facts.Solver.Context.MkInt(0));
-                }
-
-                lhs = facts.Solver.Context.MkAdd(exprs);
-            }
-            else
-            {
-                lhs = (Z3ArithExpr)facts.Encoder.GetTerm(t1, out normalized);
-            }
-
-            if (t2.Symbol.Kind == SymbolKind.UserCnstSymb && t2.Symbol.IsVariable)
-            {
-                var tTerm = facts.varToTypeMap[t2];
-                Contract.Assert(tTerm != null);
-                rhs = (Z3ArithExpr)facts.Encoder.GetVarEnc(t2, tTerm);
-            }
-            else if (t2.Symbol.Kind == SymbolKind.BaseOpSymb) // If we are a symbolic count
-            {
-                Z3ArithExpr[] exprs = new Z3ArithExpr[t2.Args.Length];
-
-                exprs[0] = (Z3ArithExpr)facts.Encoder.GetTerm(t2.Args[0], out normalized);
-                for (int i = 1; i < t2.Args.Count(); i++)
-                {
-                    Z3BoolExpr boolExpr = facts.GetSideConstraints(t2.Args[i]);
-                    exprs[i] = (Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr,
-                                                                     facts.Solver.Context.MkInt(1),
-                                                                     facts.Solver.Context.MkInt(0));
-                }
-
-                rhs = facts.Solver.Context.MkAdd(exprs);
-            }
-            else
-            {
-                rhs = (Z3ArithExpr)facts.Encoder.GetTerm(t2, out normalized);
-            }
-
-            facts.PendConstraint(facts.Solver.Context.MkLt(lhs, rhs));
+            facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
             return res;
         }
 
@@ -1404,64 +1348,8 @@
             BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Gt);
             Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
 
-            Z3ArithExpr lhs, rhs;
-
-            // If we're a UserCnstSymb variable, then we lookup our Type in the SymExecuter
             Term normalized;
-            if (t1.Symbol.Kind == SymbolKind.UserCnstSymb && t1.Symbol.IsVariable)
-            {
-                var tTerm = facts.varToTypeMap[t1];
-                Contract.Assert(tTerm != null);
-                lhs = (Z3ArithExpr)facts.Encoder.GetVarEnc(t1, tTerm);
-            }
-            else if (t1.Symbol.Kind == SymbolKind.BaseOpSymb &&
-                     ((BaseOpSymb)t1.Symbol).IsSymCount)
-            {
-                Z3ArithExpr[] exprs = new Z3ArithExpr[t1.Args.Length];
-
-                exprs[0] = (Z3ArithExpr)facts.Encoder.GetTerm(t1.Args[0], out normalized);
-                for (int i = 1; i < t1.Args.Count(); i++)
-                {
-                    Z3BoolExpr boolExpr = facts.GetSideConstraints(t1.Args[i]);
-                    exprs[i] = (Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr, 
-                                                                     facts.Solver.Context.MkInt(1),
-                                                                     facts.Solver.Context.MkInt(0));
-                }
-
-                lhs = facts.Solver.Context.MkAdd(exprs);
-            }
-            else
-            {
-                lhs = (Z3ArithExpr)facts.Encoder.GetTerm(t1, out normalized);
-            }
-
-            if (t2.Symbol.Kind == SymbolKind.UserCnstSymb && t2.Symbol.IsVariable)
-            {
-                var tTerm = facts.varToTypeMap[t2];
-                Contract.Assert(tTerm != null);
-                rhs = (Z3ArithExpr)facts.Encoder.GetVarEnc(t2, tTerm);
-            }
-            else if (t2.Symbol.Kind == SymbolKind.BaseOpSymb) // If we are a symbolic count
-            {
-                Z3ArithExpr[] exprs = new Z3ArithExpr[t2.Args.Length];
-
-                exprs[0] = (Z3ArithExpr)facts.Encoder.GetTerm(t2.Args[0], out normalized);
-                for (int i = 1; i < t2.Args.Count(); i++)
-                {
-                    Z3BoolExpr boolExpr = facts.GetSideConstraints(t2.Args[i]);
-                    exprs[i] = (Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr,
-                                                                     facts.Solver.Context.MkInt(1),
-                                                                     facts.Solver.Context.MkInt(0));
-                }
-
-                rhs = facts.Solver.Context.MkAdd(exprs);
-            }
-            else
-            {
-                rhs = (Z3ArithExpr)facts.Encoder.GetTerm(t2, out normalized);
-            }
-
-            facts.PendConstraint(facts.Solver.Context.MkGt(lhs, rhs));
+            facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
             return res;
         }
 

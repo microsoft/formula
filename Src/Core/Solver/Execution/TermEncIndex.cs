@@ -14,6 +14,7 @@
     using Common.Terms;
 
     using Z3Expr = Microsoft.Z3.Expr;
+    using Z3BoolExpr = Microsoft.Z3.BoolExpr;
     using Z3ArithExpr = Microsoft.Z3.ArithExpr;
 
     /// <summary>
@@ -94,7 +95,7 @@
         /// <summary>
         /// Returns an encoding of this term, possibly after applying some normalizing rewrites. 
         /// </summary>
-        public Z3Expr GetTerm(Term t, out Term normalizedTerm)
+        public Z3Expr GetTerm(Term t, out Term normalizedTerm, SymExecuter facts = null)
         {
             Contract.Requires(t != null);
             normalizedTerm = Normalize(t);
@@ -171,6 +172,20 @@
                                 return encp;
                             case RelKind.Gt:
                                 encp = Solver.TypeEmbedder.Context.MkGt((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
+                                return encp;
+                            case OpKind.SymCount:
+                                Z3ArithExpr[] exprs = new Z3ArithExpr[x.Args.Length];
+
+                                exprs[0] = (Z3ArithExpr)ch.ElementAt(0);
+                                for (int i = 1; i < x.Args.Count(); i++)
+                                {
+                                    Z3BoolExpr boolExpr = facts.GetSideConstraints(x.Args[i]);
+                                    exprs[i] = (Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr,
+                                                                                     facts.Solver.Context.MkInt(1),
+                                                                                     facts.Solver.Context.MkInt(0));
+                                }
+                                encp = facts.Solver.Context.MkAdd(exprs);
+                                encodings.Add(x, encp);
                                 return encp;
                             default:
                                 throw new NotImplementedException();

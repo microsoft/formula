@@ -31,17 +31,6 @@
   </ItemGroup>
 
    <ItemGroup>
-     <Reference Include="Core">
-       <HintPath>..\..\Core\bin\Debug\net5.0\Core.dll</HintPath>
-     </Reference>
-     <Reference Include="CommandLine">
-       <HintPath>..\..\CommandLine\bin\Debug\net5.0\CommandLine.dll</HintPath>
-     </Reference>
-     <Reference Include="Antlr4.Runtime.Standard">
-       <HintPath>..\..\CommandLine\bin\Debug\net5.0\Antlr4.Runtime.Standard.dll</HintPath>
-     </Reference>
-     <Reference Include="Microsoft.Z3">
-       <HintPath>..\..\CommandLine\bin\Debug\net5.0\Microsoft.Z3.dll</HintPath>
-     </Reference>
+     <ProjectReference Include="..\..\CommandLine\CommandLine.csproj" />
    </ItemGroup>
 </Project>

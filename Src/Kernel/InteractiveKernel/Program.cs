@@ -11,15 +11,12 @@ namespace Microsoft.Jupyter.Core
             serviceCollection
                 .AddSingleton<IExecutionEngine, KernelEngine>();
 
-        internal static CommandOption? FormulaOption;
-
         public static int Main(string[] args)
         {
             var app = new KernelApplication(
                 PROPERTIES,
                 Init
             );
-            CommandOption formulaInstallOption;
 
             return app
                 .WithDefaultCommands()

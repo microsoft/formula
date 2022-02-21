@@ -1367,7 +1367,7 @@
 
             if (Unifier.IsUnifiable(pattern, t, true, partitions))
             {
-                var bindings = GetBindings(facts, pattern, t, partitions);
+                var bindings = facts.GetBindings(pattern, t, partitions);
                 foreach (var kv in bindings)
                 {
                     if (!Propagate(facts, kv.Key, kv.Value, bindingLevel))

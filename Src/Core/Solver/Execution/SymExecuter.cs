@@ -43,17 +43,17 @@
         /// <summary>
         /// Maps a find pattern to a subindex.
         /// </summary>
-        private Map<Term, ShapeTrie> trigIndices = new Map<Term, ShapeTrie>(Term.Compare);
+        private Map<Term, SymSubIndex> trigIndices = new Map<Term, SymSubIndex>(Term.Compare);
 
         /// <summary>
         /// Maps a comprehension symbol to a subindex.
         /// </summary>
-        private Map<Symbol, ShapeTrie> comprIndices = new Map<Symbol, ShapeTrie>(Symbol.Compare);
+        private Map<Symbol, SymSubIndex> comprIndices = new Map<Symbol, SymSubIndex>(Symbol.Compare);
 
         /// <summary>
         /// Maps a symbol to a set of indices with patterns beginning with this symbol. 
         /// </summary>
-        private Map<Symbol, LinkedList<ShapeTrie>> symbToIndexMap = new Map<Symbol, LinkedList<ShapeTrie>>(Symbol.Compare);
+        private Map<Symbol, LinkedList<SymSubIndex>> symbToIndexMap = new Map<Symbol, LinkedList<SymSubIndex>>(Symbol.Compare);
 
         /// <summary>
         /// A map from strata to rules that are not triggered.
@@ -107,9 +107,38 @@
             pendingConstraints.Add(expr);
         }
 
+        public bool HasSideConstraint(Term term)
+        {
+            SymElement e;
+            if (lfp.TryFindValue(term, out e))
+            {
+                if (e.HasSideConstraints())
+                {
+                    return true;
+                }
+            }
 
+            return false;
+        }
 
-        public void CopySideConstraints(Term t)
+        public bool HasSideConstraints(IEnumerable<Term> terms)
+        {
+            foreach (var term in terms)
+            {
+                SymElement e;
+                if (lfp.TryFindValue(term, out e))
+                {
+                    if (e.HasSideConstraints())
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        public Z3BoolExpr GetSideConstraints(Term t)
         {
             SymElement e;
             if (lfp.TryFindValue(t, out e))
@@ -130,9 +159,46 @@
                         }
                     }
 
+                    return expr;
+                }
+            }
+
+            return Solver.Context.MkTrue(); // if no constraints
+        }
+
+        public bool CopySideConstraints(Term t, bool negate = false)
+        {
+            bool hasConstraints = false;
+            SymElement e;
+            if (lfp.TryFindValue(t, out e))
+            {
+                if (e.HasSideConstraints())
+                {
+                    hasConstraints = true;
+                    Z3BoolExpr expr = null;
+                    foreach (var kvp in e.SideConstraints)
+                    {
+                        var constraint = kvp.Value;
+                        if (expr == null)
+                        {
+                            expr = constraint;
+                        }
+                        else
+                        {
+                            expr = Solver.Context.MkAnd(expr, constraint);
+                        }
+                    }
+
+                    if (negate)
+                    {
+                        expr = Solver.Context.MkNot(expr);
+                    }
+
                     PendConstraint(expr);
                 }
             }
+
+            return hasConstraints;
         }
 
         public void PendEqualityConstraint(Z3Expr expr1, Z3Expr expr2)
@@ -215,9 +281,12 @@
 
             foreach (var elem in lfp)
             {
-                foreach (var currConstr in elem.Value.SideConstraints)
+                if (elem.Key.Symbol.PrintableName.EndsWith("conforms"))
                 {
-                    Solver.Z3Solver.Assert(currConstr.Value);
+                    foreach (var currConstr in elem.Value.SideConstraints)
+                    {
+                        Solver.Z3Solver.Assert(currConstr.Value);
+                    }
                 }
             }
 
@@ -229,8 +298,18 @@
                 {
                     if (Encoder.CanGetEncoding(kvp.Key))
                     {
-                        var s = GetModelInterpretation(kvp.Key, model);
-                        Console.WriteLine(s);
+                        if (!kvp.Value.SideConstraints.IsEmpty())
+                        {
+                            var eval = model.Evaluate(kvp.Value.GetAllSideConstraints(Solver.Context));
+                            if (eval.BoolValue == Z3.Z3_lbool.Z3_L_TRUE)
+                            {
+                                Console.WriteLine(GetModelInterpretation(kvp.Key, model));
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine(GetModelInterpretation(kvp.Key, model));
+                        }
                     }
                 }
             }
@@ -458,7 +537,7 @@
         
         private void IndexFact(SymElement t, Set<Activation> pending, int stratum)
         {
-            LinkedList<ShapeTrie> subindices;
+            LinkedList<SymSubIndex> subindices;
             if (!symbToIndexMap.TryFindValue(t.Term.Symbol, out subindices))
             {
                 return;
@@ -564,16 +643,16 @@
         {
             Contract.Requires(rule != null && trigger != null);
 
-            ShapeTrie index;
+            SymSubIndex index;
             if (!trigIndices.TryFindValue(trigger, out index))
             {
-                index = new ShapeTrie(trigger);
+                index = new SymSubIndex(this, trigger);
                 trigIndices.Add(trigger, index);
 
-                LinkedList<ShapeTrie> subindices;
+                LinkedList<SymSubIndex> subindices;
                 if (!symbToIndexMap.TryFindValue(index.Pattern.Symbol, out subindices))
                 {
-                    subindices = new LinkedList<ShapeTrie>();
+                    subindices = new LinkedList<SymSubIndex>();
                     symbToIndexMap.Add(index.Pattern.Symbol, subindices);
                 }
 
@@ -589,16 +668,16 @@
         private void Register(Symbol comprSymbol)
         {
             Contract.Requires(comprSymbol != null);
-            ShapeTrie index;
+            SymSubIndex index;
             if (!comprIndices.TryFindValue(comprSymbol, out index))
             {
-                index = new ShapeTrie(MkPattern(comprSymbol, true));
+                index = new SymSubIndex(this, MkPattern(comprSymbol, true));
                 comprIndices.Add(comprSymbol, index);
 
-                LinkedList<ShapeTrie> subindices;
+                LinkedList<SymSubIndex> subindices;
                 if (!symbToIndexMap.TryFindValue(comprSymbol, out subindices))
                 {
-                    subindices = new LinkedList<ShapeTrie>();
+                    subindices = new LinkedList<SymSubIndex>();
                     symbToIndexMap.Add(comprSymbol, subindices);
                 }
 
@@ -656,7 +735,6 @@
             return Index.MkApply(s, args, out wasAdded);
         }
 
-        // TODO: implement the ShapeTrie query operation
         public IEnumerable<Term> Query(Term comprTerm, out int nResults)
         {
             Contract.Requires(comprTerm != null);
@@ -728,6 +806,319 @@
             }
 
             yield break;
+        }
+
+        public Map<Term, Term> GetBindings(Term tA, Term tB, Map<Term, Set<Term>> partitions)
+        {
+            Map<Term, Term> bindings = new Map<Term, Term>(Term.Compare);
+            Set<Term> lhsVars = new Set<Term>(Term.Compare);
+            Set<Term> rhsVars = new Set<Term>(Term.Compare);
+
+            // Collect all variables in the LHS term
+            tA.Compute<Term>(
+                (x, s) => x.Groundness == Groundness.Variable ? x.Args : null,
+                (x, ch, s) =>
+                {
+                    if (x.Groundness != Groundness.Variable)
+                    {
+                        return null;
+                    }
+                    else if (x.Symbol.IsVariable)
+                    {
+                        lhsVars.Add(x);
+                    }
+                    else
+                    {
+                        foreach (var t in x.Args)
+                        {
+                            if (t.Symbol.IsVariable)
+                            {
+                                lhsVars.Add(t);
+                            }
+                        }
+                    }
+
+                    return null;
+                });
+
+            // Collect all variables in the RHS term
+            tB.Compute<Term>(
+                (x, s) =>
+                {
+                    if (x.Symbol.Kind == SymbolKind.BaseOpSymb)
+                    {
+                        return null; // don't descend into base op symbols
+                    }
+                    else
+                    {
+                        return x.Groundness == Groundness.Variable ? x.Args : null;
+                    }
+                },
+                (x, ch, s) =>
+                {
+                    if (x.Groundness != Groundness.Variable)
+                    {
+                        return null;
+                    }
+                    else if (x.Symbol.IsVariable || x.Symbol.Kind == SymbolKind.BaseOpSymb || x.Symbol.Kind == SymbolKind.ConSymb)
+                    {
+                        rhsVars.Add(x);
+                    }
+                    else
+                    {
+                        foreach (var t in x.Args)
+                        {
+                            if (t.Symbol.IsVariable)
+                            {
+                                rhsVars.Add(t);
+                            }
+                        }
+                    }
+
+                    return null;
+                });
+
+            foreach (var part in partitions)
+            {
+                Set<Term> constants = new Set<Term>(Term.Compare);
+                Set<Term> lhsPartVars = new Set<Term>(Term.Compare);
+                Set<Term> rhsPartVars = new Set<Term>(Term.Compare);
+                Set<Term> rhsPartGround = new Set<Term>(Term.Compare);
+
+                foreach (var term in part.Value)
+                {
+                    if (term.Symbol.IsNonVarConstant)
+                    {
+                        constants.Add(term);
+                    }
+                    else if (lhsVars.Contains(term))
+                    {
+                        lhsPartVars.Add(term);
+                    }
+                    else if (rhsVars.Contains(term))
+                    {
+                        rhsPartVars.Add(term);
+                    }
+                    else if (term.Symbol.IsDataConstructor && term.Groundness == Groundness.Ground)
+                    {
+                        rhsPartGround.Add(term);
+                    }
+                }
+
+                if (!constants.IsEmpty())
+                {
+                    Term normalized;
+                    Term constant = constants.First();
+                    foreach (var rhs in rhsPartVars)
+                    {
+                        var expr1 = this.Encoder.GetTerm(rhs, out normalized);
+                        var expr2 = this.Encoder.GetTerm(constant, out normalized);
+                        this.PendEqualityConstraint(expr1, expr2);
+                    }
+                }
+
+                if (!rhsPartVars.IsEmpty())
+                {
+                    foreach (var lhsVar in lhsPartVars)
+                    {
+                        bindings.Add(lhsVar, rhsPartVars.First());
+                    }
+                }
+                else if (!constants.IsEmpty())
+                {
+                    foreach (var lhsVar in lhsPartVars)
+                    {
+                        bindings.Add(lhsVar, constants.First());
+                    }
+                }
+                else if (!rhsPartGround.IsEmpty())
+                {
+                    foreach (var lhsVar in lhsPartVars)
+                    {
+                        bindings.Add(lhsVar, rhsPartGround.First());
+                    }
+                }
+            }
+
+            return bindings;
+        }
+
+        internal class SymSubIndex
+        {
+            public static readonly Term[] EmptyProjection = new Term[0];
+
+            private SymExecuter Executer;
+
+            private int nBoundVars;
+            private Matcher patternMatcher;
+
+            /// <summary>
+            /// Map from strata to rules triggered by this pattern.
+            /// </summary>
+            private Map<int, LinkedList<Tuple<CoreRule, int>>> triggers =
+                new Map<int, LinkedList<Tuple<CoreRule, int>>>((x, y) => x - y);
+
+            /// <summary>
+            /// Simple collection of facts. No pre-unification optimization.
+            /// </summary>
+            //private Set<SymElement> facts = new Set<SymElement>(SymElement.Compare);
+            private Map<Term[], Set<SymElement>> facts = new Map<Term[], Set<SymElement>>(Compare);
+
+            /// <summary>
+            /// The pattern of this subindex.
+            /// </summary>
+            public Term Pattern
+            {
+                get;
+                private set;
+            }
+
+            public SymSubIndex(SymExecuter executer, Term pattern)
+            {
+                Executer = executer;
+                Pattern = pattern;
+
+                patternMatcher = new Matcher(pattern);
+                nBoundVars = 0;
+                foreach (var kv in patternMatcher.CurrentBindings)
+                {
+                    if (((UserSymbol)kv.Key.Symbol).Name[0] == SymExecuter.PatternVarBoundPrefix)
+                    {
+                        ++nBoundVars;
+                    }
+                }
+            }
+
+            public IEnumerable<Term> Query(Term[] projection)
+            {
+                Set<SymElement> subindex;
+                if (!facts.TryFindValue(projection, out subindex))
+                {
+                    yield break;
+                }
+
+                foreach (var t in subindex)
+                {
+                    yield return t.Term;
+                }
+            }
+
+            public IEnumerable<Term> Query(Term[] projection, out int nResults)
+            {
+                Set<SymElement> subindex;
+                if (!facts.TryFindValue(projection, out subindex))
+                {
+                    nResults = 0;
+                }
+                else
+                {
+                    nResults = subindex.Count;
+                }
+
+                return Query(projection);
+            }
+
+            public void AddTrigger(CoreRule rule, int findNumber)
+            {
+                LinkedList<Tuple<CoreRule, int>> rules;
+                if (!triggers.TryFindValue(rule.Stratum, out rules))
+                {
+                    rules = new LinkedList<Tuple<CoreRule, int>>();
+                    triggers.Add(rule.Stratum, rules);
+                }
+
+                rules.AddLast(new Tuple<CoreRule, int>(rule, findNumber));
+            }
+
+            /// <summary>
+            /// Tries to add this term to the subindex. Returns true if t unifies with pattern.
+            /// If pending is non-null, then pends rules that are triggered by this term.
+            /// </summary>
+            public bool TryAdd(SymElement t, Set<Activation> pending, int stratum)
+            {
+                Contract.Requires(t != null && t.Term.Groundness != Groundness.Type);
+                Contract.Requires(t.Term.Owner == Pattern.Owner);
+
+                Map<Term, Set<Term>> partitions = new Map<Term, Set<Term>>(Term.Compare);
+
+                if (!Unifier.IsUnifiable(Pattern, t.Term, true, partitions))
+                {
+                    //// Terms t must unify with the pattern for insertion to succeed.
+                    //// Pattern is already standardized apart from t.
+                    return false;
+                }
+
+                Term[] projection;
+
+                if (nBoundVars == 0)
+                {
+                    projection = EmptyProjection;
+                }
+                else
+                {
+                    var bindings = Executer.GetBindings(Pattern, t.Term, partitions);
+                    int i = 0;
+                    projection = new Term[nBoundVars];
+                    foreach (var kv in patternMatcher.CurrentBindings)
+                    {
+                        if (((UserSymbol)kv.Key.Symbol).Name[0] == SymExecuter.PatternVarBoundPrefix)
+                        {
+                            projection[i++] = bindings[kv.Key];
+                        }
+                    }
+                }
+
+                Set<SymElement> subset;
+                if (!facts.TryFindValue(projection, out subset))
+                {
+                    subset = new Set<SymElement>(SymElement.Compare);
+                    facts.Add(projection, subset);
+                }
+
+                subset.Add(t);
+
+                if (pending != null)
+                {
+                    LinkedList<Tuple<CoreRule, int>> triggered;
+                    if (triggers.TryFindValue(stratum, out triggered))
+                    {
+                        foreach (var trig in triggered)
+                        {
+                            pending.Add(new Activation(trig.Item1, trig.Item2, t));
+                        }
+                    }
+                }
+
+                return true;
+            }
+
+            /// <summary>
+            /// Generate pending activations for all rules triggered in this stratum. 
+            /// </summary>
+            public void PendAll(Set<Activation> pending, int stratum)
+            {
+                LinkedList<Tuple<CoreRule, int>> triggered;
+                if (!triggers.TryFindValue(stratum, out triggered))
+                {
+                    return;
+                }
+
+                foreach (var kv in facts)
+                {
+                    foreach (var t in kv.Value)
+                    {
+                        foreach (var trig in triggered)
+                        {
+                            pending.Add(new Activation(trig.Item1, trig.Item2, t));
+                        }
+                    }
+                }
+            }
+
+            public static int Compare(Term[] v1, Term[] v2)
+            {
+                return EnumerableMethods.LexCompare<Term>(v1, v2, Term.Compare);
+            }
         }
     }
 }

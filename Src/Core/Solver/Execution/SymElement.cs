@@ -45,6 +45,19 @@
             private set;
         }
 
+        public Z3BoolExpr GetAllSideConstraints(Z3Context context)
+        {
+            Z3BoolExpr curr;
+
+            curr = SideConstraints[0];
+            for (int i = 1; i < SideConstraints.Count; i++)
+            {
+                curr = context.MkAnd(curr, SideConstraints[i]);
+            }
+
+            return curr;
+        }
+
         public bool HasSideConstraints()
         {
             return !SideConstraints.IsEmpty();

@@ -166,7 +166,7 @@
                 StopTimer("Tokenizing for file");
 
                 //parser.RemoveErrorListeners();
-                //parser.AddErrorListener(new Core.API.Parser.FormulaLexerErrorListener());
+                parser.AddErrorListener(new Core.API.Parser.FormulaLexerErrorListener());
 
                 StartTimer();
                 FormulaParser.ProgramContext programContext = parser.program();

@@ -2539,7 +2539,19 @@
                 OpLibrary.ValidateUse_Count,
                 OpLibrary.TypeApprox_Count_Up,
                 OpLibrary.TypeApprox_Count_Down,
-                OpLibrary.Evaluator_Count));
+                OpLibrary.Evaluator_Count,
+                null,
+                OpLibrary.SymEvaluator_Count));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.SymCount,
+                2, // Number of args can vary at runtime
+                OpLibrary.ValidateUse_SymCount,
+                OpLibrary.TypeApprox_Count_Up,
+                OpLibrary.TypeApprox_Count_Down,
+                OpLibrary.Evaluator_Count,
+                null,
+                OpLibrary.SymEvaluator_Count));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.Div, 

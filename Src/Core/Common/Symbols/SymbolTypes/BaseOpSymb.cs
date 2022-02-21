@@ -54,6 +54,14 @@
             }
         }
 
+        public override bool IsSymCount
+        {
+            get
+            {
+                return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymCount;
+            }
+        }
+
         public override bool IsReservedOperation
         {
             get { return OpKind is ReservedOpKind; }

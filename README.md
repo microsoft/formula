@@ -9,7 +9,7 @@ To build and run the command line interpreter with Nix flakes, run
 $ nix run github:VUISIS/formula-dotnet
 ```
 
-Note that if you are on an M1 Mac, use `github:VUISIS/formula-dotnet#defaultPackages.x86_64-darwin` instead.
+Note that if you are on an M1 Mac, use `github:VUISIS/formula-dotnet#defaultPackage.x86_64-darwin` instead.
 
 ### With .NET
 To build the command line interpreter, run the following command from

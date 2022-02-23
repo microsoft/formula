@@ -94,16 +94,18 @@
                 Matcher.Clone(index));
         }
 
-        public override void Execute(Term binding, int findNumber, SymExecuter index, Set<Term> pending)
+        public override void Execute(Term binding, int findNumber, SymExecuter index, bool keepDerivations, Map<Term, Set<Derivation>> pending, Set<Term> constraintTerms)
         {
             bool wasAdded;
             Term[] args;
+            constraintTerms.Add(binding);
             // TODO: Check the matching for the symbolic case
             foreach (var match in Matcher.EnumerateMatches(binding))
             {
                 args = new Term[match.Length];
                 match.CopyTo(args, 0);
                 Pend(
+                    keepDerivations,
                     index,
                     pending,
                     Index.MkApply(Head.Symbol, args, out wasAdded),

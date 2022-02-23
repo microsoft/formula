@@ -721,7 +721,9 @@
             Term binding,
             int findNumber,
             SymExecuter index,
-            Set<Term> pending)
+            bool keepDerivations,
+            Map<Term, Set<Derivation>> pending,
+            Set<Term> constraintTerms)
         {
             if (initStatus == InitStatusKind.Uninit)
             {
@@ -735,10 +737,11 @@
 
             //// Case 1. There are no finds.
             ConstraintNode headNode = nodes[Head];
+            constraintTerms.Add(binding);
             if (Find1.IsNull && Find2.IsNull)
             {
                 Contract.Assert(headNode.Binding != null);
-                Pend(index, pending, headNode.Binding, Index.FalseValue, Index.FalseValue);
+                Pend(keepDerivations, index, pending, headNode.Binding, Index.FalseValue, Index.FalseValue);
                 return;
             }
 
@@ -764,6 +767,7 @@
             {
                 Contract.Assert(headNode.Binding != null);
                 Pend(
+                    keepDerivations,
                     index,
                     pending,
                     headNode.Binding,
@@ -821,12 +825,14 @@
                 {
                     Contract.Assert(headNode.Binding != null);
                     Pend(
+                        keepDerivations,
                         index,
                         pending,
                         headNode.Binding,
                         findNumber == 0 ? binding : tp,
                         findNumber == 1 ? binding : tp);
 
+                    constraintTerms.Add(tp);
                     UndoPropagation(ConstraintNode.BLSecond);
                 }
             }
@@ -1137,17 +1143,37 @@
         }
 
         protected void Pend(
+            bool keepDerivations,
             SymExecuter index,
-            Set<Term> pending,
+            Map<Term, Set<Derivation>> pending,
             Term t,
             Term bind1,
             Term bind2)
         {
-            if (!index.Exists(t) && !pending.Contains(t))
+            if (!keepDerivations)
             {
-                pending.Add(t);
+                if (!index.Exists(t) && !pending.ContainsKey(t))
+                {
+                    pending.Add(t, null);
+                }
+
+                return;
             }
 
+            var d = new Derivation(this, bind1, bind2);
+            if (index.IfExistsThenDerive(t, d))
+            {
+                return;
+            }
+
+            Set<Derivation> dervs;
+            if (!pending.TryFindValue(t, out dervs))
+            {
+                dervs = new Set<Derivation>(Derivation.Compare);
+                pending.Add(t, dervs);
+            }
+
+            dervs.Add(d);
         }
 
         protected void Pend(
@@ -2550,17 +2576,55 @@
                 Contract.Assert(!IsEvaluated);
                 EvaluationLevel = bindingLevel;
 
-                if (lhs.Binding != rhs.Binding)
+                if (lhs.Binding == rhs.Binding)
                 {
-                    return false;
-                }
-                else if (Binding == null)
-                {
-                    Binding = facts.Index.TrueValue;
-                    BindingLevel = bindingLevel;
+                    if (Binding == null)
+                    {
+                            Binding = facts.Index.TrueValue;
+                            BindingLevel = bindingLevel;
+                    }
+
+                    return true;
                 }
 
-                return true;
+                bool symbolicEval = (lhs.Binding.Groundness == Groundness.Variable ||
+                                     rhs.Binding.Groundness == Groundness.Variable ||
+                                     lhs.Binding.Symbol.IsSymCount ||
+                                     rhs.Binding.Symbol.IsSymCount);
+
+                bool hasEncoding = false;
+
+                if (symbolicEval)
+                {
+                    hasEncoding = (facts.Encoder.CanGetEncoding(lhs.Binding) &&
+                                   facts.Encoder.CanGetEncoding(rhs.Binding));
+                }
+
+                if (symbolicEval && hasEncoding)
+                {
+                    Term normalized;
+                    var lhsEncoding = facts.Encoder.GetTerm(lhs.Binding, out normalized, facts);
+                    var rhsEncoding = facts.Encoder.GetTerm(rhs.Binding, out normalized, facts);
+                    facts.PendEqualityConstraint(lhsEncoding, rhsEncoding);
+
+                    Binding = facts.Index.TrueValue;
+                    BindingLevel = bindingLevel;
+                    return true;
+                }
+                else
+                {
+                    if (lhs.Binding != rhs.Binding)
+                    {
+                        return false;
+                    }
+                    else if (Binding == null)
+                    {
+                        Binding = facts.Index.TrueValue;
+                        BindingLevel = bindingLevel;
+                    }
+
+                    return true;
+                }
             }
 
             public override bool TryEval(Executer facts, int bindingLevel)

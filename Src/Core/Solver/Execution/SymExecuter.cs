@@ -67,6 +67,8 @@
         private Map<Term, SymElement> lfp = 
             new Map<Term, SymElement>(Term.Compare);
 
+        private Map<Term, Set<Derivation>> facts = new Map<Term, Set<Derivation>>(Term.Compare);
+
         private List<Z3BoolExpr> pendingConstraints =
             new List<Z3BoolExpr>();
 
@@ -77,6 +79,12 @@
         }
 
         public Solver Solver
+        {
+            get;
+            private set;
+        }
+
+        public bool KeepDerivations
         {
             get;
             private set;
@@ -100,6 +108,25 @@
         public bool Exists(Term t)
         {
             return lfp.ContainsKey(t);
+        }
+
+        public bool IfExistsThenDerive(Term t, Derivation d)
+        {
+            Contract.Requires(t != null);
+
+            if (!KeepDerivations)
+            {
+                return lfp.ContainsKey(t);
+            }
+
+            Set<Derivation> dervs;
+            if (!facts.TryFindValue(t, out dervs))
+            {
+                return false;
+            }
+
+            dervs.Add(d);
+            return true;
         }
 
         public void PendConstraint(Z3BoolExpr expr)
@@ -213,6 +240,7 @@
             Rules = solver.PartialModel.Rules;
             Index = solver.PartialModel.Index;
             Encoder = new TermEncIndex(solver);
+            KeepDerivations = true;
 
             solver.PartialModel.ConvertSymbCnstsToVars(out varFacts, out aliasMap);
 
@@ -323,7 +351,8 @@
         {
             Activation act;
             var pendingAct = new Set<Activation>(Activation.Compare);
-            Set<Term> pendingFacts = new Set<Term>(Term.Compare);
+            var pendingFacts = new Map<Term, Set<Derivation>>(Term.Compare);
+            var constraintTerms = new Set<Term>(Term.Compare);
             LinkedList<CoreRule> untrigList;
             for (int i = 0; i < Rules.StratificationDepth; ++i)
             {
@@ -347,15 +376,19 @@
                 {
                     act = pendingAct.GetSomeElement();
                     pendingAct.Remove(act);
-                    act.Rule.Execute(act.Binding1.Term, act.FindNumber, this, pendingFacts);
-                    foreach (var pending in pendingFacts)
+                    act.Rule.Execute(act.Binding1.Term, act.FindNumber, this, KeepDerivations, pendingFacts, constraintTerms);
+                    foreach (var kv in pendingFacts)
                     {
-                        CopySideConstraints(act.Binding1.Term);
-                        IndexFact(ExtendLFP(pending), pendingAct, i);
+                        foreach (var t in constraintTerms)
+                        {
+                            CopySideConstraints(t);
+                        }
+                        IndexFact(ExtendLFP(kv.Key), pendingAct, i);
                     }
 
                     pendingConstraints.Clear();
                     pendingFacts.Clear();
+                    constraintTerms.Clear();
                 }
             }
         }

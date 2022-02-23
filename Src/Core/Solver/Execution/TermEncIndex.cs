@@ -112,7 +112,12 @@
             return normalizedTerm.Compute<Z3Expr>(
                 (x, s) =>
                 {
-                    if (encodings.ContainsKey(x) || x.Groundness == Groundness.Ground)
+                    if (encodings.ContainsKey(x))
+                    {
+                        return null;
+                    }
+                    else if (x.Groundness == Groundness.Ground &&
+                             !x.Symbol.IsSymCount)
                     {
                         return null;
                     }
@@ -127,7 +132,8 @@
                     {
                         return encp;
                     }
-                    else if (x.Groundness == Groundness.Ground)
+                    else if (x.Groundness == Groundness.Ground &&
+                             !x.Symbol.IsSymCount)
                     {
                         typEmb = Solver.TypeEmbedder.ChooseRepresentation(x);
                         encp = Solver.TypeEmbedder.MkGround(x, typEmb);

@@ -4,12 +4,7 @@ buildDotnetModule rec {
   pname = "formula-dotnet";
   version = "2.0";
 
-  src = fetchFromGitHub {
-    owner = "VUISIS";
-    repo = "formula-dotnet";
-    rev = "e962438022350dca64335c0603c00d44cb10b528";
-    sha256 = "sha256-hVtwV1MdsXaN6ZrGW4RG2HcNcv/hys/5VxGjH9vFdRE=";
-  };
+  src = ./.;
 
   nugetDeps = ./nuget.nix;
   projectFile = "Src/CommandLine/CommandLine.csproj";

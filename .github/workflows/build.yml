@@ -1,0 +1,21 @@
+name: 'build'
+on:
+  pull_request:
+  push:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout codebase'
+        uses: actions/checkout@v2.4.0
+      - uses: cachix/install-nix-action@v16
+      - run: nix --experimental-features 'nix-command flakes' build -L
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - name: 'Checkout codebase'
+        uses: actions/checkout@v2.4.0
+      - uses: cachix/install-nix-action@v16
+      - run: nix --experimental-features 'nix-command flakes' build -L
+

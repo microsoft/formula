@@ -176,15 +176,36 @@
                                 encp = Solver.TypeEmbedder.Context.MkAdd((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
                                 encodings.Add(x, encp);
                                 return encp;
+                            case OpKind.Sub:
+                                encp = Solver.TypeEmbedder.Context.MkSub((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
+                                encodings.Add(x, encp);
+                                return encp;
+                            case OpKind.Mul:
+                                encp = Solver.TypeEmbedder.Context.MkMul((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
+                                encodings.Add(x, encp);
+                                return encp;
+                            case OpKind.Div:
+                                encp = Solver.TypeEmbedder.Context.MkDiv((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
+                                encodings.Add(x, encp);
+                                return encp;
                             case RelKind.Lt:
                                 encp = Solver.TypeEmbedder.Context.MkLt((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
+                                encodings.Add(x, encp);
+                                return encp;
+                            case RelKind.Le:
+                                encp = Solver.TypeEmbedder.Context.MkLe((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
+                                encodings.Add(x, encp);
                                 return encp;
                             case RelKind.Gt:
                                 encp = Solver.TypeEmbedder.Context.MkGt((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
+                                encodings.Add(x, encp);
+                                return encp;
+                            case RelKind.Ge:
+                                encp = Solver.TypeEmbedder.Context.MkGe((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
+                                encodings.Add(x, encp);
                                 return encp;
                             case OpKind.SymCount:
                                 Z3ArithExpr[] exprs = new Z3ArithExpr[x.Args.Length];
-
                                 exprs[0] = (Z3ArithExpr)ch.ElementAt(0);
                                 for (int i = 1; i < x.Args.Count(); i++)
                                 {

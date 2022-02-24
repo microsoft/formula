@@ -36,6 +36,12 @@
                 {
                     //// Because pressing CTRL-C may return a null line
                     line = Console.ReadLine();
+                    //// Exit on CTRL-D
+                    if (line == null)
+                    {
+                        Environment.ExitCode = sink.PrintedError ? 1 : 0;
+                        return;
+                    }
                     line = line == null ? string.Empty : line.Trim();
                     if (line == CommandInterface.ExitCommand ||
                         line == CommandInterface.ExitShortCommand)

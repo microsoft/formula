@@ -1,0 +1,28 @@
+domain SymbolicAggregation
+{
+  Component ::= new (id: Integer, utilization: Real).
+  Processor ::= new (id: Integer).
+  Mapping   ::= new (c: Component, p: Processor).
+  
+  ExtComponent ::= (id: Integer, utilization: Real).
+  ExtComponent(x, y) :- Component(x, y), y > 45, y < 55.
+  
+  badMapping :- p is Processor,
+                s = sum(0.0, { c.utilization | 
+                    c is Component, Mapping(c, p) }), s > 100.
+
+  goodModel :- c = count({ p | p is ExtComponent(x, y)}), c = 2.
+
+  conforms goodModel.
+  conforms no badMapping.
+}
+
+partial model pm of SymbolicAggregation
+{
+  c0 is Component(0, x).
+  c1 is Component(1, y).
+  p0 is Processor(0).
+  p1 is Processor(1).
+  Mapping(c0, p0).
+  Mapping(c1, p0).
+}

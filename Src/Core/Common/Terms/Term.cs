@@ -164,6 +164,30 @@
                 return 0;
             }
         }
+
+        public static bool IsSymbolicTerm(Term t)
+        {
+            if (t.Groundness == Groundness.Variable ||
+                t.Symbol.IsSymCount)
+            {
+                return true;
+            }
+
+            return false;
+        }
+
+        public static bool IsSymbolicTerm(Term t1, Term t2)
+        {
+            if (t1.Groundness == Groundness.Variable ||
+                t2.Groundness == Groundness.Variable ||
+                t1.Symbol.IsSymCount ||
+                t2.Symbol.IsSymCount)
+            {
+                return true;
+            }
+
+            return false;
+        }
         
         public void PrintTerm(
                     TextWriter wr, 

@@ -1672,7 +1672,7 @@
                             }
 
                             // If symbolic binding, an equality constraint may be asserted later
-                            arg.SetSymbolicBinding();
+                            //arg.SetSymbolicBinding();
                             stack.Push(arg);
                         }
                     }
@@ -2250,7 +2250,7 @@
 
             public void RemoveSymbolicBinding()
             {
-                isSymbolicBinding = true;
+                isSymbolicBinding = false;
             }
 
             /// <summary>
@@ -2748,7 +2748,11 @@
                     BindingLevel = bindingLevel;
                     return true;
                 }
-                else if (isSymbolicBinding)
+                else if (result == Binding)
+                {
+                    return true;
+                }
+                else if (Term.IsSymbolicTerm(result))
                 {
                     // Assert an equality constraint between the previous binding and new binding
                     Term normalized;

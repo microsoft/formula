@@ -989,7 +989,42 @@
             Term t1 = values[0].Binding;
             Term t2 = values[1].Binding;
 
-            if (t1.Groundness == Groundness.Ground && t2.Groundness == Groundness.Ground)
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Add);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                // If we're a UserCnstSymb variable, then we lookup our Type in the SymExecuter
+                Term normalized;
+                if (t1.Symbol.Kind == SymbolKind.UserCnstSymb && t1.Symbol.IsVariable)
+                {
+                    var tTerm = facts.varToTypeMap[t1];
+                    Contract.Assert(tTerm != null);
+                    facts.Encoder.GetVarEnc(t1, tTerm);
+                }
+                else
+                {
+                    facts.Encoder.GetTerm(t1, out normalized);
+                }
+
+                if (t2.Symbol.Kind == SymbolKind.UserCnstSymb && t2.Symbol.IsVariable)
+                {
+                    var tTerm = facts.varToTypeMap[t2];
+                    Contract.Assert(tTerm != null);
+                    facts.Encoder.GetVarEnc(t2, tTerm);
+                }
+                else
+                {
+                    facts.Encoder.GetTerm(t2, out normalized);
+                }
+
+                // Encode the Term with Z3
+                facts.Encoder.GetTerm(res, out normalized);
+                return res;
+            }
+            else
             {
                 Rational r1, r2;
                 bool added;
@@ -1000,39 +1035,6 @@
 
                 return facts.Index.MkCnst(r1 + r2, out added);
             }
-
-            // Create the Term that we will return
-            bool wasAdded;
-            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Add);
-            Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
-
-            // If we're a UserCnstSymb variable, then we lookup our Type in the SymExecuter
-            Term normalized;
-            if (t1.Symbol.Kind == SymbolKind.UserCnstSymb && t1.Symbol.IsVariable)
-            {
-                var tTerm = facts.varToTypeMap[t1];
-                Contract.Assert(tTerm != null);
-                facts.Encoder.GetVarEnc(t1, tTerm);
-            }
-            else
-            {
-                facts.Encoder.GetTerm(t1, out normalized);
-            }
-
-            if (t2.Symbol.Kind == SymbolKind.UserCnstSymb && t2.Symbol.IsVariable)
-            {
-                var tTerm = facts.varToTypeMap[t2];
-                Contract.Assert(tTerm != null);
-                facts.Encoder.GetVarEnc(t2, tTerm);
-            }
-            else
-            {
-                facts.Encoder.GetTerm(t2, out normalized);
-            }
-
-            // Encode the Term with Z3
-            facts.Encoder.GetTerm(res, out normalized);
-            return res;
         }
 
         internal static Term Evaluator_Add(Executer facts, Bindable[] values)
@@ -1257,20 +1259,22 @@
             Term t1 = values[0].Binding;
             Term t2 = values[1].Binding;
 
-            if (t1.Groundness == Groundness.Ground && t2.Groundness == Groundness.Ground)
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Lt);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                Term normalized;
+                facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
+                return res;
+            }
+            else
             {
                 var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
                 return cmp < 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
             }
-
-            // Create the Term that we will return
-            bool wasAdded;
-            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Lt);
-            Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
-
-            Term normalized;
-            facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
-            return res;
         }
 
         internal static Term Evaluator_Lt(Executer facts, Bindable[] values)
@@ -1337,20 +1341,22 @@
             Term t1 = values[0].Binding;
             Term t2 = values[1].Binding;
 
-            if (t1.Groundness == Groundness.Ground && t2.Groundness == Groundness.Ground)
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Gt);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                Term normalized;
+                facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
+                return res;
+            }
+            else
             {
                 var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
                 return cmp > 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
             }
-
-            // Create the Term that we will return
-            bool wasAdded;
-            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Gt);
-            Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
-
-            Term normalized;
-            facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
-            return res;
         }
 
         internal static Term Evaluator_Gt(Executer facts, Bindable[] values)
@@ -1670,11 +1676,11 @@
                 return values[0].Binding;
             }
 
+
             bool hasVariables = false;
             foreach (var term in terms)
             {
-                symb = term.Args[term.Symbol.Arity - 1].Symbol;
-                if (symb.Kind == SymbolKind.UserCnstSymb && symb.IsVariable)
+                if (Term.IsSymbolicTerm(term))
                 {
                     hasVariables = true;
                     break;

@@ -2935,7 +2935,8 @@
                 OpLibrary.ValidateUse_Le,
                 OpLibrary.TypeApprox_Le_Up,
                 OpLibrary.TypeApprox_Le_Down,
-                OpLibrary.Evaluator_Le));
+                OpLibrary.Evaluator_Le,
+                OpLibrary.SymEvaluator_Le));
 
             AddBaseOp(new BaseOpSymb(
                 RelKind.Lt, 
@@ -2952,7 +2953,8 @@
                 OpLibrary.ValidateUse_Ge,
                 OpLibrary.TypeApprox_Ge_Up,
                 OpLibrary.TypeApprox_Ge_Down,
-                OpLibrary.Evaluator_Ge));
+                OpLibrary.Evaluator_Ge,
+                OpLibrary.SymEvaluator_Ge));
 
             AddBaseOp(new BaseOpSymb(
                 RelKind.Gt, 

@@ -1252,6 +1252,31 @@
             return cmp <= 0 ? facts.TermIndex.TrueValue : facts.TermIndex.FalseValue;
         }
 
+        internal static Term SymEvaluator_Le(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Le);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                Term normalized;
+                facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
+                return res;
+            }
+            else
+            {
+                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
+                return cmp <= 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
+        }
+
         internal static Term SymEvaluator_Lt(SymExecuter facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1331,6 +1356,31 @@
             else
             {
                 return facts.Index.MkCnst(new Rational(nResults), out wasAdded);
+            }
+        }
+
+        internal static Term SymEvaluator_Ge(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Ge);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                Term normalized;
+                facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
+                return res;
+            }
+            else
+            {
+                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
+                return cmp >= 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
             }
         }
 

@@ -1,31 +1,27 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Jupyter.Core" Version="1.5.157285" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="res\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Folder Include="res\" />
-  </ItemGroup>
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net5.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <ToolCommandName>dotnet-formula</ToolCommandName>
-    <AssemblyName>Microsoft.Jupyter.VUISIS.Formula</AssemblyName>
-    <Version>1.0</Version>
-
-    <IsPackable>true</IsPackable>
-  </PropertyGroup>
-
-   <ItemGroup>
-    <EmbeddedResource Include="res/4ml-icon.png" />
-  </ItemGroup>
-
-   <ItemGroup>
-     <ProjectReference Include="..\..\CommandLine\CommandLine.csproj" />
-   </ItemGroup>
+    <ItemGroup>
+        <None Remove="res\"/>
+    </ItemGroup>
+    <ItemGroup>
+        <Folder Include="res\"/>
+    </ItemGroup>
+    <ItemGroup>
+        <EmbeddedResource Include="res/4ml-icon.png"/>
+    </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\..\CommandLine\CommandLine.csproj"/>
+        <ProjectReference Include="..\jupyter-core\src\jupyter-core.csproj"/>
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="Serilog.Sinks.File" Version="5.0.0"/>
+    </ItemGroup>
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net5.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ToolCommandName>dotnet-formula</ToolCommandName>
+        <AssemblyName>Microsoft.Jupyter.VUISIS.Formula</AssemblyName>
+        <Version>1.0</Version>
+        <IsPackable>true</IsPackable>
+    </PropertyGroup>
 </Project>

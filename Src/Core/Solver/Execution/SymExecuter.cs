@@ -459,6 +459,16 @@
                                 str = "" + res;
                                 pieces.Enqueue(str);
                                 return str;
+                            case OpKind.Mul:
+                                if (!Int32.TryParse(pieces.Dequeue(), out arg1) ||
+                                    !Int32.TryParse(pieces.Dequeue(), out arg2))
+                                {
+                                    throw new NotImplementedException();
+                                }
+                                res = arg1 * arg2;
+                                str = "" + res;
+                                pieces.Enqueue(str);
+                                return str;
                             default:
                                 throw new NotImplementedException();
                         }

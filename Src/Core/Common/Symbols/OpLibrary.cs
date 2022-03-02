@@ -1079,8 +1079,14 @@
             }
             else
             {
-                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
-                return cmp >= 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
+                Rational r1, r2;
+                bool added;
+                if (!ToNumerics(values[0].Binding, values[1].Binding, out r1, out r2))
+                {
+                    return null;
+                }
+
+                return facts.Index.MkCnst(r1 - r2, out added);
             }
         }
 
@@ -1095,6 +1101,33 @@
             }
 
             return facts.TermIndex.MkCnst(r1 * r2, out wasAdded);
+        }
+
+        internal static Term SymEvaluator_Mul(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Mul);
+                return facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+            }
+            else
+            {
+                Rational r1, r2;
+                bool wasAdded;
+                if (!ToNumerics(values[0].Binding, values[1].Binding, out r1, out r2))
+                {
+                    return null;
+                }
+
+                return facts.Index.MkCnst(r1 * r2, out wasAdded);
+            }
         }
 
         internal static Term Evaluator_Div(Executer facts, Bindable[] values)

@@ -2649,7 +2649,9 @@
                 OpLibrary.ValidateUse_Mul,
                 OpLibrary.TypeApprox_Mul_Up,
                 OpLibrary.TypeApprox_Mul_Down,
-                OpLibrary.Evaluator_Mul));
+                OpLibrary.Evaluator_Mul,
+                null,
+                OpLibrary.SymEvaluator_Mul));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.Neg, 

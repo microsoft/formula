@@ -10,7 +10,7 @@
     </ItemGroup>
     <ItemGroup>
         <ProjectReference Include="..\..\CommandLine\CommandLine.csproj"/>
-        <ProjectReference Include="/Users/stephen/git/jupyter-core/src/jupyter-core.csproj"/>
+        <ProjectReference Include="..\jupyter-core\src\jupyter-core.csproj"/>
     </ItemGroup>
     <ItemGroup>
         <PackageReference Include="Serilog.Sinks.File" Version="5.0.0"/>

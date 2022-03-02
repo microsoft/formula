@@ -1,16 +1,19 @@
 ﻿using System.Collections.Generic;
 using static Microsoft.Jupyter.Core.Constants;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using McMaster.Extensions.CommandLineUtils;
 
 namespace Microsoft.Jupyter.Core
 {
     class InteractiveKernel
     {
-        public static void Init(ServiceCollection serviceCollection) =>
+        public static void Init(ServiceCollection serviceCollection)
+        {
             serviceCollection
                 .AddSingleton<IExecutionEngine, KernelEngine>();
-
+        }
+            
         public static int Main(string[] args)
         {
             var app = new KernelApplication(

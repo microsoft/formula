@@ -1,13 +1,18 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Microsoft.Formula.CommandLine;
+using Microsoft.Jupyter.Core.Protocol;
 
 namespace Microsoft.Jupyter.Core
 {
     public class Chooser : IChooser
     {
-        public int _choice = -1;
-        public Chooser()
+        private IShellServer _server;
+
+        private Message cell_message;
+        public Chooser(IShellServer server)
         {
+            _server = server;
             Interactive = true;
         }
 
@@ -15,20 +20,47 @@ namespace Microsoft.Jupyter.Core
 
         public bool GetChoice(out DigitChoiceKind choice)
         {
-            if(_choice != -1)
-            {
-                choice = (DigitChoiceKind)_choice;
-            }
-            else
-            {
-                choice = DigitChoiceKind.Zero;
-            }
+            RequestInputFromUser();
+            var res = GetReplyOfInputFromClient();
+            choice = (DigitChoiceKind)res;
             return true;
         }
 
-        public void SetChoice(int num)
+        public void setCellMessage(Message msg)
         {
-            _choice = num;
+            cell_message = msg;
+        }
+
+        private void RequestInputFromUser()
+        {
+            var msg =new Message
+            {
+                ZmqIdentities = cell_message.ZmqIdentities,
+                ParentHeader = cell_message.Header,
+                Metadata = null,
+                Content = new InputRequestContent
+                {
+                    Prompt = "Input selection: ",
+                    Password = false
+                },
+                Header = new MessageHeader
+                {
+                    MessageType = "input_request",
+                    Id = Guid.NewGuid().ToString()
+                }
+            };
+            _server.SendStdinMessage(msg);
+        }
+
+        private int GetReplyOfInputFromClient()
+        {
+            Message msg = _server.ReceiveStdinMessage();
+            if(msg != null
+                && msg.Header.MessageType == "input_reply")
+            {
+                return Int32.Parse(((InputReplyContent)msg.Content).Value);
+            }
+            return 0;
         }
     }
 }

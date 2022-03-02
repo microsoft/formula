@@ -2587,11 +2587,7 @@
                     return true;
                 }
 
-                bool symbolicEval = (lhs.Binding.Groundness == Groundness.Variable ||
-                                     rhs.Binding.Groundness == Groundness.Variable ||
-                                     lhs.Binding.Symbol.IsSymCount ||
-                                     rhs.Binding.Symbol.IsSymCount);
-
+                bool symbolicEval = Term.IsSymbolicTerm(lhs.Binding, rhs.Binding);
                 bool hasEncoding = false;
 
                 if (symbolicEval)

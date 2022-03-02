@@ -1418,7 +1418,6 @@
                     {
                         ++baseCount;
                     }
-
                 }
 
                 Term baseTerm = facts.Index.MkCnst(new Rational(baseCount), out wasAdded);

@@ -1063,6 +1063,27 @@
             return facts.TermIndex.MkCnst(r1 - r2, out wasAdded);
         }
 
+        internal static Term SymEvaluator_Sub(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Sub);
+                return facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+            }
+            else
+            {
+                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
+                return cmp >= 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
+        }
+
         internal static Term Evaluator_Mul(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);

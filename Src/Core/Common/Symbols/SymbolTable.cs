@@ -2706,7 +2706,9 @@
                 OpLibrary.ValidateUse_Sub,
                 OpLibrary.TypeApprox_Sub_Up,
                 OpLibrary.TypeApprox_Sub_Down,
-                OpLibrary.Evaluator_Sub));
+                OpLibrary.Evaluator_Sub,
+                null,
+                OpLibrary.SymEvaluator_Sub));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.Sum, 

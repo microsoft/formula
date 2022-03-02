@@ -435,20 +435,30 @@
                     }
                     else if (x.Symbol.Kind == SymbolKind.BaseOpSymb)
                     {
+                        int arg1, arg2, res;
+                        string str;
                         switch (((BaseOpSymb)x.Symbol).OpKind)
                         {
                             case OpKind.Add:
-                                int arg1, arg2;
                                 if (!Int32.TryParse(pieces.Dequeue(), out arg1) ||
                                     !Int32.TryParse(pieces.Dequeue(), out arg2))
                                 {
                                     throw new NotImplementedException();
                                 }
-                                int res = arg1 + arg2;
-                                string str = "" + res;
+                                res = arg1 + arg2;
+                                str = "" + res;
                                 pieces.Enqueue(str);
                                 return str;
-
+                            case OpKind.Sub:
+                                if (!Int32.TryParse(pieces.Dequeue(), out arg1) ||
+                                    !Int32.TryParse(pieces.Dequeue(), out arg2))
+                                {
+                                    throw new NotImplementedException();
+                                }
+                                res = arg1 - arg2;
+                                str = "" + res;
+                                pieces.Enqueue(str);
+                                return str;
                             default:
                                 throw new NotImplementedException();
                         }

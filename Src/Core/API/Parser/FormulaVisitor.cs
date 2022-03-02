@@ -1858,15 +1858,26 @@
             {
                 AppendEnum(new Nodes.Id(ToSpan(context.Start), context.BAREID().GetText()));
             }
-            else if (context.DIGITS()[0] != null)
+            else if (context.DIGITS().Length > 0)
             {
+                string preOne = "";
+                string preTwo = "";
+                int len = context.MINUS().Length;
+                if (len > 0)
+                {
+                    preOne = "-";
+                    if (len == 2)
+                    {
+                        preTwo = "-";
+                    }
+                }
                 if (context.RANGE() != null)
                 {
-                    AppendEnum(new Nodes.Range(ToSpan(context.Start), ParseNumeric(context.DIGITS(0).GetText()), ParseNumeric(context.DIGITS(1).GetText())));
+                    AppendEnum(new Nodes.Range(ToSpan(context.Start), ParseNumeric(preOne + context.DIGITS(0).GetText()), ParseNumeric(preTwo + context.DIGITS(1).GetText())));
                 }
                 else
                 {
-                    AppendEnum(ParseNumeric(context.DIGITS(0).GetText(), false, ToSpan(context.Start)));
+                    AppendEnum(ParseNumeric(preOne + context.DIGITS(0).GetText(), false, ToSpan(context.Start)));
                 }
             }
             else if (context.REAL() != null)

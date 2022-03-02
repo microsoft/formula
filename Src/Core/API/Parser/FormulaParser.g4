@@ -487,9 +487,24 @@ enumCnst			:	BAREID
 					|	FRAC
 					|	str
 					|	DIGITS
+					|	MINUS 
+						DIGITS
 					|	QUALID
 					|	DIGITS
 						RANGE
+						DIGITS
+					|	MINUS
+						DIGITS
+						RANGE
+						DIGITS
+					|	DIGITS
+						RANGE
+						MINUS
+						DIGITS
+					|	MINUS
+						DIGITS
+						RANGE
+						MINUS
 						DIGITS
 					;
 

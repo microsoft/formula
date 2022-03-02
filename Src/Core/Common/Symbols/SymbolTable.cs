@@ -2560,7 +2560,8 @@
                 OpLibrary.TypeApprox_Div_Up,
                 OpLibrary.TypeApprox_Div_Down,
                 OpLibrary.Evaluator_Div,
-                OpLibrary.AppConstrainer_BinArg2NonZero));
+                OpLibrary.AppConstrainer_BinArg2NonZero,
+                OpLibrary.SymEvaluator_Div));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.GCD, 

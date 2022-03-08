@@ -133,7 +133,7 @@
                         return encp;
                     }
                     else if (x.Groundness == Groundness.Ground &&
-                             !x.Symbol.IsSymCount)
+                             !Term.IsSymbolicTerm(x))
                     {
                         typEmb = Solver.TypeEmbedder.ChooseRepresentation(x);
                         encp = Solver.TypeEmbedder.MkGround(x, typEmb);
@@ -217,6 +217,15 @@
                                 encp = facts.Solver.Context.MkAdd(exprs);
                                 encodings.Add(x, encp);
                                 return encp;
+                            case OpKind.SymAnd:
+                                Term tempTerm;
+                                var tValue = GetTerm(facts.Index.TrueValue, out tempTerm);
+                                var fValue = GetTerm(facts.Index.FalseValue, out tempTerm);
+                                encp = Solver.Context.MkITE(Solver.Context.MkEq(tValue, ch.ElementAt(0)),
+                                    Solver.Context.MkITE(Solver.Context.MkEq(tValue, ch.ElementAt(1)), tValue, fValue), fValue);
+                                encodings.Add(x, encp);
+                                return encp;
+
                             default:
                                 throw new NotImplementedException();
                         }

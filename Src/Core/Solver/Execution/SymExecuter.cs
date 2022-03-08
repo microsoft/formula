@@ -416,6 +416,12 @@
                                 // If there were no constraints on the term, use the default
                                 str = Solver.TypeEmbedder.GetEmbedding(expr.Sort).DefaultMember.Item2.ToString();
                             }
+                            else if (Solver.TypeEmbedder.GetEmbedding(expr.Sort) is EnumEmbedding)
+                            {
+                                var embedding = Solver.TypeEmbedder.GetEmbedding(expr.Sort) as EnumEmbedding;
+                                int index = ((Z3.BitVecNum)interp.Args[0]).Int;
+                                str = embedding.GetSymbolAtIndex(index);
+                            }
                             else
                             {
                                 str = interp.ToString();
@@ -479,6 +485,19 @@
                                 str = "" + res;
                                 pieces.Enqueue(str);
                                 return str;
+                            case OpKind.SymAnd:
+                                if (ch.ElementAt(0) == "TRUE" && ch.ElementAt(1) == "TRUE")
+                                {
+                                    str = "TRUE";
+                                }
+                                else
+                                {
+                                    str = "FALSE";
+                                }
+                                pieces.Dequeue();
+                                pieces.Dequeue();
+                                pieces.Enqueue(str);
+                                return str;
                             default:
                                 throw new NotImplementedException();
                         }
@@ -490,7 +509,7 @@
                         for (int i = 0; i < ch.Count(); i++)
                         {
                             str += pieces.Dequeue();
-                            str += i == ch.Count() - 1 ? "" : ",";
+                            str += i == ch.Count() - 1 ? "" : ", ";
                         }
                         str += ")";
                         pieces.Enqueue(str);
@@ -574,7 +593,7 @@
             Z3Expr enc = null;
             if (Encoder.CanGetEncoding(t))
             {
-                enc = Encoder.GetTerm(t, out normalized);
+                enc = Encoder.GetTerm(t, out normalized, this);
 
                 if (lfp.TryFindValue(normalized, out e))
                 {

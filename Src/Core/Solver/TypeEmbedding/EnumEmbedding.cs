@@ -253,6 +253,11 @@
             }
         }
 
+        public string GetSymbolAtIndex(int index)
+        {
+            return valToSymb[(uint)index].PrintableName;
+        }
+
         public void Debug_Print()
         {
             Console.WriteLine("Enumeration of {0} elements with bv width {1}", symbToVal.Count, bvSort.Size);

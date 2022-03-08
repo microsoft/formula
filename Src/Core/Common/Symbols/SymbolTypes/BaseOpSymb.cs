@@ -54,6 +54,14 @@
             }
         }
 
+        public override bool IsSymAnd
+        {
+            get
+            {
+                return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymAnd;
+            }
+        }
+
         public override bool IsSymCount
         {
             get

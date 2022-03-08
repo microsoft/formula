@@ -110,6 +110,7 @@
         StrLower,
         StrReverse,
         StrUpper,
+        SymAnd,
         SymCount,
         Sub,
         Sum,

@@ -411,16 +411,16 @@
                             string str;
                             var expr = Encoder.GetVarEnc(x, varToTypeMap[x]);
                             var interp = model.ConstInterp(expr);
-                            if (interp == null)
+                            if (Solver.TypeEmbedder.GetEmbedding(expr.Sort) is EnumEmbedding)
+                            {
+                                var embedding = Solver.TypeEmbedder.GetEmbedding(expr.Sort) as EnumEmbedding;
+                                int index = (interp == null) ? 0 : ((Z3.BitVecNum)interp.Args[0]).Int;
+                                str = embedding.GetSymbolAtIndex(index);
+                            }
+                            else if (interp == null)
                             {
                                 // If there were no constraints on the term, use the default
                                 str = Solver.TypeEmbedder.GetEmbedding(expr.Sort).DefaultMember.Item2.ToString();
-                            }
-                            else if (Solver.TypeEmbedder.GetEmbedding(expr.Sort) is EnumEmbedding)
-                            {
-                                var embedding = Solver.TypeEmbedder.GetEmbedding(expr.Sort) as EnumEmbedding;
-                                int index = ((Z3.BitVecNum)interp.Args[0]).Int;
-                                str = embedding.GetSymbolAtIndex(index);
                             }
                             else
                             {

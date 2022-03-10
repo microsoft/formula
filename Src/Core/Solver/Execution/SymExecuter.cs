@@ -498,6 +498,15 @@
                                 pieces.Dequeue();
                                 pieces.Enqueue(str);
                                 return str;
+                            case OpKind.SymAndAll:
+                                bool hasFalse = ch.Any(s => s.Equals("FALSE"));
+                                str = hasFalse ? "FALSE" : "TRUE";
+                                for (int i = 0; i < ch.Count(); i++)
+                                {
+                                    pieces.Dequeue();
+                                }
+                                pieces.Enqueue(str);
+                                return str;
                             default:
                                 throw new NotImplementedException();
                         }

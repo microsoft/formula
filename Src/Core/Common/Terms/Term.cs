@@ -167,8 +167,16 @@
 
         public static bool IsSymbolicTerm(Term t)
         {
-            if (t.Groundness == Groundness.Variable ||
-                t.Symbol.IsSymCount)
+            if (t.Groundness == Groundness.Variable)
+            {
+                return true;
+            }
+
+            Symbol sym = t.Symbol;
+
+            if (sym.IsSymCount ||
+                sym.IsSymAnd ||
+                sym.IsSymAndAll)
             {
                 return true;
             }

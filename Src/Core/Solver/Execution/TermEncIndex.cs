@@ -225,7 +225,28 @@
                                     Solver.Context.MkITE(Solver.Context.MkEq(tValue, ch.ElementAt(1)), tValue, fValue), fValue);
                                 encodings.Add(x, encp);
                                 return encp;
-
+                            case OpKind.SymAndAll:
+                                var tEnc = GetTerm(facts.Index.TrueValue, out tempTerm);
+                                var fEnc = GetTerm(facts.Index.FalseValue, out tempTerm);
+                                Z3BoolExpr[] boolExprs = new Z3BoolExpr[ch.Count()];
+                                for (int i = 0; i < ch.Count(); i++)
+                                {
+                                    boolExprs[i] = Solver.Context.MkEq(tEnc, ch.ElementAt(i));
+                                }
+                                Z3Expr currExpr = null;
+                                for (int i = 0; i < ch.Count(); i++)
+                                {
+                                    if (currExpr == null)
+                                    {
+                                        currExpr = Solver.Context.MkITE(boolExprs[i], tEnc, fEnc);
+                                    }
+                                    else
+                                    {
+                                        currExpr = Solver.Context.MkITE(boolExprs[i], currExpr, fEnc);
+                                    }
+                                }
+                                encodings.Add(x, currExpr);
+                                return currExpr;
                             default:
                                 throw new NotImplementedException();
                         }

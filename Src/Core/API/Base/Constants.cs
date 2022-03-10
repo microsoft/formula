@@ -111,6 +111,7 @@
         StrReverse,
         StrUpper,
         SymAnd,
+        SymAndAll,
         SymCount,
         Sub,
         Sum,

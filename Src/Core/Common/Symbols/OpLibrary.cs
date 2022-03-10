@@ -160,6 +160,14 @@
             return ValidateArity(ft, "symand", UnCompr, flags);
         }
 
+        internal static bool ValidateUse_SymAndAll(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.SymAndAll);
+            return ValidateArity(ft, "symandall", UnCompr, flags);
+        }
+
         internal static bool ValidateUse_SymCount(Node n, List<Flag> flags)
         {
             Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
@@ -1588,6 +1596,51 @@
             }
 
             return hasBool ? facts.TermIndex.TrueValue : values[0].Binding;
+        }
+
+        internal static Term SymEvaluator_AndAll(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            int nResults;
+            var acc = BigInteger.Zero;
+            bool hasBool = false;
+            Term t;
+            bool hasSymbolics = false;
+            using (var it = facts.Query(values[1].Binding, out nResults).GetEnumerator())
+            {
+                if (nResults == 0)
+                {
+                    return values[0].Binding;
+                }
+
+                while (it.MoveNext())
+                {
+                    t = it.Current.Args[it.Current.Symbol.Arity - 1];
+                    if (Term.IsSymbolicTerm(t))
+                    {
+                        hasSymbolics = true;
+                        break;
+                    }
+                    if (t == facts.Index.FalseValue)
+                    {
+                        return facts.Index.FalseValue;
+                    }
+                    else if (t == facts.Index.TrueValue)
+                    {
+                        hasBool = true;
+                    }
+                }
+            }
+
+            if (!hasSymbolics)
+            {
+                return hasBool ? facts.Index.TrueValue : values[0].Binding;
+            }
+
+            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymAndAll);
+            Term[] terms = facts.Query(values[1].Binding, out nResults).Select(t => t.Args[t.Symbol.Arity - 1]).ToArray();
+            bool wasAdded;
+            return facts.Index.MkApply(bos, terms, out wasAdded);
         }
 
         internal static Term Evaluator_Or(Executer facts, Bindable[] values)

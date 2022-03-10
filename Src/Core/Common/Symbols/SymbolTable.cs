@@ -2533,7 +2533,19 @@
                 OpLibrary.ValidateUse_AndAll,
                 OpLibrary.TypeApprox_AndAll_Up,
                 OpLibrary.TypeApprox_AndAll_Down,
-                OpLibrary.Evaluator_AndAll));
+                OpLibrary.Evaluator_AndAll,
+                null,
+                OpLibrary.SymEvaluator_AndAll));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.SymAndAll,
+                2,
+                OpLibrary.ValidateUse_AndAll,
+                OpLibrary.TypeApprox_AndAll_Up,
+                OpLibrary.TypeApprox_AndAll_Down,
+                OpLibrary.Evaluator_AndAll,
+                null,
+                OpLibrary.SymEvaluator_AndAll));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.Count, 

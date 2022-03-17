@@ -9,19 +9,6 @@ domain ARM
     MachineState ::= new (seq : Integer, pc: Integer, cpsr: CPSR, regs : Registers).
     Immediate ::= new (val : Integer).
 
-    SetMem ::= new (addr : Integer, val : Integer, memlist : MemoryNode+{NIL}, newmemlist : MemoryNode+{NIL}).
-    SetMem(addr, val, NIL, newmemlist) :- newmemlist=MemoryNode(addr, val, NIL).
-    SetMem(addr, val, memlist, newmemlist) :-
-        memlist.addr = addr, newmemlist=MemoryNode(addr, val, memlist.nxt).
-    SetMem(addr, val, memlist, newmemlist) :-
-        memlist.addr != addr, SetMem(addr, val, memlist.nxt, newtail),
-        newmemlist=MemoryNode(memlist.addr, memlist.value, newtail).
-
-//    FetchMem ::= new (addr : Integer, memoryNode : MemoryNode+{NIL}, val : Integer).
-//    FetchMem(addr, NIL, val) :- addr >= 0, val=0.
-//    FetchMem(addr, memnode, val) :- addr=memnode.addr, val=memnode.value.
-//    FetchMem(addr, memnode, val) :- addr != memnode.addr, FetchMem(addr, memnode.nxt, val).
-    
     GetReg ::= new (seq : Integer, pc : Integer, cpsr: CPSR, reg : Integer, r : Integer).
     GetReg(seq, pc, status, 0, r) :- MachineState(seq, pc, status, regs), r = regs.r0.
     GetReg(seq, pc, status, 1, r) :- MachineState(seq, pc, status, regs), r = regs.r1.

@@ -5,9 +5,23 @@ domain ARM
                         r8: Integer, r9: Integer, r10: Integer, r11: Integer,
                         r12: Integer, r13: Integer, r14: Integer).
     CPSR ::= new ( n: Boolean, z: Boolean, c: Boolean, v: Boolean ).
+    MemoryNode ::= new (addr : Integer, value : Integer, nxt : any MemoryNode+{NIL}).
     MachineState ::= new (seq : Integer, pc: Integer, cpsr: CPSR, regs : Registers).
     Immediate ::= new (val : Integer).
 
+    SetMem ::= new (addr : Integer, val : Integer, memlist : MemoryNode+{NIL}, newmemlist : MemoryNode+{NIL}).
+    SetMem(addr, val, NIL, newmemlist) :- newmemlist=MemoryNode(addr, val, NIL).
+    SetMem(addr, val, memlist, newmemlist) :-
+        memlist.addr = addr, newmemlist=MemoryNode(addr, val, memlist.nxt).
+    SetMem(addr, val, memlist, newmemlist) :-
+        memlist.addr != addr, SetMem(addr, val, memlist.nxt, newtail),
+        newmemlist=MemoryNode(memlist.addr, memlist.value, newtail).
+
+//    FetchMem ::= new (addr : Integer, memoryNode : MemoryNode+{NIL}, val : Integer).
+//    FetchMem(addr, NIL, val) :- addr >= 0, val=0.
+//    FetchMem(addr, memnode, val) :- addr=memnode.addr, val=memnode.value.
+//    FetchMem(addr, memnode, val) :- addr != memnode.addr, FetchMem(addr, memnode.nxt, val).
+    
     GetReg ::= new (seq : Integer, pc : Integer, cpsr: CPSR, reg : Integer, r : Integer).
     GetReg(seq, pc, status, 0, r) :- MachineState(seq, pc, status, regs), r = regs.r0.
     GetReg(seq, pc, status, 1, r) :- MachineState(seq, pc, status, regs), r = regs.r1.
@@ -186,8 +200,6 @@ domain ARM
 
 model ArmTest of ARM
 {
-//    Mem(1, 1000, 123).
-
     MachineState(0, 0, CPSR(FALSE,FALSE,FALSE,FALSE), Registers(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15)).
     
     Mov(0, 8, 0).
@@ -206,8 +218,6 @@ model ArmTest of ARM
 
 model FactTest of ARM
 {
-//    Mem(1, 1000, 123).
-
     MachineState(0, 0, CPSR(FALSE,FALSE,FALSE,FALSE), Registers(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)).
     
     Mov(0, Immediate(5), 0).

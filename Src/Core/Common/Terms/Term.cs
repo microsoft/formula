@@ -176,7 +176,8 @@
 
             if (sym.IsSymCount ||
                 sym.IsSymAnd ||
-                sym.IsSymAndAll)
+                sym.IsSymAndAll ||
+                sym.IsSymMax)
             {
                 return true;
             }
@@ -198,7 +199,11 @@
             if (sym1.IsSymCount ||
                 sym2.IsSymCount ||
                 sym1.IsSymAnd ||
-                sym2.IsSymAnd)
+                sym2.IsSymAnd ||
+                sym1.IsSymAndAll ||
+                sym2.IsSymAndAll ||
+                sym1.IsSymMax ||
+                sym2.IsSymMax)
             {
                 return true;
             }

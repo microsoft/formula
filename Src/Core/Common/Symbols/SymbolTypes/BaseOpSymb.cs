@@ -78,6 +78,14 @@
             }
         }
 
+        public override bool IsSymMax
+        {
+            get
+            {
+                return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymMax;
+            }
+        }
+
         public override bool IsReservedOperation
         {
             get { return OpKind is ReservedOpKind; }

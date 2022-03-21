@@ -78,6 +78,15 @@
                             return x.Args;
                         }
                     }
+                    else if (x.Symbol.Kind == SymbolKind.UserCnstSymb &&
+                            ((UserCnstSymb)x.Symbol).IsMangled)
+                    {
+                        if (Char.IsNumber(((UserCnstSymb)x.Symbol).Name[1]))
+                        {
+                            hasEncoding = false; // this is ugly
+                        }
+                        return null;
+                    }
                     else
                     {
                         return null;
@@ -247,6 +256,12 @@
                                 }
                                 encodings.Add(x, currExpr);
                                 return currExpr;
+                            case OpKind.SymMax:
+                                encp = Solver.TypeEmbedder.Context.MkITE(
+                                    Solver.TypeEmbedder.Context.MkGt((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1)), 
+                                    ch.ElementAt(0), ch.ElementAt(1));
+                                encodings.Add(x, encp);
+                                return encp;
                             default:
                                 throw new NotImplementedException();
                         }

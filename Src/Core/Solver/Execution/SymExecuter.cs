@@ -395,7 +395,6 @@
 
         public string GetModelInterpretation(Term t, Z3.Model model)
         {
-            Queue<string> pieces = new Queue<string>();
             if (t.Groundness == Groundness.Ground)
             {
                 return t.ToString();
@@ -406,9 +405,9 @@
                 {
                     if (x.Symbol.Arity == 0)
                     {
+                        string str = "";
                         if (x.Symbol.Kind == SymbolKind.UserCnstSymb && x.Symbol.IsVariable)
                         {
-                            string str;
                             var expr = Encoder.GetVarEnc(x, varToTypeMap[x]);
                             var interp = model.ConstInterp(expr);
                             if (Solver.TypeEmbedder.GetEmbedding(expr.Sort) is EnumEmbedding)
@@ -427,17 +426,14 @@
                                 str = interp.ToString();
                             }
 
-                            pieces.Enqueue(str);
                             return str;
                         }
                         else if (x.Symbol.Kind == SymbolKind.BaseCnstSymb)
                         {
-                            string str = x.Symbol.PrintableName;
-                            pieces.Enqueue(str);
-                            return str;
+                            str = x.Symbol.PrintableName;
                         }
 
-                        return "";
+                        return str;
                     }
                     else if (x.Symbol.Kind == SymbolKind.BaseOpSymb)
                     {
@@ -446,44 +442,40 @@
                         switch (((BaseOpSymb)x.Symbol).OpKind)
                         {
                             case OpKind.Add:
-                                if (!Int32.TryParse(pieces.Dequeue(), out arg1) ||
-                                    !Int32.TryParse(pieces.Dequeue(), out arg2))
+                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
+                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
                                 {
                                     throw new NotImplementedException();
                                 }
                                 res = arg1 + arg2;
                                 str = "" + res;
-                                pieces.Enqueue(str);
                                 return str;
                             case OpKind.Sub:
-                                if (!Int32.TryParse(pieces.Dequeue(), out arg1) ||
-                                    !Int32.TryParse(pieces.Dequeue(), out arg2))
+                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
+                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
                                 {
                                     throw new NotImplementedException();
                                 }
                                 res = arg1 - arg2;
                                 str = "" + res;
-                                pieces.Enqueue(str);
                                 return str;
                             case OpKind.Mul:
-                                if (!Int32.TryParse(pieces.Dequeue(), out arg1) ||
-                                    !Int32.TryParse(pieces.Dequeue(), out arg2))
+                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
+                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
                                 {
                                     throw new NotImplementedException();
                                 }
                                 res = arg1 * arg2;
                                 str = "" + res;
-                                pieces.Enqueue(str);
                                 return str;
                             case OpKind.Div:
-                                if (!Int32.TryParse(pieces.Dequeue(), out arg1) ||
-                                    !Int32.TryParse(pieces.Dequeue(), out arg2))
+                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
+                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
                                 {
                                     throw new NotImplementedException();
                                 }
                                 res = arg1 / arg2;
                                 str = "" + res;
-                                pieces.Enqueue(str);
                                 return str;
                             case OpKind.SymAnd:
                                 if (ch.ElementAt(0) == "TRUE" && ch.ElementAt(1) == "TRUE")
@@ -494,18 +486,19 @@
                                 {
                                     str = "FALSE";
                                 }
-                                pieces.Dequeue();
-                                pieces.Dequeue();
-                                pieces.Enqueue(str);
                                 return str;
                             case OpKind.SymAndAll:
                                 bool hasFalse = ch.Any(s => s.Equals("FALSE"));
                                 str = hasFalse ? "FALSE" : "TRUE";
-                                for (int i = 0; i < ch.Count(); i++)
+                                return str;
+                            case OpKind.SymMax:
+                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
+                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
                                 {
-                                    pieces.Dequeue();
+                                    throw new NotImplementedException();
                                 }
-                                pieces.Enqueue(str);
+                                res = arg1 > arg2 ? arg1 : arg2;
+                                str = "" + res;
                                 return str;
                             default:
                                 throw new NotImplementedException();
@@ -517,11 +510,10 @@
                         str += "(";
                         for (int i = 0; i < ch.Count(); i++)
                         {
-                            str += pieces.Dequeue();
+                            str += ch.ElementAt(i);
                             str += i == ch.Count() - 1 ? "" : ", ";
                         }
                         str += ")";
-                        pieces.Enqueue(str);
                         return str;
                     }
                     else

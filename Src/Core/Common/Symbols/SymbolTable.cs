@@ -2633,7 +2633,20 @@
                 OpLibrary.ValidateUse_Max,
                 OpLibrary.TypeApprox_Max_Up,
                 OpLibrary.TypeApprox_Max_Down,
-                OpLibrary.Evaluator_Max));
+                OpLibrary.Evaluator_Max,
+                null,
+                OpLibrary.SymEvaluator_Max
+                ));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.SymMax,
+                2,
+                OpLibrary.ValidateUse_Max,
+                OpLibrary.TypeApprox_Max_Up,
+                OpLibrary.TypeApprox_Max_Down,
+                OpLibrary.Evaluator_Max,
+                null,
+                OpLibrary.SymEvaluator_Max));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.MaxAll, 

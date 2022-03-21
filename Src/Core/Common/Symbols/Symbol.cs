@@ -75,6 +75,11 @@
             get { return false; }
         }
 
+        public virtual bool IsSymMax
+        {
+            get { return false; }
+        }
+
         public bool IsDataConstructor
         {
             get { return Kind == SymbolKind.ConSymb || Kind == SymbolKind.MapSymb; }

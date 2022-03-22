@@ -54,11 +54,35 @@
             }
         }
 
+        public override bool IsSymAnd
+        {
+            get
+            {
+                return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymAnd;
+            }
+        }
+
+        public override bool IsSymAndAll
+        {
+            get
+            {
+                return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymAndAll;
+            }
+        }
+
         public override bool IsSymCount
         {
             get
             {
                 return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymCount;
+            }
+        }
+
+        public override bool IsSymMax
+        {
+            get
+            {
+                return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymMax;
             }
         }
 

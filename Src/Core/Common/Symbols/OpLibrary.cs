@@ -152,6 +152,22 @@
             return ValidateArity(ft, "count", UnCompr, flags);
         }
 
+        internal static bool ValidateUse_SymAnd(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.SymAnd);
+            return ValidateArity(ft, "symand", UnCompr, flags);
+        }
+
+        internal static bool ValidateUse_SymAndAll(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.SymAndAll);
+            return ValidateArity(ft, "symandall", UnCompr, flags);
+        }
+
         internal static bool ValidateUse_SymCount(Node n, List<Flag> flags)
         {
             Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
@@ -1063,6 +1079,33 @@
             return facts.TermIndex.MkCnst(r1 - r2, out wasAdded);
         }
 
+        internal static Term SymEvaluator_Sub(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Sub);
+                return facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+            }
+            else
+            {
+                Rational r1, r2;
+                bool added;
+                if (!ToNumerics(values[0].Binding, values[1].Binding, out r1, out r2))
+                {
+                    return null;
+                }
+
+                return facts.Index.MkCnst(r1 - r2, out added);
+            }
+        }
+
         internal static Term Evaluator_Mul(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1076,6 +1119,33 @@
             return facts.TermIndex.MkCnst(r1 * r2, out wasAdded);
         }
 
+        internal static Term SymEvaluator_Mul(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Mul);
+                return facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+            }
+            else
+            {
+                Rational r1, r2;
+                bool wasAdded;
+                if (!ToNumerics(values[0].Binding, values[1].Binding, out r1, out r2))
+                {
+                    return null;
+                }
+
+                return facts.Index.MkCnst(r1 * r2, out wasAdded);
+            }
+        }
+
         internal static Term Evaluator_Div(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1087,6 +1157,33 @@
             }
 
             return facts.TermIndex.MkCnst(r1 / r2, out wasAdded);
+        }
+
+        internal static Term SymEvaluator_Div(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Div);
+                return facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+            }
+            else
+            {
+                Rational r1, r2;
+                bool wasAdded;
+                if (!ToNumerics(values[0].Binding, values[1].Binding, out r1, out r2) || r2.IsZero)
+                {
+                    return null;
+                }
+
+                return facts.Index.MkCnst(r1 / r2, out wasAdded);
+            }
         }
 
         internal static Term Evaluator_Mod(Executer facts, Bindable[] values)
@@ -1337,7 +1434,6 @@
                     {
                         ++baseCount;
                     }
-
                 }
 
                 Term baseTerm = facts.Index.MkCnst(new Rational(baseCount), out wasAdded);
@@ -1436,6 +1532,25 @@
             return cmp >= 0 ? values[0].Binding : values[1].Binding;
         }
 
+        internal static Term SymEvaluator_Max(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            Term x = values[0].Binding;
+            Term y = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(x, y))
+            {
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymMax);
+                return facts.Index.MkApply(bos, new Term[] { x, y }, out wasAdded);
+            }
+            else
+            {
+                var cmp = facts.Index.LexicographicCompare(x, y);
+                return cmp >= 0 ? x : y;
+            }
+        }
+
         internal static Term Evaluator_And(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1446,6 +1561,29 @@
             }
 
             return b1 && b2 ? facts.TermIndex.TrueValue : facts.TermIndex.FalseValue;
+        }
+
+        internal static Term SymEvaluator_And(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            if (Term.IsSymbolicTerm(values[0].Binding, values[1].Binding))
+            {
+                bool wasAdded;
+                Term t1 = values[0].Binding;
+                Term t2 = values[1].Binding;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymAnd);
+                return facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+            }
+            else
+            {
+                bool b1, b2;
+                if (!ToBooleans(values[0].Binding, values[1].Binding, out b1, out b2))
+                {
+                    return null;
+                }
+
+                return b1 && b2 ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
         }
 
         internal static Term Evaluator_AndAll(Executer facts, Bindable[] values)
@@ -1477,6 +1615,51 @@
             }
 
             return hasBool ? facts.TermIndex.TrueValue : values[0].Binding;
+        }
+
+        internal static Term SymEvaluator_AndAll(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            int nResults;
+            var acc = BigInteger.Zero;
+            bool hasBool = false;
+            Term t;
+            bool hasSymbolics = false;
+            using (var it = facts.Query(values[1].Binding, out nResults).GetEnumerator())
+            {
+                if (nResults == 0)
+                {
+                    return values[0].Binding;
+                }
+
+                while (it.MoveNext())
+                {
+                    t = it.Current.Args[it.Current.Symbol.Arity - 1];
+                    if (Term.IsSymbolicTerm(t))
+                    {
+                        hasSymbolics = true;
+                        break;
+                    }
+                    if (t == facts.Index.FalseValue)
+                    {
+                        return facts.Index.FalseValue;
+                    }
+                    else if (t == facts.Index.TrueValue)
+                    {
+                        hasBool = true;
+                    }
+                }
+            }
+
+            if (!hasSymbolics)
+            {
+                return hasBool ? facts.Index.TrueValue : values[0].Binding;
+            }
+
+            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymAndAll);
+            Term[] terms = facts.Query(values[1].Binding, out nResults).Select(t => t.Args[t.Symbol.Arity - 1]).ToArray();
+            bool wasAdded;
+            return facts.Index.MkApply(bos, terms, out wasAdded);
         }
 
         internal static Term Evaluator_Or(Executer facts, Bindable[] values)

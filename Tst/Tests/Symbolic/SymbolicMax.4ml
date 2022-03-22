@@ -1,0 +1,24 @@
+domain SymbolicMax
+{
+  A ::= new (x : Integer).
+  B ::= new (x : Integer).
+
+  maxVal ::= (x : Integer).
+
+  goodA :- a is A, a.x > 10.
+  goodB :- b is B, b.x > 20.
+
+  maxVal(x) :- a is A, b is B, x = max(a.x, b.x).
+  
+  goodModel :- m is maxVal, m.x > 51.
+  
+  conforms goodA.
+  conforms goodB.
+  conforms goodModel.
+}
+
+partial model pm of SymbolicMax
+{
+  a is A(x).
+  b is B(y).
+}

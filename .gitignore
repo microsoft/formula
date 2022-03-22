@@ -62,6 +62,8 @@ ipch/
 *.sdf
 *.cachefile
 
+# Rider idea folder
+.idea
 
 # Visual Studio profiler
 *.psess

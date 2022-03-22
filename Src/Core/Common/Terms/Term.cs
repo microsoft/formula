@@ -167,8 +167,17 @@
 
         public static bool IsSymbolicTerm(Term t)
         {
-            if (t.Groundness == Groundness.Variable ||
-                t.Symbol.IsSymCount)
+            if (t.Groundness == Groundness.Variable)
+            {
+                return true;
+            }
+
+            Symbol sym = t.Symbol;
+
+            if (sym.IsSymCount ||
+                sym.IsSymAnd ||
+                sym.IsSymAndAll ||
+                sym.IsSymMax)
             {
                 return true;
             }
@@ -179,9 +188,22 @@
         public static bool IsSymbolicTerm(Term t1, Term t2)
         {
             if (t1.Groundness == Groundness.Variable ||
-                t2.Groundness == Groundness.Variable ||
-                t1.Symbol.IsSymCount ||
-                t2.Symbol.IsSymCount)
+                t2.Groundness == Groundness.Variable)
+            {
+                return true;
+            }
+
+            Symbol sym1 = t1.Symbol;
+            Symbol sym2 = t2.Symbol;
+
+            if (sym1.IsSymCount ||
+                sym2.IsSymCount ||
+                sym1.IsSymAnd ||
+                sym2.IsSymAnd ||
+                sym1.IsSymAndAll ||
+                sym2.IsSymAndAll ||
+                sym1.IsSymMax ||
+                sym2.IsSymMax)
             {
                 return true;
             }

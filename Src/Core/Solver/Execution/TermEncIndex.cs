@@ -78,6 +78,15 @@
                             return x.Args;
                         }
                     }
+                    else if (x.Symbol.Kind == SymbolKind.UserCnstSymb &&
+                            ((UserCnstSymb)x.Symbol).IsMangled)
+                    {
+                        if (Char.IsNumber(((UserCnstSymb)x.Symbol).Name[1]))
+                        {
+                            hasEncoding = false; // this is ugly
+                        }
+                        return null;
+                    }
                     else
                     {
                         return null;
@@ -133,7 +142,7 @@
                         return encp;
                     }
                     else if (x.Groundness == Groundness.Ground &&
-                             !x.Symbol.IsSymCount)
+                             !Term.IsSymbolicTerm(x))
                     {
                         typEmb = Solver.TypeEmbedder.ChooseRepresentation(x);
                         encp = Solver.TypeEmbedder.MkGround(x, typEmb);
@@ -215,6 +224,42 @@
                                                                                      facts.Solver.Context.MkInt(0));
                                 }
                                 encp = facts.Solver.Context.MkAdd(exprs);
+                                encodings.Add(x, encp);
+                                return encp;
+                            case OpKind.SymAnd:
+                                Term tempTerm;
+                                var tValue = GetTerm(facts.Index.TrueValue, out tempTerm);
+                                var fValue = GetTerm(facts.Index.FalseValue, out tempTerm);
+                                encp = Solver.Context.MkITE(Solver.Context.MkEq(tValue, ch.ElementAt(0)),
+                                    Solver.Context.MkITE(Solver.Context.MkEq(tValue, ch.ElementAt(1)), tValue, fValue), fValue);
+                                encodings.Add(x, encp);
+                                return encp;
+                            case OpKind.SymAndAll:
+                                var tEnc = GetTerm(facts.Index.TrueValue, out tempTerm);
+                                var fEnc = GetTerm(facts.Index.FalseValue, out tempTerm);
+                                Z3BoolExpr[] boolExprs = new Z3BoolExpr[ch.Count()];
+                                for (int i = 0; i < ch.Count(); i++)
+                                {
+                                    boolExprs[i] = Solver.Context.MkEq(tEnc, ch.ElementAt(i));
+                                }
+                                Z3Expr currExpr = null;
+                                for (int i = 0; i < ch.Count(); i++)
+                                {
+                                    if (currExpr == null)
+                                    {
+                                        currExpr = Solver.Context.MkITE(boolExprs[i], tEnc, fEnc);
+                                    }
+                                    else
+                                    {
+                                        currExpr = Solver.Context.MkITE(boolExprs[i], currExpr, fEnc);
+                                    }
+                                }
+                                encodings.Add(x, currExpr);
+                                return currExpr;
+                            case OpKind.SymMax:
+                                encp = Solver.TypeEmbedder.Context.MkITE(
+                                    Solver.TypeEmbedder.Context.MkGt((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1)), 
+                                    ch.ElementAt(0), ch.ElementAt(1));
                                 encodings.Add(x, encp);
                                 return encp;
                             default:

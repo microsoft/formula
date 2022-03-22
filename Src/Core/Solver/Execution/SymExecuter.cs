@@ -395,7 +395,6 @@
 
         public string GetModelInterpretation(Term t, Z3.Model model)
         {
-            Queue<string> pieces = new Queue<string>();
             if (t.Groundness == Groundness.Ground)
             {
                 return t.ToString();
@@ -406,12 +405,18 @@
                 {
                     if (x.Symbol.Arity == 0)
                     {
+                        string str = "";
                         if (x.Symbol.Kind == SymbolKind.UserCnstSymb && x.Symbol.IsVariable)
                         {
-                            string str;
                             var expr = Encoder.GetVarEnc(x, varToTypeMap[x]);
                             var interp = model.ConstInterp(expr);
-                            if (interp == null)
+                            if (Solver.TypeEmbedder.GetEmbedding(expr.Sort) is EnumEmbedding)
+                            {
+                                var embedding = Solver.TypeEmbedder.GetEmbedding(expr.Sort) as EnumEmbedding;
+                                int index = (interp == null) ? 0 : ((Z3.BitVecNum)interp.Args[0]).Int;
+                                str = embedding.GetSymbolAtIndex(index);
+                            }
+                            else if (interp == null)
                             {
                                 // If there were no constraints on the term, use the default
                                 str = Solver.TypeEmbedder.GetEmbedding(expr.Sort).DefaultMember.Item2.ToString();
@@ -421,34 +426,80 @@
                                 str = interp.ToString();
                             }
 
-                            pieces.Enqueue(str);
                             return str;
                         }
                         else if (x.Symbol.Kind == SymbolKind.BaseCnstSymb)
                         {
-                            string str = x.Symbol.PrintableName;
-                            pieces.Enqueue(str);
-                            return str;
+                            str = x.Symbol.PrintableName;
                         }
 
-                        return "";
+                        return str;
                     }
                     else if (x.Symbol.Kind == SymbolKind.BaseOpSymb)
                     {
+                        int arg1, arg2, res;
+                        string str;
                         switch (((BaseOpSymb)x.Symbol).OpKind)
                         {
                             case OpKind.Add:
-                                int arg1, arg2;
-                                if (!Int32.TryParse(pieces.Dequeue(), out arg1) ||
-                                    !Int32.TryParse(pieces.Dequeue(), out arg2))
+                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
+                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
                                 {
                                     throw new NotImplementedException();
                                 }
-                                int res = arg1 + arg2;
-                                string str = "" + res;
-                                pieces.Enqueue(str);
+                                res = arg1 + arg2;
+                                str = "" + res;
                                 return str;
-
+                            case OpKind.Sub:
+                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
+                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
+                                {
+                                    throw new NotImplementedException();
+                                }
+                                res = arg1 - arg2;
+                                str = "" + res;
+                                return str;
+                            case OpKind.Mul:
+                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
+                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
+                                {
+                                    throw new NotImplementedException();
+                                }
+                                res = arg1 * arg2;
+                                str = "" + res;
+                                return str;
+                            case OpKind.Div:
+                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
+                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
+                                {
+                                    throw new NotImplementedException();
+                                }
+                                res = arg1 / arg2;
+                                str = "" + res;
+                                return str;
+                            case OpKind.SymAnd:
+                                if (ch.ElementAt(0) == "TRUE" && ch.ElementAt(1) == "TRUE")
+                                {
+                                    str = "TRUE";
+                                }
+                                else
+                                {
+                                    str = "FALSE";
+                                }
+                                return str;
+                            case OpKind.SymAndAll:
+                                bool hasFalse = ch.Any(s => s.Equals("FALSE"));
+                                str = hasFalse ? "FALSE" : "TRUE";
+                                return str;
+                            case OpKind.SymMax:
+                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
+                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
+                                {
+                                    throw new NotImplementedException();
+                                }
+                                res = arg1 > arg2 ? arg1 : arg2;
+                                str = "" + res;
+                                return str;
                             default:
                                 throw new NotImplementedException();
                         }
@@ -459,11 +510,10 @@
                         str += "(";
                         for (int i = 0; i < ch.Count(); i++)
                         {
-                            str += pieces.Dequeue();
-                            str += i == ch.Count() - 1 ? "" : ",";
+                            str += ch.ElementAt(i);
+                            str += i == ch.Count() - 1 ? "" : ", ";
                         }
                         str += ")";
-                        pieces.Enqueue(str);
                         return str;
                     }
                     else
@@ -544,7 +594,7 @@
             Z3Expr enc = null;
             if (Encoder.CanGetEncoding(t))
             {
-                enc = Encoder.GetTerm(t, out normalized);
+                enc = Encoder.GetTerm(t, out normalized, this);
 
                 if (lfp.TryFindValue(normalized, out e))
                 {

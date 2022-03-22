@@ -20,7 +20,7 @@
 
             LanguageFileExtension = ".4mlnb",
 
-            Description = "A simple kernel that echos its input."
+            Description = "An extension for the Formula program."
         };
     }
 }

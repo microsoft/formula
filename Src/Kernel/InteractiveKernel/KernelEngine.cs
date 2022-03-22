@@ -17,6 +17,8 @@ namespace Microsoft.Jupyter.Core
         private Sink _sink;
         private Chooser _chooser;
 
+        private bool init = false;
+
         private IShellServer _server;
 
         public KernelEngine(
@@ -41,28 +43,14 @@ namespace Microsoft.Jupyter.Core
             _chooser.setCellMessage(channel.CellMessage);
 
             _sink.setChannel(channel);
-            var cell_output = input.Split("\n");
 
-            if(input.Contains("load") && !input.Contains("unload"))
+            if(!init)
             {
                 _ci.DoCommand("wait on");
-                string path = input.Replace("load ","");
-                string data = "";
-                using (FileStream fs = File.OpenRead(path))  
-                {  
-                    byte[] b = new byte[1024];  
-                    UTF8Encoding temp = new UTF8Encoding(true);  
-                    while (fs.Read(b,0,b.Length) > 0)  
-                    {  
-                        data += temp.GetString(b);  
-                    }  
-                } 
+                _sink.Clear();
+                init = true;
             }
-
-            for (int i = 0; i < cell_output.Length; ++i)
-            {
-                _ci.DoCommand(cell_output[i]);
-            }
+            _ci.DoCommand(input);
 
             _sink.ShowOutput();
             _sink.Clear();

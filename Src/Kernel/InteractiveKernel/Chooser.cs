@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Microsoft.Formula.CommandLine;
 using Microsoft.Jupyter.Core.Protocol;
 

@@ -56,7 +56,15 @@ namespace Microsoft.Jupyter.Core
             _sink.Clear();
 
             var res = new ExecutionResult();
-            res.Status = ExecuteStatus.Ok;
+
+            if(_sink.PrintedError)
+            {
+                res.Status = ExecuteStatus.Error;
+            }
+            else
+            {
+                res.Status = ExecuteStatus.Ok;
+            }
             return res;
         }   
     }

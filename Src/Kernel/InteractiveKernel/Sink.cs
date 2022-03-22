@@ -110,6 +110,7 @@ namespace Microsoft.Jupyter.Core
             _strBuilder.Clear();
             _estrBuilder.Clear();
             _rowList.Clear();
+            SetPrintedError(false);
         }
 
         public System.IO.TextWriter Writer
@@ -137,7 +138,7 @@ namespace Microsoft.Jupyter.Core
                     Console.Error.Write(msg);
                     break;
                 case SeverityKind.Error:
-                    SetPrintedError();
+                    SetPrintedError(true);
                     Console.Error.Write(msg);
                     Console.ForegroundColor = ConsoleColor.Red;
                     break;
@@ -173,7 +174,7 @@ namespace Microsoft.Jupyter.Core
                     UpdateTable(Level.ERROR, msg);
                     break;
                 case SeverityKind.Error:
-                    SetPrintedError();
+                    SetPrintedError(true);
                     Console.Error.WriteLine(msg);
                     UpdateTable(Level.ERROR, msg);
                     Console.ForegroundColor = ConsoleColor.Red;
@@ -188,13 +189,13 @@ namespace Microsoft.Jupyter.Core
             Console.ForegroundColor = ConsoleColor.Gray;
         }
 
-        private void SetPrintedError()
+        private void SetPrintedError(bool flag)
         {
             bool gotLock = false;
             try
             {
                 printedErrLock.Enter(ref gotLock);
-                printedErr = true;
+                printedErr = flag;
             }
             finally
             {

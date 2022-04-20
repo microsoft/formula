@@ -379,7 +379,7 @@
             var pendingFacts = new Map<Term, Set<Derivation>>(Term.Compare);
             var constraintTerms = new Set<Term>(Term.Compare);
             LinkedList<CoreRule> untrigList;
-            int maxDepth = 10; // TODO: make configurable
+            uint maxDepth = Solver.RecursionBound;
 
             for (int i = 0; i < Rules.StratificationDepth; ++i)
             {
@@ -636,6 +636,7 @@
             SymElement e;
             if (lfp.TryFindValue(t, out e))
             {
+                e.DisjoinSideConstraints(0, pendingConstraints.ToArray(), Solver.Context);
                 return e;
             }
 
@@ -647,6 +648,7 @@
 
                 if (lfp.TryFindValue(normalized, out e))
                 {
+                    e.DisjoinSideConstraints(0, pendingConstraints.ToArray(), Solver.Context);
                     return e;
                 }
             }

@@ -98,6 +98,20 @@
             }
         }
 
+        public void DisjoinSideConstraints(int index, Z3BoolExpr[] constr, Z3Context context)
+        {
+            Z3BoolExpr prevConstraint;
+            Z3BoolExpr currConstraint = context.MkAnd(constr);
+            if (SideConstraints.TryFindValue(index, out prevConstraint))
+            {
+                SideConstraints[index] = context.MkOr(prevConstraint, currConstraint);
+            }
+            else
+            {
+                SideConstraints.Add(index, currConstraint);
+            }
+        }
+
         /// <summary>
         /// Removes all constraints introduced at or after index.
         /// </summary>

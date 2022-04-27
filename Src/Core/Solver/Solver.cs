@@ -30,6 +30,8 @@
 
     internal class Solver : ISolver, IDisposable
     {
+        public static readonly uint DefaultRecursionBound = 10;
+
         private CancellationToken cancel;
         private bool disposed = false;
         private List<Flag> solverFlags = new List<Flag>();
@@ -58,6 +60,12 @@
         }
 
         public Env Env
+        {
+            get;
+            private set;
+        }
+
+        public uint RecursionBound
         {
             get;
             private set;
@@ -287,7 +295,23 @@
                Strategy = CreateStrategy(solverFlags);
             }
 
+            SetRecursionBound();
+
             var se = new SymExecuter(this);
+        }
+
+        private void SetRecursionBound()
+        {
+            Cnst value;
+            var conf = (Configuration)Source.Config.CompilerData;
+            if (conf.TryGetSetting(Configuration.Solver_RecursionBoundSetting, out value))
+            {
+                RecursionBound = (uint)((Rational)value.Raw).Numerator;
+            }
+            else
+            {
+                RecursionBound = DefaultRecursionBound;
+            }
         }
 
         public SearchState GetState(IEnumerable<KeyValuePair<UserSymbol, int>> dofs)

@@ -72,6 +72,12 @@
         private List<Z3BoolExpr> pendingConstraints =
             new List<Z3BoolExpr>();
 
+        private Dictionary<int, Z3BoolExpr> recursionConstraints =
+            new Dictionary<int, Z3BoolExpr>();
+
+        private Dictionary<int, int> ruleCycles =
+            new Dictionary<int, int>();
+
         public RuleTable Rules
         {
             get;
@@ -233,6 +239,25 @@
             pendingConstraints.Add(Solver.Context.MkEq(expr1, expr2));
         }
 
+        private void AddRecursionConstraint(int ruleId)
+        {
+            Z3BoolExpr expr = null;
+            foreach (var constraint in pendingConstraints)
+            {
+                if (expr == null)
+                {
+                    expr = constraint;
+                }
+                else
+                {
+                    expr = Solver.Context.MkAnd(expr, constraint);
+                }
+            }
+
+            expr = Solver.Context.MkNot(expr);
+            recursionConstraints.Add(ruleId, expr);
+        }
+
         public SymExecuter(Solver solver)
         {
             Contract.Requires(solver != null);
@@ -354,6 +379,8 @@
             var pendingFacts = new Map<Term, Set<Derivation>>(Term.Compare);
             var constraintTerms = new Set<Term>(Term.Compare);
             LinkedList<CoreRule> untrigList;
+            uint maxDepth = Solver.RecursionBound;
+
             for (int i = 0; i < Rules.StratificationDepth; ++i)
             {
                 if (untrigRules.TryFindValue(i, out untrigList))
@@ -374,16 +401,37 @@
 
                 while (pendingAct.Count > 0)
                 {
+                    bool copyConstraints = true;
                     act = pendingAct.GetSomeElement();
                     pendingAct.Remove(act);
+                    int ruleId = act.Rule.RuleId;
                     act.Rule.Execute(act.Binding1.Term, act.FindNumber, this, KeepDerivations, pendingFacts, constraintTerms);
+
+                    // Check for cycles and cut if execution count exceeds max depth
+                    if (ruleCycles.ContainsKey(ruleId))
+                    {
+                        ruleCycles[ruleId]++;
+                        if (ruleCycles[ruleId] > maxDepth)
+                        {
+                            copyConstraints = false;
+                        }
+                    }
+
                     foreach (var kv in pendingFacts)
                     {
                         foreach (var t in constraintTerms)
                         {
                             CopySideConstraints(t);
                         }
-                        IndexFact(ExtendLFP(kv.Key), pendingAct, i);
+
+                        if (copyConstraints)
+                        {
+                            IndexFact(ExtendLFP(kv.Key), pendingAct, i);
+                        }
+                        else
+                        {
+                            AddRecursionConstraint(ruleId);
+                        }
                     }
 
                     pendingConstraints.Clear();
@@ -526,6 +574,7 @@
         private void InitializeExecuter()
         {
             var optRules = Rules.Optimize();
+            ruleCycles = Rules.GetCycles(optRules);
 
             /*foreach (var rule in optRules.OrderBy(x => x.Stratum))
             {
@@ -587,6 +636,7 @@
             SymElement e;
             if (lfp.TryFindValue(t, out e))
             {
+                e.DisjoinSideConstraints(0, pendingConstraints.ToArray(), Solver.Context);
                 return e;
             }
 
@@ -598,6 +648,7 @@
 
                 if (lfp.TryFindValue(normalized, out e))
                 {
+                    e.DisjoinSideConstraints(0, pendingConstraints.ToArray(), Solver.Context);
                     return e;
                 }
             }

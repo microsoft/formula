@@ -63,6 +63,7 @@
         public const string Solver_NegIntegerCostSetting = "solver_NegIntegerCost";
         public const string Solver_PosIntegerCostSetting = "solver_PosIntegerCost";
         public const string Solver_StringCostSetting = "solver_StringCost";
+        public const string Solver_RecursionBoundSetting = "solver_RecursionBound";
         public const string Proofs_KeepLineNumbersSetting = "proofs_KeepLineNumbers";
         public const string Proofs_MaxLocationsSetting = "proofs_MaxLocations";
         public const string Rule_ClassesSetting = "rule_Classes";
@@ -85,6 +86,7 @@
             TopSettingValidators[Solver_NegIntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_PosIntegerCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
             TopSettingValidators[Solver_StringCostSetting] = (s, f) => ValidateIntSetting(s, 0, int.MaxValue, f);
+            TopSettingValidators[Solver_RecursionBoundSetting] = (s, f) => ValidateIntSetting(s, 1, int.MaxValue, f);
 
             colDescrs = new Tuple<string, Type, string>[]
             {
@@ -162,6 +164,11 @@
                     Solver_StringCostSetting,
                     CnstKind.Numeric,
                     string.Format("Use {0} = n such that 0 <= n <= {1} to increase the cost of encoding symbolic constants as strings.", Solver_StringCostSetting, int.MaxValue)),
+
+                new Tuple<string, CnstKind, string>(
+                    Solver_RecursionBoundSetting,
+                    CnstKind.Numeric,
+                    string.Format("Use {0} = n for 1 <= n <= {1} to set the maximum recursion depth for symbolic rules.", Solver_RecursionBoundSetting, int.MaxValue)),
 
                 new Tuple<string, CnstKind, string>(
                     Proofs_KeepLineNumbersSetting,

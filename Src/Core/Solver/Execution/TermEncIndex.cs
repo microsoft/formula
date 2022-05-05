@@ -213,6 +213,10 @@
                                 encp = Solver.TypeEmbedder.Context.MkGe((Z3ArithExpr)ch.ElementAt(0), (Z3ArithExpr)ch.ElementAt(1));
                                 encodings.Add(x, encp);
                                 return encp;
+                            case RelKind.Neq:
+                                encp = Solver.TypeEmbedder.Context.MkNot(
+                                    Solver.TypeEmbedder.Context.MkEq(ch.ElementAt(0), ch.ElementAt(1)));
+                                return encp;
                             case OpKind.SymCount:
                                 Z3ArithExpr[] exprs = new Z3ArithExpr[x.Args.Length];
                                 exprs[0] = (Z3ArithExpr)ch.ElementAt(0);

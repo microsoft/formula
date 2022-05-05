@@ -101,7 +101,17 @@
         public void DisjoinSideConstraints(int index, Z3BoolExpr[] constr, Z3Context context)
         {
             Z3BoolExpr prevConstraint;
-            Z3BoolExpr currConstraint = context.MkAnd(constr);
+            Z3BoolExpr currConstraint;
+
+            if (constr.Length == 1)
+            {
+                currConstraint = constr[0];
+            }
+            else
+            {
+                currConstraint = context.MkAnd(constr);
+            }
+
             if (SideConstraints.TryFindValue(index, out prevConstraint))
             {
                 SideConstraints[index] = context.MkOr(prevConstraint, currConstraint);

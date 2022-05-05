@@ -2969,7 +2969,8 @@
                 OpLibrary.ValidateUse_Neq,
                 OpLibrary.TypeApprox_NEq_Up,
                 OpLibrary.TypeApprox_NEq_Down,
-                OpLibrary.Evaluator_Neq));
+                OpLibrary.Evaluator_Neq,
+                OpLibrary.SymEvaluator_Neq));
 
             AddBaseOp(new BaseOpSymb(
                 RelKind.Le, 

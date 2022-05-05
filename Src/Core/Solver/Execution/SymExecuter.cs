@@ -636,7 +636,10 @@
             SymElement e;
             if (lfp.TryFindValue(t, out e))
             {
-                e.DisjoinSideConstraints(0, pendingConstraints.ToArray(), Solver.Context);
+                if (pendingConstraints.Any())
+                {
+                    e.DisjoinSideConstraints(0, pendingConstraints.ToArray(), Solver.Context);
+                }
                 return e;
             }
 
@@ -648,7 +651,10 @@
 
                 if (lfp.TryFindValue(normalized, out e))
                 {
-                    e.DisjoinSideConstraints(0, pendingConstraints.ToArray(), Solver.Context);
+                    if (pendingConstraints.Any())
+                    {
+                        e.DisjoinSideConstraints(0, pendingConstraints.ToArray(), Solver.Context);
+                    }
                     return e;
                 }
             }

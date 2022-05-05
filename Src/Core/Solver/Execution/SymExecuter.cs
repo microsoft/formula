@@ -349,7 +349,8 @@
                 var model = Solver.Z3Solver.Model;
                 foreach (var kvp in lfp)
                 {
-                    if (Encoder.CanGetEncoding(kvp.Key))
+                    if (!kvp.Key.Symbol.PrintableName.StartsWith("~") &&
+                        Encoder.CanGetEncoding(kvp.Key))
                     {
                         if (!kvp.Value.SideConstraints.IsEmpty())
                         {

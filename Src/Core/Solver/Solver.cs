@@ -292,7 +292,7 @@
             //// Step 4. Try to create the search strategy.
             if (!Cardinalities.IsUnsat)
             {
-               Strategy = CreateStrategy(solverFlags);
+                Strategy = CreateStrategy(solverFlags);
             }
 
             SetRecursionBound();
@@ -407,8 +407,17 @@
         /// </summary>
         private void CreateContextAndSolver()
         {
-            Context = new Z3Context();
+            var settings = new Dictionary<string, string>()
+            {
+                { "unsat_core", "true" },
+                { "proof", "true" },
+                { "model", "true" }
+            };
+
+            Context = new Z3Context(settings);
             Z3Solver = Context.MkSolver();
+            Z3Solver.Set("core.minimize", true);
+            Z3Solver.Set("core.minimize_partial", true);
         }
 
         /// <summary>

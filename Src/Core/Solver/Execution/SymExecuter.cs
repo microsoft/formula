@@ -331,6 +331,7 @@
             }
 
             Execute();
+            var assumptions = new List<Z3Expr>();
 
             foreach (var elem in lfp)
             {
@@ -338,12 +339,14 @@
                 {
                     foreach (var currConstr in elem.Value.SideConstraints)
                     {
-                        Solver.Z3Solver.Assert(currConstr.Value);
+                        assumptions.Add(currConstr.Value);
+                        //Solver.Z3Solver.Assert(currConstr.Value);                            
                     }
                 }
             }
 
-            var status = Solver.Z3Solver.Check();
+            var status = Solver.Z3Solver.Check(assumptions.ToArray());
+            //var status = Solver.Z3Solver.Check();
             if (status == Z3.Status.SATISFIABLE)
             {
                 var model = Solver.Z3Solver.Model;
@@ -369,7 +372,13 @@
             }
             else if (status == Z3.Status.UNSATISFIABLE)
             {
-                Console.WriteLine("Model not solvable");
+                var core = Solver.Z3Solver.UnsatCore;
+                Console.WriteLine("Model not solvable. Unsat core below.");
+                foreach (var expr in core)
+                {
+                    Console.WriteLine("Expr: " + expr);
+                }
+                
             }
         }
 

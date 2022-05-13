@@ -51,14 +51,7 @@
         public ProgramName(string uriString, bool relativeToWorkingDir = true)
         {
             Contract.Requires(uriString != null);
-            if(OperatingSystem.IsMacOS())
-            {
-                workingUri = new Uri(Environment.CurrentDirectory, UriKind.Absolute);
-            } 
-            else
-            {
-                workingUri = new Uri(Environment.CurrentDirectory + System.IO.Path.DirectorySeparatorChar, UriKind.Absolute);
-            }
+            workingUri = new Uri(Environment.CurrentDirectory + System.IO.Path.DirectorySeparatorChar, UriKind.Absolute);
             Uri = new Uri(relativeToWorkingDir ? workingUri : envScheme, uriString);
 
             if (!Uri.AbsoluteUri.StartsWith(fileScheme.AbsoluteUri) &&                
@@ -71,14 +64,7 @@
         public ProgramName(string uriString, ProgramName relativeToProgram)
         {
             Contract.Requires(uriString != null && relativeToProgram != null);
-            if(OperatingSystem.IsMacOS())
-            {
-                workingUri = new Uri(Environment.CurrentDirectory, UriKind.Absolute);
-            } 
-            else
-            {
-                workingUri = new Uri(string.Format("{0}/", Environment.CurrentDirectory), UriKind.Absolute);
-            }
+            workingUri = new Uri(string.Format("{0}/", Environment.CurrentDirectory), UriKind.Absolute);
             Uri = new Uri(relativeToProgram.Uri, uriString);
 
             if (!Uri.AbsoluteUri.StartsWith(fileScheme.AbsoluteUri) &&

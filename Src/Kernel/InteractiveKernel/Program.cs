@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using static Microsoft.Jupyter.Core.Constants;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using McMaster.Extensions.CommandLineUtils;
 
 namespace Microsoft.Jupyter.Core
 {

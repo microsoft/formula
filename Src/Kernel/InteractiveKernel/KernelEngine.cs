@@ -1,13 +1,9 @@
 ﻿using System;
-using System.IO;
-using System.Text;
+using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
-using System.Threading;
-using System.Collections.Generic;
 using Microsoft.Formula.CommandLine;
-using Microsoft.Jupyter.Core.Protocol;
 
 namespace Microsoft.Jupyter.Core
 {
@@ -50,6 +46,16 @@ namespace Microsoft.Jupyter.Core
                 _sink.Clear();
                 init = true;
             }
+
+            var regx = new Regex(@"^(load\s|l\s)", RegexOptions.Singleline);
+            var match = regx.Match(input);
+            if(match.Success)
+            {
+                var sp = input.Split(" ", 3);
+                Environment.CurrentDirectory = sp[2]; 
+                input = sp[0] + " " + sp[1];   
+            }
+
             _ci.DoCommand(input);
 
             _sink.ShowOutput();

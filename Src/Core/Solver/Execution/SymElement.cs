@@ -45,22 +45,124 @@
             private set;
         }
 
-        public Z3BoolExpr GetAllSideConstraints(Z3Context context)
+        public bool HasConstraints()
         {
-            Z3BoolExpr curr;
-
-            curr = SideConstraints[0];
-            for (int i = 1; i < SideConstraints.Count; i++)
-            {
-                curr = context.MkAnd(curr, SideConstraints[i]);
-            }
-
-            return curr;
+            return !constraintData.IsEmpty();
         }
 
-        public bool HasSideConstraints()
+        private List<Tuple<HashSet<Z3BoolExpr>, Set<Term>, Set<Term>>> constraintData
+            = new List<Tuple<HashSet<Z3BoolExpr>, Set<Term>, Set<Term>>>();
+
+        public void AddConstraintData(HashSet<Z3BoolExpr> exprs, Set<Term> posTerms, Set<Term> negTerms)
         {
-            return !SideConstraints.IsEmpty();
+            bool needToAdd = true;
+
+            foreach (var item in constraintData)
+            {
+                if (item.Item2.IsSameSet(posTerms) &&
+                    item.Item3.IsSameSet(negTerms) &&
+                    item.Item1.SetEquals(exprs))
+                {
+                    needToAdd = false;
+                    break;
+                }
+            }
+
+            if (needToAdd)
+            {
+                var data = new Tuple<HashSet<Z3BoolExpr>, Set<Term>, Set<Term>>(exprs, posTerms, negTerms);
+                constraintData.Add(data);
+            }
+        }
+
+        private IEnumerable<Z3BoolExpr> GetSideConstraints(SymExecuter executer, Set<Term> processed)
+        {
+            List<Z3BoolExpr> constraints = new List<Z3BoolExpr>();
+            Term t = this.Term;
+            processed.Add(t);
+            SymElement next;
+
+            foreach (var constraint in constraintData)
+            {
+                foreach (var posTerm in constraint.Item2)
+                {
+                    if (!processed.Contains(posTerm) &&
+                        executer.GetSymbolicTerm(posTerm, out next))
+                    {
+                        constraints.AddRange(next.GetSideConstraints(executer, processed));
+                    }
+                }
+
+                foreach (var negTerm in constraint.Item3)
+                {
+                    if (!processed.Contains(negTerm) &&
+                        executer.GetSymbolicTerm(negTerm, out next))
+                    {
+                        foreach (var negConstraint in next.GetSideConstraints(executer, processed))
+                        {
+                            constraints.Add(executer.Solver.Context.MkNot(negConstraint));
+                        }
+                    }
+                }
+
+                constraints.AddRange(constraint.Item1);
+            }
+
+
+            return constraints;
+        }
+
+        public Z3BoolExpr GetSideConstraints(SymExecuter executer)
+        {
+            List<Z3BoolExpr> constraints = new List<Z3BoolExpr>();
+            Set<Term> processed = new Set<Term>(Term.Compare);
+            Term t = this.Term;
+            SymElement next;
+            Z3BoolExpr topLevelConstraint = null;
+            Z3Context context = executer.Solver.Context;
+
+            foreach (var constraint in constraintData)
+            {
+                foreach (var posTerm in constraint.Item2)
+                {
+                    processed.Clear();
+                    processed.Add(t);
+                    if (executer.GetSymbolicTerm(posTerm, out next))
+                    {
+                        constraints.AddRange(next.GetSideConstraints(executer, processed));
+                    }
+                }
+
+                foreach (var negTerm in constraint.Item3)
+                {
+                    processed.Clear();
+                    processed.Add(t);
+                    if (executer.GetSymbolicTerm(negTerm, out next))
+                    {
+                        foreach (var negConstraint in next.GetSideConstraints(executer, processed))
+                        {
+                            constraints.Add(context.MkNot(negConstraint));
+                        }
+                    }
+                }
+
+                constraints.AddRange(constraint.Item1);
+
+                var currConstraint = context.MkAnd(constraints);
+                if (topLevelConstraint == null)
+                {
+                    topLevelConstraint = currConstraint;
+                }
+                else
+                {
+                    topLevelConstraint = context.MkOr(topLevelConstraint, currConstraint);
+                }
+
+                constraints.Clear();
+            }
+
+
+            return topLevelConstraint;
         }
 
         /// <summary>
@@ -78,48 +180,6 @@
             Term = term;
             Encoding = encoding;
             SideConstraints = new Map<int, Z3BoolExpr>(Compare);
-        }
-
-        /// <summary>
-        /// Conjoins the current side constraint with constr
-        /// </summary>
-        /// <param name="constr"></param>
-        /// <param name="context"></param>
-        public void ExtendSideConstraint(int index, Z3BoolExpr constr, Z3Context context)
-        {
-            Z3BoolExpr crntConstr;
-            if (SideConstraints.TryFindValue(index, out crntConstr))
-            {
-                SideConstraints[index] = context.MkAnd(crntConstr, constr);
-            }
-            else
-            {
-                SideConstraints.Add(index, constr);
-            }
-        }
-
-        public void DisjoinSideConstraints(int index, Z3BoolExpr[] constr, Z3Context context)
-        {
-            Z3BoolExpr prevConstraint;
-            Z3BoolExpr currConstraint;
-
-            if (constr.Length == 1)
-            {
-                currConstraint = constr[0];
-            }
-            else
-            {
-                currConstraint = context.MkAnd(constr);
-            }
-
-            if (SideConstraints.TryFindValue(index, out prevConstraint))
-            {
-                SideConstraints[index] = context.MkOr(prevConstraint, currConstraint);
-            }
-            else
-            {
-                SideConstraints.Add(index, currConstraint);
-            }
         }
 
         /// <summary>

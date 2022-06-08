@@ -997,8 +997,6 @@
             return facts.TermIndex.MkCnst(new Rational(r1.Sign), out wasAdded);
         }
 
-        private static int varId = 0;
-
         internal static Term SymEvaluator_Add(SymExecuter facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1775,7 +1773,7 @@
             
             foreach (var item in res)
             {
-                hasConstraints = (facts.CopySideConstraints(item, true) || hasConstraints);
+                hasConstraints = (facts.AddNegativeConstraint(item) || hasConstraints);
             }
 
             if (nResults == 0 || hasConstraints)

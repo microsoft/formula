@@ -722,8 +722,7 @@
             int findNumber,
             SymExecuter index,
             bool keepDerivations,
-            Map<Term, Set<Derivation>> pending,
-            Set<Term> constraintTerms)
+            Map<Term, Set<Derivation>> pending)
         {
             if (initStatus == InitStatusKind.Uninit)
             {
@@ -737,7 +736,7 @@
 
             //// Case 1. There are no finds.
             ConstraintNode headNode = nodes[Head];
-            constraintTerms.Add(binding);
+            index.AddPositiveConstraint(binding);
             if (Find1.IsNull && Find2.IsNull)
             {
                 Contract.Assert(headNode.Binding != null);
@@ -832,7 +831,7 @@
                         findNumber == 0 ? binding : tp,
                         findNumber == 1 ? binding : tp);
 
-                    constraintTerms.Add(tp);
+                    index.AddPositiveConstraint(tp);
                     UndoPropagation(ConstraintNode.BLSecond);
                 }
             }

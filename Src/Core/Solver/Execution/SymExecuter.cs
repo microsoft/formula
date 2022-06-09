@@ -19,6 +19,7 @@
     using Z3Expr = Microsoft.Z3.Expr;
     using Z3BoolExpr = Microsoft.Z3.BoolExpr;
     using System.Numerics;
+    using System.Text.RegularExpressions;
 
     internal class SymExecuter
     {
@@ -315,65 +316,69 @@
             }
 
             Execute();
-            var assumptions = new List<Z3Expr>();
-            Z3BoolExpr topLevelConstraint = null;
-
+            
+            bool hasConforms = false;
             foreach (var elem in lfp)
             {
                 if (elem.Key.Symbol.PrintableName.EndsWith("conforms"))
                 {
-                    SymElement symbolicConforms = elem.Value;
-                    var constraint = symbolicConforms.GetSideConstraints(this);
-                    if (topLevelConstraint == null)
-                    {
-                        topLevelConstraint = constraint;
-                    }
-                    else
-                    {
-                        topLevelConstraint = Solver.Context.MkOr(constraint, topLevelConstraint);
-                    }
-
-                    foreach (var currConstr in elem.Value.SideConstraints)
-                    {
-                        assumptions.Add(currConstr.Value);
-                    }
+                    hasConforms = true;
                 }
             }
 
-            assumptions.Add(topLevelConstraint);
-            var status = Solver.Z3Solver.Check(assumptions.ToArray());
-            if (status == Z3.Status.SATISFIABLE)
+            if (hasConforms)
             {
-                var model = Solver.Z3Solver.Model;
-                foreach (var kvp in lfp)
+                var assumptions = new List<Z3Expr>();
+                Z3BoolExpr topLevelConstraint = null;
+                string pattern = @"conforms\d+$";
+                foreach (var elem in lfp)
                 {
-                    if (!kvp.Key.Symbol.PrintableName.StartsWith("~") &&
-                        Encoder.CanGetEncoding(kvp.Key))
+                    if (Regex.IsMatch(elem.Key.Symbol.PrintableName, pattern))
                     {
-                        if (kvp.Value.HasConstraints())
+                        SymElement symbolicConforms = elem.Value;
+                        var constraint = symbolicConforms.GetSideConstraints(this);
+                        assumptions.Add(constraint);
+                    }
+                }
+
+                var status = Solver.Z3Solver.Check(assumptions.ToArray());
+                if (status == Z3.Status.SATISFIABLE)
+                {
+                    var model = Solver.Z3Solver.Model;
+                    foreach (var kvp in lfp)
+                    {
+                        if (!kvp.Key.Symbol.PrintableName.StartsWith("~") &&
+                            Encoder.CanGetEncoding(kvp.Key))
                         {
-                            var eval = model.Evaluate(kvp.Value.GetSideConstraints(this));
-                            if (eval.BoolValue == Z3.Z3_lbool.Z3_L_TRUE)
+                            if (kvp.Value.HasConstraints())
+                            {
+                                var eval = model.Evaluate(kvp.Value.GetSideConstraints(this));
+                                if (eval.BoolValue == Z3.Z3_lbool.Z3_L_TRUE)
+                                {
+                                    Console.WriteLine(GetModelInterpretation(kvp.Key, model));
+                                }
+                            }
+                            else
                             {
                                 Console.WriteLine(GetModelInterpretation(kvp.Key, model));
                             }
                         }
-                        else
-                        {
-                            Console.WriteLine(GetModelInterpretation(kvp.Key, model));
-                        }
                     }
                 }
-            }
-            else if (status == Z3.Status.UNSATISFIABLE)
-            {
-                var core = Solver.Z3Solver.UnsatCore;
-                Console.WriteLine("Model not solvable. Unsat core below.");
-                foreach (var expr in core)
+                else if (status == Z3.Status.UNSATISFIABLE)
                 {
-                    Console.WriteLine("Expr: " + expr);
+                    var core = Solver.Z3Solver.UnsatCore;
+                    Console.WriteLine("Model not solvable. Unsat core below.");
+                    foreach (var expr in core)
+                    {
+                        Console.WriteLine("Expr: " + expr);
+                    }
+
                 }
-                
+            }
+            else
+            {
+                Console.WriteLine("Model not solvable because conforms could not be derived.");
             }
         }
 

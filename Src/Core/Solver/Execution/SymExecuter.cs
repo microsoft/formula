@@ -337,7 +337,10 @@
                     {
                         SymElement symbolicConforms = elem.Value;
                         var constraint = symbolicConforms.GetSideConstraints(this);
-                        assumptions.Add(constraint);
+                        if (constraint != null)
+                        {
+                            assumptions.Add(constraint);
+                        }
                     }
                 }
 
@@ -652,6 +655,10 @@
                 Set<Term> c = new Set<Term>(Term.Compare, NegativeConstraintTerms);
 
                 e.AddConstraintData(a, b, c);
+            }
+            else
+            {
+                e.SetDirectlyProvable();
             }
 
             return e;

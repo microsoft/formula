@@ -50,6 +50,17 @@
             return !constraintData.IsEmpty();
         }
 
+        public bool IsDirectlyProvable
+        {
+            get;
+            private set;
+        }
+
+        public void SetDirectlyProvable()
+        {
+            IsDirectlyProvable = true;
+        }
+
         private List<Tuple<HashSet<Z3BoolExpr>, Set<Term>, Set<Term>>> constraintData
             = new List<Tuple<HashSet<Z3BoolExpr>, Set<Term>, Set<Term>>>();
 
@@ -75,22 +86,52 @@
             }
         }
 
-        private IEnumerable<Z3BoolExpr> GetSideConstraints(SymExecuter executer, Set<Term> processed)
+        private Z3BoolExpr GetSideConstraints(SymExecuter executer, Set<Term> processed)
         {
             List<Z3BoolExpr> constraints = new List<Z3BoolExpr>();
             Term t = this.Term;
             processed.Add(t);
             SymElement next;
+            Z3BoolExpr topConstraint = null;
+            Z3BoolExpr currConstraint = null;
+            Set<Term> localProcessed = new Set<Term>(Term.Compare);
+
+            if (IsDirectlyProvable)
+            {
+                return executer.Solver.Context.MkTrue();
+            }
 
             foreach (var constraint in constraintData)
             {
+                currConstraint = null;
+                localProcessed.Clear();
+                foreach (var term in processed)
+                {
+                    localProcessed.Add(term);
+                }
+
                 foreach (var posTerm in constraint.Item2)
                 {
-                    if (!processed.Contains(posTerm) &&
+                    if (!localProcessed.Contains(posTerm) &&
                         executer.GetSymbolicTerm(posTerm, out next))
                     {
-                        constraints.AddRange(next.GetSideConstraints(executer, processed));
+                        var nextConstraint = next.GetSideConstraints(executer, localProcessed);
+
+                        if (currConstraint == null)
+                        {
+                            currConstraint = nextConstraint;
+                        }
+                        else
+                        {
+                            currConstraint = executer.Solver.Context.MkAnd(currConstraint, nextConstraint);
+                        }
                     }
+                }
+
+                localProcessed.Clear();
+                foreach (var term in processed)
+                {
+                    localProcessed.Add(term);
                 }
 
                 foreach (var negTerm in constraint.Item3)
@@ -98,18 +139,43 @@
                     if (!processed.Contains(negTerm) &&
                         executer.GetSymbolicTerm(negTerm, out next))
                     {
-                        foreach (var negConstraint in next.GetSideConstraints(executer, processed))
+                        var nextConstraint = next.GetSideConstraints(executer, localProcessed);
+                        nextConstraint = executer.Solver.Context.MkNot(nextConstraint);
+
+                        if (currConstraint == null)
                         {
-                            constraints.Add(executer.Solver.Context.MkNot(negConstraint));
+                            currConstraint = nextConstraint;
+                        }
+                        else
+                        {
+                            currConstraint = executer.Solver.Context.MkAnd(currConstraint, nextConstraint);
                         }
                     }
                 }
 
-                constraints.AddRange(constraint.Item1);
+                foreach (var nextConstraint in constraint.Item1)
+                {
+                    if (currConstraint == null)
+                    {
+                        currConstraint = nextConstraint;
+                    }
+                    else
+                    {
+                        currConstraint = executer.Solver.Context.MkAnd(currConstraint, nextConstraint);
+                    }
+                }
+
+                if (topConstraint == null)
+                {
+                    topConstraint = currConstraint;
+                }
+                else
+                {
+                    topConstraint = executer.Solver.Context.MkOr(topConstraint, currConstraint);
+                }
             }
 
-
-            return constraints;
+            return topConstraint;
         }
 
         public Z3BoolExpr GetSideConstraints(SymExecuter executer)
@@ -118,18 +184,34 @@
             Set<Term> processed = new Set<Term>(Term.Compare);
             Term t = this.Term;
             SymElement next;
-            Z3BoolExpr topLevelConstraint = null;
+            Z3BoolExpr topConstraint = null;
+            Z3BoolExpr currConstraint = null;
             Z3Context context = executer.Solver.Context;
+
+            if (IsDirectlyProvable)
+            {
+                return executer.Solver.Context.MkTrue();
+            }
 
             foreach (var constraint in constraintData)
             {
+                currConstraint = null;
                 foreach (var posTerm in constraint.Item2)
                 {
                     processed.Clear();
                     processed.Add(t);
                     if (executer.GetSymbolicTerm(posTerm, out next))
                     {
-                        constraints.AddRange(next.GetSideConstraints(executer, processed));
+                        var nextConstraint = next.GetSideConstraints(executer, processed);
+
+                        if (currConstraint == null)
+                        {
+                            currConstraint = nextConstraint;
+                        } 
+                        else
+                        {
+                            currConstraint = context.MkAnd(currConstraint, nextConstraint);
+                        }
                     }
                 }
 
@@ -139,30 +221,43 @@
                     processed.Add(t);
                     if (executer.GetSymbolicTerm(negTerm, out next))
                     {
-                        foreach (var negConstraint in next.GetSideConstraints(executer, processed))
+                        var nextConstraint = next.GetSideConstraints(executer, processed);
+                        nextConstraint = context.MkNot(nextConstraint);
+
+                        if (currConstraint == null)
                         {
-                            constraints.Add(context.MkNot(negConstraint));
+                            currConstraint = nextConstraint;
+                        }
+                        else
+                        {
+                            currConstraint = context.MkAnd(currConstraint, nextConstraint);
                         }
                     }
                 }
 
-                constraints.AddRange(constraint.Item1);
-
-                var currConstraint = context.MkAnd(constraints);
-                if (topLevelConstraint == null)
+                foreach (var nextConstraint in constraint.Item1)
                 {
-                    topLevelConstraint = currConstraint;
+                    if (currConstraint == null)
+                    {
+                        currConstraint = nextConstraint;
+                    }
+                    else
+                    {
+                        currConstraint = executer.Solver.Context.MkAnd(currConstraint, nextConstraint);
+                    }
+                }
+
+                if (topConstraint == null)
+                {
+                    topConstraint = currConstraint;
                 }
                 else
                 {
-                    topLevelConstraint = context.MkOr(topLevelConstraint, currConstraint);
+                    topConstraint = executer.Solver.Context.MkOr(topConstraint, currConstraint);
                 }
-
-                constraints.Clear();
             }
 
-
-            return topLevelConstraint;
+            return topConstraint;
         }
 
         /// <summary>
@@ -180,6 +275,7 @@
             Term = term;
             Encoding = encoding;
             SideConstraints = new Map<int, Z3BoolExpr>(Compare);
+            IsDirectlyProvable = false;
         }
 
         /// <summary>

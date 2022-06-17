@@ -61,8 +61,7 @@
             IsDirectlyProvable = true;
         }
 
-        private List<Tuple<HashSet<Z3BoolExpr>, Set<Term>, Set<Term>>> constraintData
-            = new List<Tuple<HashSet<Z3BoolExpr>, Set<Term>, Set<Term>>>();
+        private List<ConstraintData> constraintData = new List<ConstraintData>();
 
         public void AddConstraintData(HashSet<Z3BoolExpr> exprs, Set<Term> posTerms, Set<Term> negTerms)
         {
@@ -70,9 +69,7 @@
 
             foreach (var item in constraintData)
             {
-                if (item.Item2.IsSameSet(posTerms) &&
-                    item.Item3.IsSameSet(negTerms) &&
-                    item.Item1.SetEquals(exprs))
+                if (item.IsSameConstraintData(exprs, posTerms, negTerms))
                 {
                     needToAdd = false;
                     break;
@@ -81,7 +78,7 @@
 
             if (needToAdd)
             {
-                var data = new Tuple<HashSet<Z3BoolExpr>, Set<Term>, Set<Term>>(exprs, posTerms, negTerms);
+                var data = new ConstraintData(exprs, posTerms, negTerms);
                 constraintData.Add(data);
             }
         }
@@ -94,7 +91,7 @@
             SymElement next;
             Z3BoolExpr topConstraint = null;
             Z3BoolExpr currConstraint = null;
-            Set<Term> localProcessed = new Set<Term>(Term.Compare);
+            Set<Term> localProcessed = null;
 
             if (IsDirectlyProvable)
             {
@@ -104,13 +101,8 @@
             foreach (var constraint in constraintData)
             {
                 currConstraint = null;
-                localProcessed.Clear();
-                foreach (var term in processed)
-                {
-                    localProcessed.Add(term);
-                }
-
-                foreach (var posTerm in constraint.Item2)
+                localProcessed = new Set<Term>(Term.Compare, processed);
+                foreach (var posTerm in constraint.PosConstraints)
                 {
                     if (!localProcessed.Contains(posTerm) &&
                         executer.GetSymbolicTerm(posTerm, out next))
@@ -128,13 +120,8 @@
                     }
                 }
 
-                localProcessed.Clear();
-                foreach (var term in processed)
-                {
-                    localProcessed.Add(term);
-                }
-
-                foreach (var negTerm in constraint.Item3)
+                localProcessed = new Set<Term>(Term.Compare, processed);
+                foreach (var negTerm in constraint.NegConstraints)
                 {
                     if (!processed.Contains(negTerm) &&
                         executer.GetSymbolicTerm(negTerm, out next))
@@ -153,7 +140,7 @@
                     }
                 }
 
-                foreach (var nextConstraint in constraint.Item1)
+                foreach (var nextConstraint in constraint.DirConstraints)
                 {
                     if (currConstraint == null)
                     {
@@ -196,7 +183,7 @@
             foreach (var constraint in constraintData)
             {
                 currConstraint = null;
-                foreach (var posTerm in constraint.Item2)
+                foreach (var posTerm in constraint.PosConstraints)
                 {
                     processed.Clear();
                     processed.Add(t);
@@ -215,7 +202,7 @@
                     }
                 }
 
-                foreach (var negTerm in constraint.Item3)
+                foreach (var negTerm in constraint.NegConstraints)
                 {
                     processed.Clear();
                     processed.Add(t);
@@ -235,7 +222,7 @@
                     }
                 }
 
-                foreach (var nextConstraint in constraint.Item1)
+                foreach (var nextConstraint in constraint.DirConstraints)
                 {
                     if (currConstraint == null)
                     {
@@ -338,6 +325,46 @@
             {
                 return 0;
             }
+        }
+    }
+
+    internal class ConstraintData
+    {
+        public HashSet<Z3BoolExpr> DirConstraints
+        {
+            get;
+            private set;
+        }
+
+        public Set<Term> PosConstraints
+        {
+            get;
+            private set;
+        }
+
+        public Set<Term> NegConstraints
+        {
+            get;
+            private set;
+        }
+
+        public ConstraintData(HashSet<Z3BoolExpr> exprs, Set<Term> posTerms, Set<Term> negTerms)
+        {
+            DirConstraints = exprs;
+            PosConstraints = posTerms;
+            NegConstraints = negTerms;
+        }
+
+        public bool IsSameConstraintData(HashSet<Z3BoolExpr> exprs, Set<Term> posTerms, Set<Term> negTerms)
+        {
+            if (DirConstraints.SetEquals(exprs) &&
+                PosConstraints.IsSameSet(posTerms) &&
+                NegConstraints.IsSameSet(negTerms))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

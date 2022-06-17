@@ -375,6 +375,21 @@
                     foreach (var expr in core)
                     {
                         Console.WriteLine("Expr: " + expr);
+                        Console.WriteLine("Terms: ");
+                        foreach (var item in lfp)
+                        {
+                            Term t = item.Key;
+                            SymElement e = item.Value;
+
+                            if (e.ContainsConstraint(expr))
+                            {
+                                if (!(t.Symbol is UserCnstSymb &&
+                                      ((UserCnstSymb)t.Symbol).IsAutoGen))
+                                {
+                                    Console.WriteLine("  " + item.Key.ToString());
+                                }
+                            }
+                        }
                     }
 
                 }

@@ -63,6 +63,8 @@
 
         private List<ConstraintData> constraintData = new List<ConstraintData>();
 
+        private HashSet<Z3BoolExpr> cachedConstraints = new HashSet<Z3BoolExpr>();
+
         public void AddConstraintData(HashSet<Z3BoolExpr> exprs, Set<Term> posTerms, Set<Term> negTerms)
         {
             bool needToAdd = true;
@@ -80,6 +82,25 @@
             {
                 var data = new ConstraintData(exprs, posTerms, negTerms);
                 constraintData.Add(data);
+            }
+        }
+
+        public bool ContainsConstraint(Z3BoolExpr expr)
+        {
+            return cachedConstraints.Contains(expr);
+        }
+
+        private Z3BoolExpr CreateAndCacheConstraint(SymExecuter executer, Z3BoolExpr currConstraint, Z3BoolExpr nextConstraint)
+        {
+            cachedConstraints.Add(nextConstraint);
+
+            if (currConstraint == null)
+            {
+                return nextConstraint;
+            }
+            else
+            {
+                return executer.Solver.Context.MkAnd(currConstraint, nextConstraint);
             }
         }
 
@@ -108,15 +129,7 @@
                         executer.GetSymbolicTerm(posTerm, out next))
                     {
                         var nextConstraint = next.GetSideConstraints(executer, localProcessed);
-
-                        if (currConstraint == null)
-                        {
-                            currConstraint = nextConstraint;
-                        }
-                        else
-                        {
-                            currConstraint = executer.Solver.Context.MkAnd(currConstraint, nextConstraint);
-                        }
+                        currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
                     }
                 }
 
@@ -128,28 +141,13 @@
                     {
                         var nextConstraint = next.GetSideConstraints(executer, localProcessed);
                         nextConstraint = executer.Solver.Context.MkNot(nextConstraint);
-
-                        if (currConstraint == null)
-                        {
-                            currConstraint = nextConstraint;
-                        }
-                        else
-                        {
-                            currConstraint = executer.Solver.Context.MkAnd(currConstraint, nextConstraint);
-                        }
+                        currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
                     }
                 }
 
                 foreach (var nextConstraint in constraint.DirConstraints)
                 {
-                    if (currConstraint == null)
-                    {
-                        currConstraint = nextConstraint;
-                    }
-                    else
-                    {
-                        currConstraint = executer.Solver.Context.MkAnd(currConstraint, nextConstraint);
-                    }
+                    currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
                 }
 
                 if (topConstraint == null)
@@ -190,15 +188,7 @@
                     if (executer.GetSymbolicTerm(posTerm, out next))
                     {
                         var nextConstraint = next.GetSideConstraints(executer, processed);
-
-                        if (currConstraint == null)
-                        {
-                            currConstraint = nextConstraint;
-                        } 
-                        else
-                        {
-                            currConstraint = context.MkAnd(currConstraint, nextConstraint);
-                        }
+                        currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
                     }
                 }
 
@@ -210,28 +200,13 @@
                     {
                         var nextConstraint = next.GetSideConstraints(executer, processed);
                         nextConstraint = context.MkNot(nextConstraint);
-
-                        if (currConstraint == null)
-                        {
-                            currConstraint = nextConstraint;
-                        }
-                        else
-                        {
-                            currConstraint = context.MkAnd(currConstraint, nextConstraint);
-                        }
+                        currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
                     }
                 }
 
                 foreach (var nextConstraint in constraint.DirConstraints)
                 {
-                    if (currConstraint == null)
-                    {
-                        currConstraint = nextConstraint;
-                    }
-                    else
-                    {
-                        currConstraint = executer.Solver.Context.MkAnd(currConstraint, nextConstraint);
-                    }
+                    currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
                 }
 
                 if (topConstraint == null)

@@ -19,6 +19,7 @@
     using Z3Expr = Microsoft.Z3.Expr;
     using Z3BoolExpr = Microsoft.Z3.BoolExpr;
     using System.Numerics;
+    using System.Text.RegularExpressions;
 
     internal class SymExecuter
     {
@@ -111,6 +112,21 @@
         public Map<Term, Term> varToTypeMap =
             new Map<Term, Term>(Term.Compare);
 
+        private Set<Term> PositiveConstraintTerms = new Set<Term>(Term.Compare);
+        private Set<Term> NegativeConstraintTerms = new Set<Term>(Term.Compare);
+
+        public void AddPositiveConstraint(Term t)
+        {
+            SymElement e;
+            if (lfp.TryFindValue(t, out e))
+            {
+                if (e.HasConstraints())
+                {
+                    PositiveConstraintTerms.Add(t);
+                }
+            }
+        }
+
         public bool Exists(Term t)
         {
             return lfp.ContainsKey(t);
@@ -145,7 +161,7 @@
             SymElement e;
             if (lfp.TryFindValue(term, out e))
             {
-                if (e.HasSideConstraints())
+                if (e.HasConstraints())
                 {
                     return true;
                 }
@@ -161,7 +177,7 @@
                 SymElement e;
                 if (lfp.TryFindValue(term, out e))
                 {
-                    if (e.HasSideConstraints())
+                    if (e.HasConstraints())
                     {
                         return true;
                     }
@@ -176,62 +192,33 @@
             SymElement e;
             if (lfp.TryFindValue(t, out e))
             {
-                if (e.HasSideConstraints())
+                if (e.HasConstraints())
                 {
-                    Z3BoolExpr expr = null;
-                    foreach (var kvp in e.SideConstraints)
-                    {
-                        var constraint = kvp.Value;
-                        if (expr == null)
-                        {
-                            expr = constraint;
-                        }
-                        else
-                        {
-                            expr = Solver.Context.MkAnd(expr, constraint);
-                        }
-                    }
-
-                    return expr;
+                    return e.GetSideConstraints(this);
                 }
             }
 
             return Solver.Context.MkTrue(); // if no constraints
         }
 
-        public bool CopySideConstraints(Term t, bool negate = false)
+        public bool AddNegativeConstraint(Term t)
         {
-            bool hasConstraints = false;
             SymElement e;
             if (lfp.TryFindValue(t, out e))
             {
-                if (e.HasSideConstraints())
+                if (e.HasConstraints())
                 {
-                    hasConstraints = true;
-                    Z3BoolExpr expr = null;
-                    foreach (var kvp in e.SideConstraints)
-                    {
-                        var constraint = kvp.Value;
-                        if (expr == null)
-                        {
-                            expr = constraint;
-                        }
-                        else
-                        {
-                            expr = Solver.Context.MkAnd(expr, constraint);
-                        }
-                    }
-
-                    if (negate)
-                    {
-                        expr = Solver.Context.MkNot(expr);
-                    }
-
-                    PendConstraint(expr);
+                    NegativeConstraintTerms.Add(t);
+                    return true;
                 }
             }
 
-            return hasConstraints;
+            return false;
+        }
+
+        public bool GetSymbolicTerm(Term t, out SymElement e)
+        {
+            return lfp.TryFindValue(t, out e);
         }
 
         public void PendEqualityConstraint(Z3Expr expr1, Z3Expr expr2)
@@ -299,6 +286,7 @@
 
             InitializeExecuter();
 
+            // TODO: handle cardinality terms properly
             foreach (var kvp in cardTerms)
             {
                 var inequalities = kvp.Value.ToArray();
@@ -323,62 +311,92 @@
                         }
 
                         Z3BoolExpr boolExpr = Solver.Context.MkNot(Solver.Context.MkEq(firstEnc.Encoding, secondEnc.Encoding));
-                        firstEnc.ExtendSideConstraint(0, boolExpr, Solver.Context);
-                        Solver.Z3Solver.Add(boolExpr);
                     }
                 }
-
             }
 
             Execute();
-            var assumptions = new List<Z3Expr>();
-
+            
+            bool hasConforms = false;
             foreach (var elem in lfp)
             {
                 if (elem.Key.Symbol.PrintableName.EndsWith("conforms"))
                 {
-                    foreach (var currConstr in elem.Value.SideConstraints)
-                    {
-                        assumptions.Add(currConstr.Value);
-                        //Solver.Z3Solver.Assert(currConstr.Value);                            
-                    }
+                    hasConforms = true;
                 }
             }
 
-            var status = Solver.Z3Solver.Check(assumptions.ToArray());
-            //var status = Solver.Z3Solver.Check();
-            if (status == Z3.Status.SATISFIABLE)
+            if (hasConforms)
             {
-                var model = Solver.Z3Solver.Model;
-                foreach (var kvp in lfp)
+                var assumptions = new List<Z3Expr>();
+                Z3BoolExpr topLevelConstraint = null;
+                string pattern = @"conforms\d+$";
+                foreach (var elem in lfp)
                 {
-                    if (!kvp.Key.Symbol.PrintableName.StartsWith("~") &&
-                        Encoder.CanGetEncoding(kvp.Key))
+                    if (Regex.IsMatch(elem.Key.Symbol.PrintableName, pattern))
                     {
-                        if (!kvp.Value.SideConstraints.IsEmpty())
+                        SymElement symbolicConforms = elem.Value;
+                        var constraint = symbolicConforms.GetSideConstraints(this);
+                        if (constraint != null)
                         {
-                            var eval = model.Evaluate(kvp.Value.GetAllSideConstraints(Solver.Context));
-                            if (eval.BoolValue == Z3.Z3_lbool.Z3_L_TRUE)
+                            assumptions.Add(constraint);
+                        }
+                    }
+                }
+
+                var status = Solver.Z3Solver.Check(assumptions.ToArray());
+                if (status == Z3.Status.SATISFIABLE)
+                {
+                    var model = Solver.Z3Solver.Model;
+                    foreach (var kvp in lfp)
+                    {
+                        if (!kvp.Key.Symbol.PrintableName.StartsWith("~") &&
+                            Encoder.CanGetEncoding(kvp.Key))
+                        {
+                            if (kvp.Value.HasConstraints())
+                            {
+                                var eval = model.Evaluate(kvp.Value.GetSideConstraints(this));
+                                if (eval.BoolValue == Z3.Z3_lbool.Z3_L_TRUE)
+                                {
+                                    Console.WriteLine(GetModelInterpretation(kvp.Key, model));
+                                }
+                            }
+                            else
                             {
                                 Console.WriteLine(GetModelInterpretation(kvp.Key, model));
                             }
                         }
-                        else
-                        {
-                            Console.WriteLine(GetModelInterpretation(kvp.Key, model));
-                        }
                     }
                 }
-            }
-            else if (status == Z3.Status.UNSATISFIABLE)
-            {
-                var core = Solver.Z3Solver.UnsatCore;
-                Console.WriteLine("Model not solvable. Unsat core below.");
-                foreach (var expr in core)
+                else if (status == Z3.Status.UNSATISFIABLE)
                 {
-                    Console.WriteLine("Expr: " + expr);
+                    var core = Solver.Z3Solver.UnsatCore;
+                    Console.WriteLine("Model not solvable. Unsat core below.");
+                    foreach (var expr in core)
+                    {
+                        Console.WriteLine("Expr: " + expr);
+                        Console.WriteLine("Terms: ");
+                        foreach (var item in lfp)
+                        {
+                            Term t = item.Key;
+                            SymElement e = item.Value;
+
+                            if (e.ContainsConstraint(expr))
+                            {
+                                if (!(t.Symbol is UserCnstSymb &&
+                                      ((UserCnstSymb)t.Symbol).IsAutoGen))
+                                {
+                                    Console.WriteLine("  " + item.Key.ToString());
+                                }
+                            }
+                        }
+                    }
+
                 }
-                
+            }
+            else
+            {
+                Console.WriteLine("Model not solvable because conforms could not be derived.");
             }
         }
 
@@ -387,7 +405,6 @@
             Activation act;
             var pendingAct = new Set<Activation>(Activation.Compare);
             var pendingFacts = new Map<Term, Set<Derivation>>(Term.Compare);
-            var constraintTerms = new Set<Term>(Term.Compare);
             LinkedList<CoreRule> untrigList;
             uint maxDepth = Solver.RecursionBound;
 
@@ -415,7 +432,10 @@
                     act = pendingAct.GetSomeElement();
                     pendingAct.Remove(act);
                     int ruleId = act.Rule.RuleId;
-                    act.Rule.Execute(act.Binding1.Term, act.FindNumber, this, KeepDerivations, pendingFacts, constraintTerms);
+                    PositiveConstraintTerms.Clear();
+                    NegativeConstraintTerms.Clear();
+
+                    act.Rule.Execute(act.Binding1.Term, act.FindNumber, this, KeepDerivations, pendingFacts);
 
                     // Check for cycles and cut if execution count exceeds max depth
                     if (ruleCycles.ContainsKey(ruleId))
@@ -429,11 +449,6 @@
 
                     foreach (var kv in pendingFacts)
                     {
-                        foreach (var t in constraintTerms)
-                        {
-                            CopySideConstraints(t);
-                        }
-
                         if (copyConstraints)
                         {
                             IndexFact(ExtendLFP(kv.Key), pendingAct, i);
@@ -446,7 +461,6 @@
 
                     pendingConstraints.Clear();
                     pendingFacts.Clear();
-                    constraintTerms.Clear();
                 }
             }
         }
@@ -586,16 +600,6 @@
             var optRules = Rules.Optimize();
             ruleCycles = Rules.GetCycles(optRules);
 
-            /*foreach (var rule in optRules.OrderBy(x => x.Stratum))
-            {
-                System.Console.WriteLine("Stratum = {0}, Rule id = {1}, head = {2}, find = {3}",
-                    rule.Stratum,
-                    rule.RuleId,
-                    rule.Head.Debug_GetSmallTermString(),
-                    rule.Find1.Pattern == null ? "" : rule.Find1.Pattern.Debug_GetSmallTermString()
-                    );
-            }*/
-
             foreach (var r in optRules)
             {
                 foreach (var s in r.ComprehensionSymbols)
@@ -644,42 +648,32 @@
         private SymElement ExtendLFP(Term t)
         {
             SymElement e;
-            if (lfp.TryFindValue(t, out e))
+            if (!lfp.TryFindValue(t, out e))
             {
-                if (pendingConstraints.Any())
+                Term normalized = t;
+                Z3Expr enc = null;
+                if (Encoder.CanGetEncoding(t))
                 {
-                    e.DisjoinSideConstraints(0, pendingConstraints.ToArray(), Solver.Context);
+                    enc = Encoder.GetTerm(t, out normalized, this);
                 }
-                return e;
+
+                e = new SymElement(normalized, enc, Solver.Context);
+                lfp.Add(normalized, e);
             }
 
-            Term normalized = t;
-            Z3Expr enc = null;
-            if (Encoder.CanGetEncoding(t))
+            if (!pendingConstraints.IsEmpty() ||
+                !PositiveConstraintTerms.IsEmpty() ||
+                !NegativeConstraintTerms.IsEmpty())
             {
-                enc = Encoder.GetTerm(t, out normalized, this);
+                HashSet<Z3BoolExpr> a = new HashSet<Z3BoolExpr>(pendingConstraints);
+                Set<Term> b = new Set<Term>(Term.Compare, PositiveConstraintTerms);
+                Set<Term> c = new Set<Term>(Term.Compare, NegativeConstraintTerms);
 
-                if (lfp.TryFindValue(normalized, out e))
-                {
-                    if (pendingConstraints.Any())
-                    {
-                        e.DisjoinSideConstraints(0, pendingConstraints.ToArray(), Solver.Context);
-                    }
-                    return e;
-                }
+                e.AddConstraintData(a, b, c);
             }
-
-            //// Neither t nor a normalized version of t has been seen.
-            e = new SymElement(normalized, enc, Solver.Context);
-            lfp.Add(normalized, e);
-            if (normalized != t)
+            else
             {
-                lfp.Add(t, e);
-            }
-
-            foreach (var c in pendingConstraints)
-            {
-                e.ExtendSideConstraint(0, c, Solver.Context);
+                e.SetDirectlyProvable();
             }
 
             return e;

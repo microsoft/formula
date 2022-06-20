@@ -228,7 +228,14 @@
 
         private void AddRecursionConstraint(int ruleId)
         {
+            if (pendingConstraints.IsEmpty())
+            {
+                return;
+            }
+
             Z3BoolExpr expr = null;
+            Z3BoolExpr previousExpr;
+
             foreach (var constraint in pendingConstraints)
             {
                 if (expr == null)
@@ -240,9 +247,16 @@
                     expr = Solver.Context.MkAnd(expr, constraint);
                 }
             }
-
             expr = Solver.Context.MkNot(expr);
-            recursionConstraints.Add(ruleId, expr);
+            
+            if (recursionConstraints.TryGetValue(ruleId, out previousExpr))
+            {
+                recursionConstraints[ruleId] = Solver.Context.MkAnd(previousExpr, expr);
+            }
+            else
+            {
+                recursionConstraints.Add(ruleId, expr);
+            }
         }
 
         public SymExecuter(Solver solver)
@@ -344,6 +358,11 @@
                     }
                 }
 
+                foreach (var kvp in recursionConstraints)
+                {
+                    assumptions.Add(kvp.Value);
+                }
+
                 var status = Solver.Z3Solver.Check(assumptions.ToArray());
                 if (status == Z3.Status.SATISFIABLE)
                 {
@@ -371,7 +390,7 @@
                 else if (status == Z3.Status.UNSATISFIABLE)
                 {
                     var core = Solver.Z3Solver.UnsatCore;
-                    Console.WriteLine("Model not solvable. Unsat core below.");
+                    Console.WriteLine("Model not solvable. Unsat core and related terms below.");
                     foreach (var expr in core)
                     {
                         Console.WriteLine("Expr: " + expr);

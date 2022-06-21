@@ -35,6 +35,8 @@
         private static readonly LiftedBool[] BinSecCompr = new LiftedBool[] { LiftedBool.False, LiftedBool.True };
         private static readonly LiftedBool[] TerNoCompr = new LiftedBool[] { LiftedBool.False, LiftedBool.False, LiftedBool.False };
         private static readonly LiftedBool[] TerTerCompr = new LiftedBool[] { LiftedBool.False, LiftedBool.False, LiftedBool.True };
+        private static readonly LiftedBool[] FourNoCompr = new LiftedBool[] { LiftedBool.False, LiftedBool.False, LiftedBool.False, LiftedBool.False };
+        private static readonly LiftedBool[] FiveNoCompr = new LiftedBool[] { LiftedBool.False, LiftedBool.False, LiftedBool.False, LiftedBool.False, LiftedBool.False };
 
         /// <summary>
         /// Validates that the syntactic application of an operator satisfies some basic rules.
@@ -368,6 +370,30 @@
             return ValidateArity(ft, "lstReverse", BinNoCompr, flags);
         }
 
+        internal static bool ValidateUse_LstFind(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstFind);
+            return ValidateArity(ft, "lstFind", FourNoCompr, flags);
+        }
+
+        internal static bool ValidateUse_LstFindAll(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstFindAll);
+            return ValidateArity(ft, "lstFindAll", FiveNoCompr, flags);
+        }
+
+        internal static bool ValidateUse_LstFindAllNot(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstFindAllNot);
+            return ValidateArity(ft, "lstFindAllNot", FiveNoCompr, flags);
+        }
+
         internal static bool ValidateUse_RflIsMember(Node n, List<Flag> flags)
         {
             Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
@@ -607,6 +633,88 @@
         }
 
         internal static Term Evaluator_LstReverse(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            Term listConSort;
+            if (!ToType(values[0].Binding, out listConSort))
+            {
+                return null;
+            }
+
+            var listSymbol = ((UserSortSymb)listConSort.Symbol).DataSymbol;
+            var list = values[1].Binding;
+            var revQueue = new Queue<Term>();
+            while (list.Symbol == listSymbol)
+            {
+                revQueue.Enqueue(list.Args[0]);
+                list = list.Args[1];
+            }
+
+            bool wasAdded;
+            //// Now reverse the list keeping the same list terminator (at the top of the stack).
+            var revList = list;
+            while (revQueue.Count > 0)
+            {
+                revList = facts.TermIndex.MkApply(listSymbol, new Term[] { revQueue.Dequeue(), revList }, out wasAdded); 
+            }
+
+            return revList;
+        }
+
+        internal static Term Evaluator_LstFind(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 4);
+            Term listConSort;
+            if (!ToType(values[0].Binding, out listConSort))
+            {
+                return null;
+            }
+
+            var listSymbol = ((UserSortSymb)listConSort.Symbol).DataSymbol;
+            var list = values[1].Binding;
+            var searchValue = values[2].Binding;
+            while (list.Symbol == listSymbol)
+            {
+                if (Unifier.IsUnifiable(list.Args[0], searchValue))
+                {
+                    return list.Args[0];
+                }
+                list = list.Args[1];
+            }
+
+            return values[3].Binding;
+        }
+
+        internal static Term Evaluator_LstFindAll(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            Term listConSort;
+            if (!ToType(values[0].Binding, out listConSort))
+            {
+                return null;
+            }
+
+            var listSymbol = ((UserSortSymb)listConSort.Symbol).DataSymbol;
+            var list = values[1].Binding;
+            var revQueue = new Queue<Term>();
+            while (list.Symbol == listSymbol)
+            {
+                revQueue.Enqueue(list.Args[0]);
+                list = list.Args[1];
+            }
+
+            bool wasAdded;
+            //// Now reverse the list keeping the same list terminator (at the top of the stack).
+            var revList = list;
+            while (revQueue.Count > 0)
+            {
+                revList = facts.TermIndex.MkApply(listSymbol, new Term[] { revQueue.Dequeue(), revList }, out wasAdded); 
+            }
+
+            return revList;
+        }
+
+        internal static Term Evaluator_LstFindAllNot(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
             Term listConSort;
@@ -2887,6 +2995,16 @@
         public static Func<TermIndex, Term[], Term[]> TypeApprox_LstReverse_Down
         {
             get { return LstReverseDownwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstFind_Up
+        {
+            get { return LstFindUpwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstFind_Down
+        {
+            get { return LstFindDownwardApprox.Instance.Approximate; }
         }
 
         public static Func<TermIndex, Term[], Term[]> TypeApprox_RflIsMember_Up
@@ -7830,6 +7948,75 @@
                 }
 
                 return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType };
+            }
+        }
+
+        private class LstFindUpwardApprox : GaloisApproxTable
+        {
+            private static readonly LstFindUpwardApprox theInstance = new LstFindUpwardApprox();
+            public static LstFindUpwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstFindUpwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 4);
+                Set<Term> types;
+                if (!GetTypeConstantTypes(args[0], index, out types, true))
+                {
+                    return null;
+                }
+
+                if (types.Count == 1 && args[1].Groundness == Groundness.Ground)
+                {
+                    var listSymb = ((UserSortSymb)types.GetSomeElement().Symbol).DataSymbol;
+                    var list = args[1];
+                    while (list.Symbol == listSymb)
+                    {
+                        if (Unifier.IsUnifiable(list.Args[0], args[2]))
+                        {
+                            return new Term[] { list.Args[0] };
+                        }
+                        list = list.Args[1];
+                    }
+
+                    return new Term[] {args[3]};
+
+                }
+                else
+                {
+                    return new Term[] {index.MkDataWidenedType(args[3])};
+                }
+            }
+        }
+
+        private class LstFindDownwardApprox : GaloisApproxTable
+        {
+            private static readonly LstFindDownwardApprox theInstance = new LstFindDownwardApprox();
+            public static LstFindDownwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstFindDownwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 1);
+                if (index.ListTypeConstantsType == null)
+                {
+                    //// Then just return some value, which will be filtered by upward approx.
+                    return new Term[] { index.FalseValue, index.CanonicalAnyType, index.CanonicalAnyType, index.CanonicalAnyType };
+                }
+
+                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType, index.CanonicalAnyType, index.CanonicalAnyType };
             }
         }
 

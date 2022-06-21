@@ -2785,6 +2785,14 @@
                 OpLibrary.Evaluator_LstReverse));
 
             AddBaseOp(new BaseOpSymb(
+                OpKind.LstFind,
+                4,
+                OpLibrary.ValidateUse_LstFind,
+                OpLibrary.TypeApprox_LstFind_Up,
+                OpLibrary.TypeApprox_LstFind_Down,
+                OpLibrary.Evaluator_LstFind));
+
+            AddBaseOp(new BaseOpSymb(
                 OpKind.RflIsMember,
                 2,
                 OpLibrary.ValidateUse_RflIsMember,

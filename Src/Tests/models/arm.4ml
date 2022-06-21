@@ -207,7 +207,7 @@ model FactTest of ARM
 {
     MachineState(0, 0, CPSR(FALSE,FALSE,FALSE,FALSE), Registers(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)).
     
-    Mov(0, Immediate(5), 0).
+    Mov(0, Immediate(3), 0).
     BL(1, 3).
     Halt(2).
 

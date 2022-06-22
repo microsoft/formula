@@ -2791,6 +2791,22 @@
                 OpLibrary.TypeApprox_LstFind_Up,
                 OpLibrary.TypeApprox_LstFind_Down,
                 OpLibrary.Evaluator_LstFind));
+            
+            AddBaseOp(new BaseOpSymb(
+                OpKind.LstFindAll,
+                4,
+                OpLibrary.ValidateUse_LstFindAll,
+                OpLibrary.TypeApprox_LstFindAll_Up,
+                OpLibrary.TypeApprox_LstFindAll_Down,
+                OpLibrary.Evaluator_LstFindAll));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.LstFindAllNot,
+                4,
+                OpLibrary.ValidateUse_LstFindAllNot,
+                OpLibrary.TypeApprox_LstFindAllNot_Up,
+                OpLibrary.TypeApprox_LstFindAllNot_Down,
+                OpLibrary.Evaluator_LstFindAllNot));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.RflIsMember,

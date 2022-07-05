@@ -857,16 +857,6 @@
                         appType = upApprox[0];
                     }
                 }
-                else if (symb.Kind == SymbolKind.ConSymb)
-                {
-                    Term[] argTypes = new Term[targArr.Length];
-                    for (int i = 0; i < argTypes.Length; i++)
-                    {
-                        argTypes[i] = Index.GetCanonicalTerm(((ConSymb)symb).SortSymbol.DataSymbol, i);
-                    }
-
-                    appType = Index.MkApply(symb, argTypes, out wasAdded);
-                }
                 else
                 {
                     appType = Index.MkApply(symb, targArr, out wasAdded);

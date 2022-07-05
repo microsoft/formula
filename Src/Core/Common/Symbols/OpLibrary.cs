@@ -383,7 +383,7 @@
             Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
             var ft = (FuncTerm)n;
             Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstFindAll);
-            return ValidateArity(ft, "lstFindAll", FiveNoCompr, flags);
+            return ValidateArity(ft, "lstFindAll", TerNoCompr, flags);
         }
 
         internal static bool ValidateUse_LstFindAllNot(Node n, List<Flag> flags)
@@ -391,7 +391,7 @@
             Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
             var ft = (FuncTerm)n;
             Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstFindAllNot);
-            return ValidateArity(ft, "lstFindAllNot", FiveNoCompr, flags);
+            return ValidateArity(ft, "lstFindAllNot", TerNoCompr, flags);
         }
 
         internal static bool ValidateUse_RflIsMember(Node n, List<Flag> flags)
@@ -687,7 +687,7 @@
 
         internal static Term Evaluator_LstFindAll(Executer facts, Bindable[] values)
         {
-            Contract.Requires(values.Length == 4);
+            Contract.Requires(values.Length == 3);
             Term listConSort;
             if (!ToType(values[0].Binding, out listConSort))
             {
@@ -719,7 +719,7 @@
 
         internal static Term Evaluator_LstFindAllNot(Executer facts, Bindable[] values)
         {
-            Contract.Requires(values.Length == 4);
+            Contract.Requires(values.Length == 3);
             Term listConSort;
             if (!ToType(values[0].Binding, out listConSort))
             {
@@ -8060,7 +8060,7 @@
 
             private static Term[] Approx(TermIndex index, Term[] args)
             {
-                Contract.Requires(index != null && args != null && args.Length == 4);
+                Contract.Requires(index != null && args != null && args.Length == 3);
                 Set<Term> types;
                 if (!GetTypeConstantTypes(args[0], index, out types, true))
                 {
@@ -8115,10 +8115,10 @@
                 if (index.ListTypeConstantsType == null)
                 {
                     //// Then just return some value, which will be filtered by upward approx.
-                    return new Term[] { index.FalseValue, index.CanonicalAnyType, index.CanonicalAnyType, index.CanonicalAnyType };
+                    return new Term[] { index.FalseValue, index.CanonicalAnyType, index.CanonicalAnyType };
                 }
 
-                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType, index.CanonicalAnyType, index.CanonicalAnyType };
+                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType, index.CanonicalAnyType };
             }
         }
 
@@ -8136,7 +8136,7 @@
 
             private static Term[] Approx(TermIndex index, Term[] args)
             {
-                Contract.Requires(index != null && args != null && args.Length == 4);
+                Contract.Requires(index != null && args != null && args.Length == 3);
                 Set<Term> types;
                 if (!GetTypeConstantTypes(args[0], index, out types, true))
                 {
@@ -8191,10 +8191,10 @@
                 if (index.ListTypeConstantsType == null)
                 {
                     //// Then just return some value, which will be filtered by upward approx.
-                    return new Term[] { index.FalseValue, index.CanonicalAnyType, index.CanonicalAnyType, index.CanonicalAnyType };
+                    return new Term[] { index.FalseValue, index.CanonicalAnyType, index.CanonicalAnyType };
                 }
 
-                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType, index.CanonicalAnyType, index.CanonicalAnyType };
+                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType, index.CanonicalAnyType };
             }
         }
 

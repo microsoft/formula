@@ -2794,7 +2794,7 @@
             
             AddBaseOp(new BaseOpSymb(
                 OpKind.LstFindAll,
-                4,
+                3,
                 OpLibrary.ValidateUse_LstFindAll,
                 OpLibrary.TypeApprox_LstFindAll_Up,
                 OpLibrary.TypeApprox_LstFindAll_Down,
@@ -2802,7 +2802,7 @@
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.LstFindAllNot,
-                4,
+                3,
                 OpLibrary.ValidateUse_LstFindAllNot,
                 OpLibrary.TypeApprox_LstFindAllNot_Up,
                 OpLibrary.TypeApprox_LstFindAllNot_Down,

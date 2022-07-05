@@ -115,6 +115,38 @@
         private Set<Term> PositiveConstraintTerms = new Set<Term>(Term.Compare);
         private Set<Term> NegativeConstraintTerms = new Set<Term>(Term.Compare);
 
+        private Map<Term, List<Term>> symCountMap =
+            new Map<Term, List<Term>>(Term.Compare);
+
+        public int GetSymbolicCountIndex(Term t)
+        {
+            List<Term> terms;
+            if (!symCountMap.TryFindValue(t, out terms))
+            {
+                terms = new List<Term>();
+                symCountMap.Add(t, terms);
+            }
+
+            return terms.Count;
+        }
+
+        public Term GetSymbolicCountTerm(Term t, int index)
+        {
+            return symCountMap[t].ElementAt(index);
+        }
+
+        public void AddSymbolicCountTerm(Term x, Term y)
+        {
+            List<Term> terms;
+            if (!symCountMap.TryFindValue(x, out terms))
+            {
+                terms = new List<Term>();
+                symCountMap.Add(x, terms);
+            }
+
+            terms.Add(y);
+        }
+
         public void AddPositiveConstraint(Term t)
         {
             SymElement e;
@@ -470,7 +502,10 @@
                     {
                         if (copyConstraints)
                         {
-                            IndexFact(ExtendLFP(kv.Key), pendingAct, i);
+                            if (IsConstraintSatisfiable(kv.Key))
+                            {
+                                IndexFact(ExtendLFP(kv.Key), pendingAct, i);
+                            }
                         }
                         else
                         {
@@ -482,6 +517,78 @@
                     pendingFacts.Clear();
                 }
             }
+        }
+
+        private Z3BoolExpr CreateConstraint(Z3BoolExpr currConstraint, Z3BoolExpr nextConstraint)
+        {
+            if (currConstraint == null)
+            {
+                return nextConstraint;
+            }
+            else
+            {
+                return Solver.Context.MkAnd(currConstraint, nextConstraint);
+            }
+        }
+
+        private bool ShouldCheckConstraints(Term t)
+        {
+            bool shouldCheckConstraints = true;
+            string pattern = @"conforms\d+$";
+
+            if (t.Symbol.PrintableName.EndsWith("conforms") ||
+                Regex.IsMatch(t.Symbol.PrintableName, pattern))
+            {
+                shouldCheckConstraints = false;
+            }
+
+            if (pendingConstraints.IsEmpty() &&
+                PositiveConstraintTerms.IsEmpty() &&
+                NegativeConstraintTerms.IsEmpty())
+            {
+                shouldCheckConstraints = false;
+            }
+
+            return shouldCheckConstraints;
+        }
+
+        public bool IsConstraintSatisfiable(Term term)
+        {
+            if (!ShouldCheckConstraints(term))
+            {
+                return true;
+            }
+
+            Z3BoolExpr currConstraint = null;
+
+            foreach (Term t in PositiveConstraintTerms)
+            {
+                var e = lfp[t];
+                var nextConstraint = e.GetSideConstraints(this);
+                currConstraint = CreateConstraint(currConstraint, nextConstraint);
+            }
+
+            foreach (Term t in NegativeConstraintTerms)
+            {
+                var e = lfp[t];
+                var nextConstraint = e.GetSideConstraints(this);
+                nextConstraint = Solver.Context.MkNot(nextConstraint);
+                currConstraint = CreateConstraint(currConstraint, nextConstraint);
+            }
+
+            foreach (var nextConstraint in pendingConstraints)
+            {
+                currConstraint = CreateConstraint(currConstraint, nextConstraint);
+            }
+
+            var status = Solver.Z3Solver.Check(currConstraint);
+            if (status == Z3.Status.UNSATISFIABLE)
+            {
+                System.Console.WriteLine("Unsat constraint: \n" + currConstraint + "\n\n");
+                return false;
+            }
+
+            return true;
         }
 
         public string GetModelInterpretation(Term t, Z3.Model model)

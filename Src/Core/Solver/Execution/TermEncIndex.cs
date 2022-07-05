@@ -218,12 +218,14 @@
                                     Solver.TypeEmbedder.Context.MkEq(ch.ElementAt(0), ch.ElementAt(1)));
                                 return encp;
                             case OpKind.SymCount:
-                                Z3ArithExpr[] exprs = new Z3ArithExpr[x.Args.Length];
+                                Z3ArithExpr[] exprs = new Z3ArithExpr[x.Args.Length - 1];
                                 exprs[0] = (Z3ArithExpr)ch.ElementAt(0);
-                                for (int i = 1; i < x.Args.Count(); i++)
+                                int index = ((int)((Rational)((BaseCnstSymb)x.Args[1].Symbol).Raw).Numerator);
+                                Term comprTerms = facts.GetSymbolicCountTerm(x.Args[2], index);
+                                for (int j = 2; j < comprTerms.Args.Count(); j++)
                                 {
-                                    Z3BoolExpr boolExpr = facts.GetSideConstraints(x.Args[i]);
-                                    exprs[i] = (Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr,
+                                    Z3BoolExpr boolExpr = facts.GetSideConstraints(comprTerms.Args[j]);
+                                    exprs[j - 1] = (Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr,
                                                                                      facts.Solver.Context.MkInt(1),
                                                                                      facts.Solver.Context.MkInt(0));
                                 }

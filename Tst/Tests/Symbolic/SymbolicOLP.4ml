@@ -15,6 +15,7 @@ domain SymbolicOLP
 }
 
 partial model pm of SymbolicOLP
+[solver_RecursionBound = 200]
 {
   input(a, b, c, d).
 }

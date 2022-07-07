@@ -1189,6 +1189,7 @@
             Register(OpKind.LstFind, "lstFind", OpStyleKind.Apply);
             Register(OpKind.LstFindAll, "lstFindAll", OpStyleKind.Apply);
             Register(OpKind.LstFindAllNot, "lstFindAllNot", OpStyleKind.Apply);
+            Register(OpKind.LstGetAt, "lstGetAt", OpStyleKind.Apply);
 
             Register(OpKind.RflIsMember, "rflIsMember", OpStyleKind.Apply);
             Register(OpKind.RflIsSubtype, "rflIsSubtype", OpStyleKind.Apply);

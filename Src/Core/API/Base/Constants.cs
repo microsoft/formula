@@ -86,6 +86,7 @@
         LstFind,
         LstFindAll,
         LstFindAllNot,
+        LstGetAt,
         Max,
         MaxAll,
         Min,

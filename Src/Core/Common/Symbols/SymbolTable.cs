@@ -2809,6 +2809,14 @@
                 OpLibrary.Evaluator_LstFindAllNot));
 
             AddBaseOp(new BaseOpSymb(
+                OpKind.LstGetAt,
+                3,
+                OpLibrary.ValidateUse_LstGetAt,
+                OpLibrary.TypeApprox_LstGetAt_Up,
+                OpLibrary.TypeApprox_LstGetAt_Down,
+                OpLibrary.Evaluator_LstGetAt));
+
+            AddBaseOp(new BaseOpSymb(
                 OpKind.RflIsMember,
                 2,
                 OpLibrary.ValidateUse_RflIsMember,

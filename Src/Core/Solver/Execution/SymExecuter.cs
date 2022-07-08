@@ -115,6 +115,38 @@
         private Set<Term> PositiveConstraintTerms = new Set<Term>(Term.Compare);
         private Set<Term> NegativeConstraintTerms = new Set<Term>(Term.Compare);
 
+        private Map<Term, List<Term>> symCountMap =
+            new Map<Term, List<Term>>(Term.Compare);
+
+        public int GetSymbolicCountIndex(Term t)
+        {
+            List<Term> terms;
+            if (!symCountMap.TryFindValue(t, out terms))
+            {
+                terms = new List<Term>();
+                symCountMap.Add(t, terms);
+            }
+
+            return terms.Count;
+        }
+
+        public Term GetSymbolicCountTerm(Term t, int index)
+        {
+            return symCountMap[t].ElementAt(index);
+        }
+
+        public void AddSymbolicCountTerm(Term x, Term y)
+        {
+            List<Term> terms;
+            if (!symCountMap.TryFindValue(x, out terms))
+            {
+                terms = new List<Term>();
+                symCountMap.Add(x, terms);
+            }
+
+            terms.Add(y);
+        }
+
         public void AddPositiveConstraint(Term t)
         {
             SymElement e;
@@ -221,6 +253,14 @@
             return lfp.TryFindValue(t, out e);
         }
 
+        public void PendEqualityConstraint(Term t1, Term t2)
+        {
+            Term normalized;
+            var expr1 = this.Encoder.GetTerm(t1, out normalized);
+            var expr2 = this.Encoder.GetTerm(t2, out normalized);
+            this.PendEqualityConstraint(expr1, expr2);
+        }
+
         public void PendEqualityConstraint(Z3Expr expr1, Z3Expr expr2)
         {
             pendingConstraints.Add(Solver.Context.MkEq(expr1, expr2));
@@ -257,6 +297,11 @@
             {
                 recursionConstraints.Add(ruleId, expr);
             }
+        }
+
+        public void PrintRecursionConflict(Z3BoolExpr expr)
+        {
+            Console.WriteLine("Conflict detected in recursion constraint: " + expr.ToString() + "\n\n");
         }
 
         public SymExecuter(Solver solver)
@@ -393,19 +438,27 @@
                     Console.WriteLine("Model not solvable. Unsat core and related terms below.");
                     foreach (var expr in core)
                     {
-                        Console.WriteLine("Expr: " + expr);
-                        Console.WriteLine("Terms: ");
-                        foreach (var item in lfp)
+                        if (recursionConstraints.ContainsValue(expr))
                         {
-                            Term t = item.Key;
-                            SymElement e = item.Value;
+                            PrintRecursionConflict(expr);
+                        }
+                        else
+                        {
 
-                            if (e.ContainsConstraint(expr))
+                            Console.WriteLine("Expr: " + expr);
+                            Console.WriteLine("Terms: ");
+                            foreach (var item in lfp)
                             {
-                                if (!(t.Symbol is UserCnstSymb &&
-                                      ((UserCnstSymb)t.Symbol).IsAutoGen))
+                                Term t = item.Key;
+                                SymElement e = item.Value;
+
+                                if (e.ContainsConstraint(expr))
                                 {
-                                    Console.WriteLine("  " + item.Key.ToString());
+                                    if (!(t.Symbol is UserCnstSymb &&
+                                          ((UserCnstSymb)t.Symbol).IsAutoGen))
+                                    {
+                                        Console.WriteLine("  " + item.Key.ToString());
+                                    }
                                 }
                             }
                         }
@@ -415,7 +468,7 @@
             }
             else
             {
-                Console.WriteLine("Model not solvable because conforms could not be derived.");
+                Console.WriteLine("Model not solvable because conforms term could not be derived.");
             }
         }
 
@@ -470,7 +523,10 @@
                     {
                         if (copyConstraints)
                         {
-                            IndexFact(ExtendLFP(kv.Key), pendingAct, i);
+                            if (IsConstraintSatisfiable(kv.Key))
+                            {
+                                IndexFact(ExtendLFP(kv.Key), pendingAct, i);
+                            }
                         }
                         else
                         {
@@ -482,6 +538,78 @@
                     pendingFacts.Clear();
                 }
             }
+        }
+
+        private Z3BoolExpr CreateConstraint(Z3BoolExpr currConstraint, Z3BoolExpr nextConstraint)
+        {
+            if (currConstraint == null)
+            {
+                return nextConstraint;
+            }
+            else
+            {
+                return Solver.Context.MkAnd(currConstraint, nextConstraint);
+            }
+        }
+
+        private bool ShouldCheckConstraints(Term t)
+        {
+            bool shouldCheckConstraints = true;
+            string pattern = @"conforms\d+$";
+
+            if (t.Symbol.PrintableName.EndsWith("conforms") ||
+                Regex.IsMatch(t.Symbol.PrintableName, pattern))
+            {
+                shouldCheckConstraints = false;
+            }
+
+            if (pendingConstraints.IsEmpty() &&
+                PositiveConstraintTerms.IsEmpty() &&
+                NegativeConstraintTerms.IsEmpty())
+            {
+                shouldCheckConstraints = false;
+            }
+
+            return shouldCheckConstraints;
+        }
+
+        public bool IsConstraintSatisfiable(Term term)
+        {
+            if (!ShouldCheckConstraints(term))
+            {
+                return true;
+            }
+
+            Z3BoolExpr currConstraint = null;
+
+            foreach (Term t in PositiveConstraintTerms)
+            {
+                var e = lfp[t];
+                var nextConstraint = e.GetSideConstraints(this);
+                currConstraint = CreateConstraint(currConstraint, nextConstraint);
+            }
+
+            foreach (Term t in NegativeConstraintTerms)
+            {
+                var e = lfp[t];
+                var nextConstraint = e.GetSideConstraints(this);
+                nextConstraint = Solver.Context.MkNot(nextConstraint);
+                currConstraint = CreateConstraint(currConstraint, nextConstraint);
+            }
+
+            foreach (var nextConstraint in pendingConstraints)
+            {
+                currConstraint = CreateConstraint(currConstraint, nextConstraint);
+            }
+
+            var status = Solver.Z3Solver.Check(currConstraint);
+            if (status == Z3.Status.UNSATISFIABLE)
+            {
+                System.Console.WriteLine("Unsat constraint: \n" + currConstraint + "\n\n");
+                return false;
+            }
+
+            return true;
         }
 
         public string GetModelInterpretation(Term t, Z3.Model model)
@@ -1070,13 +1198,10 @@
 
                 if (!constants.IsEmpty())
                 {
-                    Term normalized;
                     Term constant = constants.First();
                     foreach (var rhs in rhsPartVars)
                     {
-                        var expr1 = this.Encoder.GetTerm(rhs, out normalized);
-                        var expr2 = this.Encoder.GetTerm(constant, out normalized);
-                        this.PendEqualityConstraint(expr1, expr2);
+                        this.PendEqualityConstraint(rhs, constant);
                     }
                 }
 
@@ -1154,15 +1279,47 @@
 
             public IEnumerable<Term> Query(Term[] projection)
             {
-                Set<SymElement> subindex;
-                if (!facts.TryFindValue(projection, out subindex))
+                if (projection.IsEmpty())
                 {
-                    yield break;
-                }
+                    Set<SymElement> subindex;
+                    if (!facts.TryFindValue(projection, out subindex))
+                    {
+                        yield break;
+                    }
 
-                foreach (var t in subindex)
+                    foreach (var t in subindex)
+                    {
+                        yield return t.Term;
+                    }
+                }
+                else
                 {
-                    yield return t.Term;
+                    Set<SymElement> allFacts = new Set<SymElement>(SymElement.Compare);
+                    foreach (var kvp in facts)
+                    {
+                        bool isUnifiable = true;
+                        for (int i = 0; i < kvp.Key.Length; i++)
+                        {
+                            if (!Unifier.IsUnifiable(projection[i], kvp.Key[i]))
+                            {
+                                isUnifiable = false;
+                                break;
+                            }
+                        }
+
+                        if (isUnifiable)
+                        {
+                            foreach (SymElement e in kvp.Value)
+                            {
+                                allFacts.Add(e);
+                            }
+                        }
+                    }
+
+                    foreach (var t in allFacts)
+                    {
+                        yield return t.Term;
+                    }
                 }
             }
 

@@ -1826,7 +1826,16 @@
             var varNode = nodes[varTerm];
             if (varNode.Binding != null)
             {
-                if (varNode.TryBind(binding, bindingLevel))
+                if (varNode.Binding.Symbol.IsVariable && binding.Symbol.IsVariable)
+                {
+                    if (varNode.Binding != binding)
+                    {
+                        facts.PendEqualityConstraint(varNode.Binding, binding);
+                    }
+
+                    return true;
+                }
+                else if (varNode.TryBind(binding, bindingLevel))
                 {
                     return true;
                 }

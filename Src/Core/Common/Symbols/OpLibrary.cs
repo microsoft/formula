@@ -1421,12 +1421,15 @@
             if (facts.HasSideConstraints(res))
             {
                 int baseCount = 0;
-                List<Term> terms = new List<Term>();
+                List<Term> realTerms = new List<Term>();
+                List<Term> fakeTerms = new List<Term>();
+
                 foreach (var term in res)
                 {
                     if (facts.HasSideConstraint(term))
                     {
-                        terms.Add(term.Args[0]); // it's a comprehension, so extract Args[0]
+                        realTerms.Add(term.Args[0]); // it's a comprehension, so extract Args[0]
+                        fakeTerms.Add(term);
                     }
                     else
                     {
@@ -1434,18 +1437,31 @@
                     }
                 }
 
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymCount);
                 Term baseTerm = facts.Index.MkCnst(new Rational(baseCount), out wasAdded);
-                Term[] allTerms = new Term[terms.Count + 1];
-                allTerms[0] = baseTerm;
-                int i = 1;
-                foreach (var term in terms)
+
+                int symCount= facts.GetSymbolicCountIndex(realTerms[0]);
+                Term symCountTerm = facts.Index.MkCnst(new Rational(symCount), out wasAdded);
+
+                Term[] allRealTerms = new Term[realTerms.Count + 2];
+                Term[] allFakeTerms = new Term[fakeTerms.Count + 2];
+
+                allRealTerms[0] = baseTerm; // use the same base count for both
+                allFakeTerms[0] = baseTerm;
+
+                allRealTerms[1] = symCountTerm; // use the same symbolic count for both
+                allFakeTerms[1] = symCountTerm;
+
+                for (int i = 0; i < realTerms.Count; i++)
                 {
-                    allTerms[i] = term;
-                    ++i;
+                    allRealTerms[i + 2] = realTerms.ElementAt(i); // first two indices are reserved
+                    allFakeTerms[i + 2] = fakeTerms.ElementAt(i);
                 }
 
-                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymCount);
-                return facts.Index.MkApply(bos, allTerms, out wasAdded);
+                Term realSymCount = facts.Index.MkApply(bos, allRealTerms, out wasAdded);
+                Term fakeSymCount = facts.Index.MkApply(bos, allFakeTerms, out wasAdded);
+                facts.AddSymbolicCountTerm(realTerms[0], fakeSymCount);
+                return realSymCount;
             }
             else
             {

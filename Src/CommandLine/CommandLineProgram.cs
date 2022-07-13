@@ -1,10 +1,8 @@
 ﻿namespace Microsoft.Formula.CommandLine
 {
     using System;
-    using System.Numerics;
     using System.Threading;
     using API;
-    using Common;
 
     public sealed class CommandLineProgram
     {
@@ -27,6 +25,13 @@
                 ci.DoOptions(out isExit);
                 if (isExit || sink.PrintedError)
                 {
+                    Environment.ExitCode = sink.PrintedError ? 1 : 0;
+                    return;
+                }
+
+                if (OperatingSystem.IsMacOS())
+                {
+                    InteractivePrompt.Run(ci);
                     Environment.ExitCode = sink.PrintedError ? 1 : 0;
                     return;
                 }
@@ -72,8 +77,14 @@
                     return true;
                 }
 
-                var key = Console.ReadKey(true);
-                switch (key.KeyChar)
+                string line = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(line) ||
+                    !char.IsDigit(line, 0))
+                {
+                    choice = DigitChoiceKind.Zero;
+                    return false;
+                }
+                switch (line[0])
                 {
                     case '0':
                     case '1':
@@ -85,7 +96,7 @@
                     case '7':
                     case '8':
                     case '9':
-                        choice = (DigitChoiceKind)(key.KeyChar - '0');
+                        choice = (DigitChoiceKind)(line[0] - '0');
                         return true;
                     default:
                         choice = DigitChoiceKind.Zero;

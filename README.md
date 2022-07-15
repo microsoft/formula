@@ -2,14 +2,12 @@
 [![build](https://github.com/VUISIS/formula-dotnet/actions/workflows/build.yml/badge.svg)](https://github.com/VUISIS/formula-dotnet/actions/workflows/build.yml)
 
 ## Building FORMULA
-### With Nix flakes
+### With Nix flakes (macOS/Linux)
 To build and run the command line interpreter with Nix flakes, run
 
 ```bash
 $ nix run github:VUISIS/formula-dotnet
 ```
-
-Note that if you are on an M1 Mac, use `github:VUISIS/formula-dotnet#defaultPackage.x86_64-darwin` instead.
 
 ### With .NET
 To build the command line interpreter, run the following command from

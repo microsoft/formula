@@ -1418,55 +1418,41 @@
             bool wasAdded;
             var res = facts.Query(values[0].Binding, out nResults);
 
-            if (facts.HasSideConstraints(res))
+            int baseCount = 0; // always 0 for now
+            List<Term> realTerms = new List<Term>();
+            List<Term> fakeTerms = new List<Term>();
+
+            foreach (var term in res)
             {
-                int baseCount = 0;
-                List<Term> realTerms = new List<Term>();
-                List<Term> fakeTerms = new List<Term>();
-
-                foreach (var term in res)
-                {
-                    if (facts.HasSideConstraint(term))
-                    {
-                        realTerms.Add(term.Args[0]); // it's a comprehension, so extract Args[0]
-                        fakeTerms.Add(term);
-                    }
-                    else
-                    {
-                        ++baseCount;
-                    }
-                }
-
-                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymCount);
-                Term baseTerm = facts.Index.MkCnst(new Rational(baseCount), out wasAdded);
-
-                int symCount= facts.GetSymbolicCountIndex(realTerms[0]);
-                Term symCountTerm = facts.Index.MkCnst(new Rational(symCount), out wasAdded);
-
-                Term[] allRealTerms = new Term[realTerms.Count + 2];
-                Term[] allFakeTerms = new Term[fakeTerms.Count + 2];
-
-                allRealTerms[0] = baseTerm; // use the same base count for both
-                allFakeTerms[0] = baseTerm;
-
-                allRealTerms[1] = symCountTerm; // use the same symbolic count for both
-                allFakeTerms[1] = symCountTerm;
-
-                for (int i = 0; i < realTerms.Count; i++)
-                {
-                    allRealTerms[i + 2] = realTerms.ElementAt(i); // first two indices are reserved
-                    allFakeTerms[i + 2] = fakeTerms.ElementAt(i);
-                }
-
-                Term realSymCount = facts.Index.MkApply(bos, allRealTerms, out wasAdded);
-                Term fakeSymCount = facts.Index.MkApply(bos, allFakeTerms, out wasAdded);
-                facts.AddSymbolicCountTerm(realTerms[0], fakeSymCount);
-                return realSymCount;
+                realTerms.Add(term.Args[0]); // it's a comprehension, so extract Args[0]
+                fakeTerms.Add(term);
             }
-            else
+
+            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymCount);
+            Term baseTerm = facts.Index.MkCnst(new Rational(baseCount), out wasAdded);
+
+            int symCount = facts.GetSymbolicCountIndex(realTerms[0]);
+            Term symCountTerm = facts.Index.MkCnst(new Rational(symCount), out wasAdded);
+
+            Term[] allRealTerms = new Term[realTerms.Count + 2];
+            Term[] allFakeTerms = new Term[fakeTerms.Count + 2];
+
+            allRealTerms[0] = baseTerm; // use the same base count for both
+            allFakeTerms[0] = baseTerm;
+
+            allRealTerms[1] = symCountTerm; // use the same symbolic count for both
+            allFakeTerms[1] = symCountTerm;
+
+            for (int i = 0; i < realTerms.Count; i++)
             {
-                return facts.Index.MkCnst(new Rational(nResults), out wasAdded);
+                allRealTerms[i + 2] = realTerms.ElementAt(i); // first two indices are reserved
+                allFakeTerms[i + 2] = fakeTerms.ElementAt(i);
             }
+
+            Term realSymCount = facts.Index.MkApply(bos, allRealTerms, out wasAdded);
+            Term fakeSymCount = facts.Index.MkApply(bos, allFakeTerms, out wasAdded);
+            facts.AddSymbolicCountTerm(realTerms[0], fakeSymCount);
+            return realSymCount;
         }
 
         internal static Term SymEvaluator_Ge(SymExecuter facts, Bindable[] values)

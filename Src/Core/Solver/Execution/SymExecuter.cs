@@ -412,6 +412,12 @@
                 if (status == Z3.Status.SATISFIABLE)
                 {
                     var model = Solver.Z3Solver.Model;
+
+                    PrintSymbolicConstants(model);
+                    PrintNewKindConstructors(model);
+
+                    Console.WriteLine("Debug output terms:");
+
                     foreach (var kvp in lfp)
                     {
                         if (!kvp.Key.Symbol.PrintableName.StartsWith("~") &&
@@ -422,12 +428,12 @@
                                 var eval = model.Evaluate(kvp.Value.GetSideConstraints(this));
                                 if (eval.BoolValue == Z3.Z3_lbool.Z3_L_TRUE)
                                 {
-                                    Console.WriteLine(GetModelInterpretation(kvp.Key, model));
+                                    Console.WriteLine("  " + GetModelInterpretation(kvp.Key, model));
                                 }
                             }
                             else
                             {
-                                Console.WriteLine(GetModelInterpretation(kvp.Key, model));
+                                Console.WriteLine("  " + GetModelInterpretation(kvp.Key, model));
                             }
                         }
                     }
@@ -470,6 +476,47 @@
             {
                 Console.WriteLine("Model not solvable because conforms term could not be derived.");
             }
+        }
+
+        private void PrintSymbolicConstants(Z3.Model model)
+        {
+            Console.WriteLine("Symbolic constants:");
+
+            foreach (var kvp in aliasMap)
+            {
+                Console.WriteLine("  " + kvp.Key.Name.Substring(1) + " = " + GetModelInterpretation(kvp.Value, model));
+            }
+
+            Console.WriteLine("");
+        }
+
+        private void PrintNewKindConstructors(Z3.Model model)
+        {
+            Console.WriteLine("New-kind constructors:");
+
+            foreach (var kvp in lfp)
+            {
+                Term t = kvp.Key;
+                if (t.Symbol.IsDataConstructor &&
+                    !((ConSymb)t.Symbol).IsAutoGen &&
+                    Encoder.CanGetEncoding(kvp.Key))
+                {
+                    if (kvp.Value.HasConstraints())
+                    {
+                        var eval = model.Evaluate(kvp.Value.GetSideConstraints(this));
+                        if (eval.BoolValue == Z3.Z3_lbool.Z3_L_TRUE)
+                        {
+                            Console.WriteLine("  " + GetModelInterpretation(kvp.Key, model));
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine("  " + GetModelInterpretation(kvp.Key, model));
+                    }
+                }
+            }
+
+            Console.WriteLine("");
         }
 
         public void Execute()

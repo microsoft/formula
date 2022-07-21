@@ -6,56 +6,36 @@
     using API;
     using Common;
 
-    public sealed class CommandLineProgram
+    internal class CommandLineProgram
     {
+        // dotnet publish CommandLine.csproj -c Release -r win-x64 --self-contained true
         public static void Main(string[] args)
         {
             var sink = new ConsoleSink();
             var chooser = new ConsoleChooser();
             var envParams = new EnvParams();
-            using (var ci = new CommandInterface(sink, chooser, envParams))
+            var ci = new CommandInterface(sink, chooser, envParams);
+            if (args.Length == 0) {
+                Console.WriteLine("Please provide commands separated by '|'");
+                return;
+            }
+
+            Console.WriteLine("Input commands: {0}", args[0]);
+
+            // All commands must be wrapped in double quotes
+            var args_str = args[0];
+            var commands = args_str.Split("|");
+            
+            // Turn on wait on by default to run all commands synchronously
+            ci.DoCommand("wait on");
+            foreach (string command in commands)
             {
-                Console.CancelKeyPress += (x, y) => 
-                { 
-                    y.Cancel = true;
-                    ci.Cancel();                 
-                };
-
-                //// If errors occured while parsing switches
-                //// then treat this an exit condition.
-                bool isExit;
-                ci.DoOptions(out isExit);
-                if (isExit || sink.PrintedError)
-                {
-                    Environment.ExitCode = sink.PrintedError ? 1 : 0;
-                    return;
-                }
-
-                string line;
-                while (true)
-                {
-                    //// Because pressing CTRL-C may return a null line
-                    line = Console.ReadLine();
-                    //// Exit on CTRL-D
-                    if (line == null)
-                    {
-                        Environment.ExitCode = sink.PrintedError ? 1 : 0;
-                        return;
-                    }
-                    line = line == null ? string.Empty : line.Trim();
-                    if (line == CommandInterface.ExitCommand ||
-                        line == CommandInterface.ExitShortCommand)
-                    {
-                        Environment.ExitCode = sink.PrintedError ? 1 : 0;
-                        return;
-                    }
-
-                    ci.DoCommand(line);
-                }
+                Console.WriteLine("Executing command: {0}", command);
+                ci.DoCommand(command);
             }
         }
 
-        public sealed class ConsoleChooser : IChooser
+        private class ConsoleChooser : IChooser
         {
             public ConsoleChooser()
             {
@@ -94,7 +74,7 @@
             }
         }
 
-        public sealed class ConsoleSink : IMessageSink
+        private class ConsoleSink : IMessageSink
         {
             private bool printedErr = false;
             private SpinLock printedErrLock = new SpinLock();

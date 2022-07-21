@@ -1158,8 +1158,6 @@
             return facts.TermIndex.MkCnst(new Rational(r1.Sign), out wasAdded);
         }
 
-        private static int varId = 0;
-
         internal static Term SymEvaluator_Add(SymExecuter facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1581,39 +1579,41 @@
             bool wasAdded;
             var res = facts.Query(values[0].Binding, out nResults);
 
-            if (facts.HasSideConstraints(res))
-            {
-                int baseCount = 0;
-                List<Term> terms = new List<Term>();
-                foreach (var term in res)
-                {
-                    if (facts.HasSideConstraint(term))
-                    {
-                        terms.Add(term.Args[0]); // it's a comprehension, so extract Args[0]
-                    }
-                    else
-                    {
-                        ++baseCount;
-                    }
-                }
+            int baseCount = 0; // always 0 for now
+            List<Term> realTerms = new List<Term>();
+            List<Term> fakeTerms = new List<Term>();
 
-                Term baseTerm = facts.Index.MkCnst(new Rational(baseCount), out wasAdded);
-                Term[] allTerms = new Term[terms.Count + 1];
-                allTerms[0] = baseTerm;
-                int i = 1;
-                foreach (var term in terms)
-                {
-                    allTerms[i] = term;
-                    ++i;
-                }
-
-                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymCount);
-                return facts.Index.MkApply(bos, allTerms, out wasAdded);
-            }
-            else
+            foreach (var term in res)
             {
-                return facts.Index.MkCnst(new Rational(nResults), out wasAdded);
+                realTerms.Add(term.Args[0]); // it's a comprehension, so extract Args[0]
+                fakeTerms.Add(term);
             }
+
+            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymCount);
+            Term baseTerm = facts.Index.MkCnst(new Rational(baseCount), out wasAdded);
+
+            int symCount = facts.GetSymbolicCountIndex(realTerms[0]);
+            Term symCountTerm = facts.Index.MkCnst(new Rational(symCount), out wasAdded);
+
+            Term[] allRealTerms = new Term[realTerms.Count + 2];
+            Term[] allFakeTerms = new Term[fakeTerms.Count + 2];
+
+            allRealTerms[0] = baseTerm; // use the same base count for both
+            allFakeTerms[0] = baseTerm;
+
+            allRealTerms[1] = symCountTerm; // use the same symbolic count for both
+            allFakeTerms[1] = symCountTerm;
+
+            for (int i = 0; i < realTerms.Count; i++)
+            {
+                allRealTerms[i + 2] = realTerms.ElementAt(i); // first two indices are reserved
+                allFakeTerms[i + 2] = fakeTerms.ElementAt(i);
+            }
+
+            Term realSymCount = facts.Index.MkApply(bos, allRealTerms, out wasAdded);
+            Term fakeSymCount = facts.Index.MkApply(bos, allFakeTerms, out wasAdded);
+            facts.AddSymbolicCountTerm(realTerms[0], fakeSymCount);
+            return realSymCount;
         }
 
         internal static Term SymEvaluator_Ge(SymExecuter facts, Bindable[] values)
@@ -1936,7 +1936,7 @@
             
             foreach (var item in res)
             {
-                hasConstraints = (facts.CopySideConstraints(item, true) || hasConstraints);
+                hasConstraints = (facts.AddNegativeConstraint(item) || hasConstraints);
             }
 
             if (nResults == 0 || hasConstraints)

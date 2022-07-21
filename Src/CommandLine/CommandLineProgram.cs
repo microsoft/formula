@@ -1,41 +1,66 @@
 ﻿namespace Microsoft.Formula.CommandLine
 {
     using System;
-    using System.Numerics;
     using System.Threading;
     using API;
-    using Common;
 
-    internal class CommandLineProgram
+    public sealed class CommandLineProgram
     {
-        // dotnet publish CommandLine.csproj -c Release -r win-x64 --self-contained true
         public static void Main(string[] args)
         {
             var sink = new ConsoleSink();
             var chooser = new ConsoleChooser();
             var envParams = new EnvParams();
-            var ci = new CommandInterface(sink, chooser, envParams);
-            if (args.Length == 0) {
-                Console.WriteLine("Please provide commands separated by '|'");
-                return;
-            }
-
-            Console.WriteLine("Input commands: {0}", args[0]);
-
-            // All commands must be wrapped in double quotes
-            var args_str = args[0];
-            var commands = args_str.Split("|");
-            
-            // Turn on wait on by default to run all commands synchronously
-            ci.DoCommand("wait on");
-            foreach (string command in commands)
+            using (var ci = new CommandInterface(sink, chooser, envParams))
             {
-                Console.WriteLine("Executing command: {0}", command);
-                ci.DoCommand(command);
+                Console.CancelKeyPress += (x, y) => 
+                { 
+                    y.Cancel = true;
+                    ci.Cancel();                 
+                };
+
+                //// If errors occured while parsing switches
+                //// then treat this an exit condition.
+                bool isExit;
+                ci.DoOptions(out isExit);
+                if (isExit || sink.PrintedError)
+                {
+                    Environment.ExitCode = sink.PrintedError ? 1 : 0;
+                    return;
+                }
+
+                if (OperatingSystem.IsMacOS())
+                {
+                    InteractivePrompt.Run(ci);
+                    Environment.ExitCode = sink.PrintedError ? 1 : 0;
+                    return;
+                }
+
+                string line;
+                while (true)
+                {
+                    //// Because pressing CTRL-C may return a null line
+                    line = Console.ReadLine();
+                    //// Exit on CTRL-D
+                    if (line == null)
+                    {
+                        Environment.ExitCode = sink.PrintedError ? 1 : 0;
+                        return;
+                    }
+                    line = line == null ? string.Empty : line.Trim();
+                    if (line == CommandInterface.ExitCommand ||
+                        line == CommandInterface.ExitShortCommand)
+                    {
+                        Environment.ExitCode = sink.PrintedError ? 1 : 0;
+                        return;
+                    }
+
+                    ci.DoCommand(line);
+                }
             }
         }
 
-        private class ConsoleChooser : IChooser
+        public sealed class ConsoleChooser : IChooser
         {
             public ConsoleChooser()
             {
@@ -52,8 +77,14 @@
                     return true;
                 }
 
-                var key = Console.ReadKey(true);
-                switch (key.KeyChar)
+                string line = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(line) ||
+                    !char.IsDigit(line, 0))
+                {
+                    choice = DigitChoiceKind.Zero;
+                    return false;
+                }
+                switch (line[0])
                 {
                     case '0':
                     case '1':
@@ -65,7 +96,7 @@
                     case '7':
                     case '8':
                     case '9':
-                        choice = (DigitChoiceKind)(key.KeyChar - '0');
+                        choice = (DigitChoiceKind)(line[0] - '0');
                         return true;
                     default:
                         choice = DigitChoiceKind.Zero;
@@ -74,7 +105,7 @@
             }
         }
 
-        private class ConsoleSink : IMessageSink
+        public sealed class ConsoleSink : IMessageSink
         {
             private bool printedErr = false;
             private SpinLock printedErrLock = new SpinLock();

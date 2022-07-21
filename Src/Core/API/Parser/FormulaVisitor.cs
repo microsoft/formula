@@ -154,27 +154,18 @@
                     return false;
                 }
 
-                StartTimer();
                 var str = new System.IO.FileStream(name.Uri.AbsolutePath, System.IO.FileMode.Open, System.IO.FileAccess.Read);
-                StopTimer("Creating file stream for file");
 
-                StartTimer();
                 ICharStream charStream = Antlr4.Runtime.CharStreams.fromStream(str);
                 FormulaLexer lexer = new FormulaLexer(charStream);
                 CommonTokenStream tokens = new CommonTokenStream(lexer);
                 FormulaParser parser = new FormulaParser(tokens);
-                StopTimer("Tokenizing for file");
 
                 //parser.RemoveErrorListeners();
                 parser.AddErrorListener(new Core.API.Parser.FormulaLexerErrorListener());
 
-                StartTimer();
                 FormulaParser.ProgramContext programContext = parser.program();
-                StopTimer("Parsing file");
-
-                StartTimer();
                 this.VisitProgram(programContext);
-                StopTimer("Visiting file");
 
                 str.Close();
             }

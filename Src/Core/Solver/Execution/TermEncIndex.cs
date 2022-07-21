@@ -218,16 +218,7 @@
                                     Solver.TypeEmbedder.Context.MkEq(ch.ElementAt(0), ch.ElementAt(1)));
                                 return encp;
                             case OpKind.SymCount:
-                                Z3ArithExpr[] exprs = new Z3ArithExpr[x.Args.Length];
-                                exprs[0] = (Z3ArithExpr)ch.ElementAt(0);
-                                for (int i = 1; i < x.Args.Count(); i++)
-                                {
-                                    Z3BoolExpr boolExpr = facts.GetSideConstraints(x.Args[i]);
-                                    exprs[i] = (Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr,
-                                                                                     facts.Solver.Context.MkInt(1),
-                                                                                     facts.Solver.Context.MkInt(0));
-                                }
-                                encp = facts.Solver.Context.MkAdd(exprs);
+                                encp = GetSymCountExpr(facts, x, ch);
                                 encodings.Add(x, encp);
                                 return encp;
                             case OpKind.SymAnd:
@@ -275,6 +266,51 @@
                         throw new NotImplementedException();
                     }
                 });
+        }
+
+        private Z3Expr GetSymCountExpr(SymExecuter facts, Term x, IEnumerable<Z3Expr> ch)
+        {
+            // 1. Add the base count
+            List<Z3ArithExpr> exprs = new List<Z3ArithExpr>();
+            exprs.Add((Z3ArithExpr)ch.ElementAt(0));
+
+            // 2. Create an ITE for each term.
+            // If a term's constraints are satisfied, the count is incremented by 1
+            int index = ((int)((Rational)((BaseCnstSymb)x.Args[1].Symbol).Raw).Numerator);
+            Term comprTerms = facts.GetSymbolicCountTerm(x.Args[2], index);
+            List<Z3BoolExpr> allBoolExprs = new List<Z3BoolExpr>();
+            for (int i = 2; i < comprTerms.Args.Count(); i++)
+            {
+                Z3BoolExpr boolExpr = facts.GetSideConstraints(comprTerms.Args[i]);
+                allBoolExprs.Add(boolExpr);
+                exprs.Add((Z3ArithExpr)facts.Solver.Context.MkITE(boolExpr,
+                                                                    facts.Solver.Context.MkInt(1),
+                                                                    facts.Solver.Context.MkInt(0)));
+            }
+
+            // 3. The equality between any two terms decrements the count by 1
+            Term normalized;
+            for (int i = 0; i < allBoolExprs.Count; i++)
+            {
+                for (int j = i + 1; j < allBoolExprs.Count; j++)
+                {
+                    var e1Term = comprTerms.Args[i + 2].Args[0];
+                    var e2Term = comprTerms.Args[j + 2].Args[0];
+
+                    var e1Enc = GetTerm(e1Term, out normalized, facts);
+                    var e2Enc = GetTerm(e2Term, out normalized, facts);
+
+                    var e1 = facts.Solver.Context.MkEq(e1Enc, e2Enc);
+                    var e2 = allBoolExprs.ElementAt(i);
+                    var e3 = allBoolExprs.ElementAt(j);
+                    var e4 = facts.Solver.Context.MkAnd(new Z3BoolExpr[] { e1, e2, e3 });
+                    exprs.Add((Z3ArithExpr)facts.Solver.Context.MkITE(e4,
+                                                                    facts.Solver.Context.MkInt(-1),
+                                                                    facts.Solver.Context.MkInt(0)));
+                }
+            }
+
+            return facts.Solver.Context.MkAdd(exprs);
         }
 
         public void Debug_Print()

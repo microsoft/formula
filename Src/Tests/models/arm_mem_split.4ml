@@ -138,15 +138,15 @@ domain ARM
     SetState(seq, newpc, newcpsr, mem, rdest, val) :-
         Ld(pc, rdest, addr), MachineState(seq,pc,_,_,mem),
           val>0, newcpsr=CPSR(FALSE,FALSE,FALSE,FALSE), newpc=pc+1,
-          idx=lstFindAll(#NumList, mem.addrList, addr), idx is NumList, pos=idx.val, val=lstGetAt(#NumList,mem.valList,pos).
+          idx=lstFindAll(#NumList, mem.addrList, addr), idx!=NIL, pos=idx.val, val=lstGetAt(#NumList,mem.valList,pos).
     SetState(seq, newpc, newcpsr, mem, rdest, val) :-
         Ld(pc, rdest, addr), MachineState(seq,pc,_,_,mem),
           val=0, newcpsr=CPSR(FALSE,TRUE,FALSE,FALSE), newpc=pc+1,
-          idx=lstFindAll(#NumList, mem.addrList, addr), idx is NumList, pos=idx.val, val=lstGetAt(#NumList,mem.valList,pos).
+          idx=lstFindAll(#NumList, mem.addrList, addr), idx!=NIL, pos=idx.val, val=lstGetAt(#NumList,mem.valList,pos).
     SetState(seq, newpc, newcpsr, mem, rdest, val) :-
         Ld(pc, rdest, addr), MachineState(seq,pc,_,_,mem),
           val<0, newcpsr=CPSR(TRUE,FALSE,FALSE,FALSE), newpc=pc+1,
-          idx=lstFindAll(#NumList, mem.addrList, addr), idx is NumList, pos=idx.val, val=lstGetAt(#NumList,mem.valList,pos).
+          idx=lstFindAll(#NumList, mem.addrList, addr), idx!=NIL, pos=idx.val, val=lstGetAt(#NumList,mem.valList,pos).
 
     St ::= new (pc : Integer, rsrc : Integer, addr : Integer).
     MachineState(newseq,newpc,newcpsr,regs,newmem) :-
@@ -255,5 +255,7 @@ model MemTest of ARM
     Mov(0, Immediate(56), 0).
     St(1, 0, 1000).
     Ld(2, 1, 1000).
-    Halt(3).
+    Mov(3, Immediate(77), 2).
+    Ld(4, 2, 2000).
+    Halt(5).
 }

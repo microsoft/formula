@@ -411,8 +411,9 @@
                 var status = Solver.Z3Solver.Check(assumptions.ToArray());
                 if (status == Z3.Status.SATISFIABLE)
                 {
-                    var model = Solver.Z3Solver.Model;
+                    System.Console.WriteLine("Model solvable.\n");
 
+                    var model = Solver.Z3Solver.Model;
                     PrintSymbolicConstants(model);
                     PrintNewKindConstructors(model);
 
@@ -440,8 +441,8 @@
                 }
                 else if (status == Z3.Status.UNSATISFIABLE)
                 {
+                    Console.WriteLine("Model not solvable.\nUnsat core and related terms below.");
                     var core = Solver.Z3Solver.UnsatCore;
-                    Console.WriteLine("Model not solvable. Unsat core and related terms below.");
                     foreach (var expr in core)
                     {
                         if (recursionConstraints.ContainsValue(expr))
@@ -474,7 +475,7 @@
             }
             else
             {
-                Console.WriteLine("Model not solvable because conforms term could not be derived.");
+                Console.WriteLine("Model not solvable.\nThe conforms term could not be derived.");
             }
         }
 

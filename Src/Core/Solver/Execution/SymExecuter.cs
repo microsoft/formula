@@ -660,6 +660,19 @@
             return true;
         }
 
+        private int GetIntRange(string s)
+        {
+            int fromBase = 2;
+            int index = s.IndexOf("#") + 1;
+            string rawNum = s.Substring(index + 1, s.Length - index - 2);
+            if (s[index] == 'x')
+            {
+                fromBase = 16;
+            }
+
+            return Convert.ToInt32(rawNum, fromBase);
+        }
+
         public string GetModelInterpretation(Term t, Z3.Model model)
         {
             if (t.Groundness == Groundness.Ground)
@@ -677,16 +690,23 @@
                         {
                             var expr = Encoder.GetVarEnc(x, varToTypeMap[x]);
                             var interp = model.ConstInterp(expr);
-                            if (Solver.TypeEmbedder.GetEmbedding(expr.Sort) is EnumEmbedding)
+                            var embedding = Solver.TypeEmbedder.GetEmbedding(expr.Sort);
+                            if (embedding is IntRangeEmbedding)
                             {
-                                var embedding = Solver.TypeEmbedder.GetEmbedding(expr.Sort) as EnumEmbedding;
+                                IntRangeEmbedding intRangeEmbedding = (IntRangeEmbedding)embedding;
+                                int val = GetIntRange(interp.ToString());
+                                str = "" + (intRangeEmbedding.Lower + val);
+                            }
+                            else if (embedding is EnumEmbedding)
+                            {
+                                var enumEmbedding = (EnumEmbedding)embedding;
                                 int index = (interp == null) ? 0 : ((Z3.BitVecNum)interp.Args[0]).Int;
-                                str = embedding.GetSymbolAtIndex(index);
+                                str = enumEmbedding.GetSymbolAtIndex(index);
                             }
                             else if (interp == null)
                             {
                                 // If there were no constraints on the term, use the default
-                                str = Solver.TypeEmbedder.GetEmbedding(expr.Sort).DefaultMember.Item2.ToString();
+                                str = embedding.DefaultMember.Item2.ToString();
                             }
                             else
                             {

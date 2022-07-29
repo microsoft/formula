@@ -86,6 +86,108 @@
             return EnumerateProofsUsingFlags(t, flags, proofsPerTerm);
         }
 
+        private static Term Parse(string t, int start, TermIndex index, out int end)
+        {
+            Contract.Requires(!string.IsNullOrEmpty(t) && start < t.Length);
+            end = -1;
+            bool wasAdded, result;
+            var tstart = t[start];
+            while (char.IsWhiteSpace(tstart))
+            {
+                ++start;
+                tstart = t[start];
+            }
+
+            if (tstart == '\"')
+            {
+                end = start;
+                do
+                {
+                    end = t.IndexOf('\"', end + 1);
+                    Contract.Assert(end >= 0);
+                }
+                while (t[end - 1] == '\\');
+
+                if (end == start + 1)
+                {
+                    return index.MkCnst(string.Empty, out wasAdded);
+                }
+                else
+                {
+                    return index.MkCnst(t.Substring(start + 1, end - start - 1).Replace("\\\"", "\""), out wasAdded);
+                }
+            }
+            else if (char.IsDigit(tstart) || tstart == '+' || tstart == '-' || tstart == '.')
+            {
+                var end1 = t.IndexOf(',', start);
+                var end2 = t.IndexOf(')', start);
+                end = (end1 >= 0 && end2 >= 0) ? Math.Min(end1, end2) : Math.Max(end1, end2);
+                Rational r;
+                if (end < 0)
+                {
+                    result = Rational.TryParseDecimal(t.Substring(start).Trim(), out r);
+                    Contract.Assert(result);
+                    end = t.Length - 1;
+                }
+                else
+                {
+                    --end;
+                    result = Rational.TryParseDecimal(t.Substring(start, end - start + 1).Trim(), out r);
+                    Contract.Assert(result);
+                }
+
+                return index.MkCnst(r, out wasAdded);
+            }
+            else
+            {
+                Contract.Assert(char.IsLetter(tstart) || tstart == '_');
+                UserSymbol us, other;
+
+                var end1 = t.IndexOf(',', start);
+                var end2 = t.IndexOf(')', start);
+                var end3 = t.IndexOf('(', start);
+                end = (end1 >= 0 && end2 >= 0) ? Math.Min(end1, end2) : Math.Max(end1, end2);
+                end = (end >= 0 && end3 >= 0) ? Math.Min(end, end3) : Math.Max(end, end3);
+                if (end < 0)
+                {
+                    us = index.SymbolTable.Resolve(t.Substring(start).Trim(), out other);
+                    Contract.Assert(us != null && other == null && us.Kind == SymbolKind.UserCnstSymb);
+                    end = t.Length - 1;
+                    return index.MkApply(us, TermIndex.EmptyArgs, out wasAdded);
+                }
+                else if (end == end1 || end == end2)
+                {
+                    --end;
+                    us = index.SymbolTable.Resolve(t.Substring(start, end - start + 1).Trim(), out other);
+                    Contract.Assert(us != null && other == null && us.Kind == SymbolKind.UserCnstSymb);
+                    return index.MkApply(us, TermIndex.EmptyArgs, out wasAdded);
+                }
+                else
+                {
+                    us = index.SymbolTable.Resolve(t.Substring(start, end - start).Trim(), out other);
+                    Contract.Assert(us != null && other == null && us.IsDataConstructor);
+                    var args = new Term[us.Arity];
+                    for (int i = 0; i < us.Arity; ++i)
+                    {
+                        ++end;
+                        args[i] = Parse(t, end, index, out end);
+                        if (i < us.Arity - 1)
+                        {
+                            end = t.IndexOf(',', end + 1);
+                        }
+                        else
+                        {
+                            end = t.IndexOf(')', end + 1);
+                        }
+
+                        Contract.Assert(end >= 0);
+                    }
+
+                    return index.MkApply(us, args, out wasAdded);
+                }
+            }
+        }
+
         public IEnumerable<AST<Node>> EnumerateDerivations(string t, out List<Flag> flags, bool isSorted = false)
         {
             flags = new List<Flag>();
@@ -148,8 +250,13 @@
 
         private IEnumerable<AST<Node>> EnumerateDerivationsUsingFlags(string t, List<Flag> flags, bool isSorted)
         {
-            Term goalTerm;
-            if (!ParseGoalWithDontCares(t, flags, out goalTerm))
+            int end = -1;
+            Term goalTerm = Parse(t, 0, facts.Index, out end);
+            if (end >= 0 && goalTerm.Groundness == Groundness.Variable)
+            {
+
+            }
+            else if (!ParseGoalWithDontCares(t, flags, out goalTerm))
             {
                 yield break;
             }

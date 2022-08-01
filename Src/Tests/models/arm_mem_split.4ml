@@ -201,6 +201,9 @@ domain ARM
         GetReg(seq,pc,cpsr,mem,rsrc,val),
         GetReg(seq,pc,cpsr,mem,reg1,baseaddr), GetReg(seq,pc,cpsr,mem,reg2,offset), addr=baseaddr+offset.
         
+    Nop ::= new (pc : Integer).
+    MachineState(newseq,newpc,cpsr,registers,mem) :- Nop(pc), MachineState(seq,pc,cpsr,registers,mem), newpc=pc+1, newseq=seq+1.
+
     BL ::= new (pc : Integer, newpc : Integer).
     MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, link),mem) :- BL(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), newseq=seq+1, link=pc+1.
 
@@ -247,6 +250,13 @@ domain ARM
     HaltedAt ::= new (seq : Integer, pc : Integer).
     HaltedAt(seq,pc) :- Halt(pc), MachineState(seq,pc,_,_,_).
 
+    HaltedWithReg ::= new (seq : Integer, pc : Integer, reg : Integer, value : Integer).
+    HaltedWithReg(seq,pc,reg,val) :- Halt(pc), MachineState(seq,pc,_,regs,_), GetReg(seq,pc,cpsr,mem,reg,regval), val=regval.
+
+    HaltedWithState ::= new (state : MachineState).
+    HaltedWithState(state) :- Halt(pc), MachineState(seq,pc,cpsr,regs,memory), state=MachineState(seq,pc,cpsr,regs,memory).
+
+    Ret ::= new (pc : Integer).
     Ret ::= new (pc : Integer).
     MachineState(newseq, regs.r14, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :-
         Ret(pc), MachineState(seq,pc,status,regs,mem), newseq=seq+1.
@@ -292,7 +302,7 @@ model FactRec of ARM
     MachineState(0, 0, CPSR(FALSE,FALSE,FALSE,FALSE), Registers(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),Memory(NIL,NIL)).
     Mov(0, Immediate(8000), 13).
     // Param=3
-    Mov(1, Immediate(2), 0).
+    Mov(1, Immediate(20), 0).
     // Call fact
     BL(2, 4).
     Halt(3).

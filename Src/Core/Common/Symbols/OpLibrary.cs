@@ -8276,41 +8276,7 @@
                     return null;
                 }
 
-                if (types.Count == 1 && args[1].Groundness == Groundness.Ground)
-                {
-                    var listSymb = ((UserSortSymb)types.GetSomeElement().Symbol).DataSymbol;
-                    var list = args[1];
-                    Rational ind;
-            
-/*                    if (!ToNumerics(args[2], out ind) ||
-                        !ind.IsInteger ||
-                        ind.Sign < 0)
-                    {
-                        return null;
-                    }
-
-                    var targetPos = (int) ind.Numerator;
-                    */
-// TODO: fix this so it works more like the StrGetAt, this is broken
-                    var targetPos = 0;
-            
-                    var listStack = new Stack<Term>();
-                    while (list.Symbol == listSymb)
-                    {
-                        if (targetPos <= 0)
-                        {
-                            return new Term[] {list.Args[0]};
-                        }
-                        list = list.Args[1];
-                        targetPos -= 1;
-                    }
-
-                    return new Term[] { list };
-                }
-                else
-                {
-                    return new Term[] {index.MkDataWidenedType(args[2])};
-                }
+                return new Term[] {index.MkDataWidenedType(args[2])};
             }
         }
 

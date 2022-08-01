@@ -1,3 +1,6 @@
+// This model doesn't quite work like it should because it can't search
+// for the pairs in the memory list correctly. Also, it requires an
+// undocumented function
 domain ARM
 {
     Registers ::= new ( r0: Integer, r1: Integer, r2: Integer, r3: Integer,

@@ -159,7 +159,11 @@
                 {
                     --end;
                     us = index.SymbolTable.Resolve(t.Substring(start, end - start + 1).Trim(), out other);
-                    Contract.Assert(us != null && other == null && us.Kind == SymbolKind.UserCnstSymb);
+                    if (us == null)
+                    {
+                        end = -1;
+                        return null;
+                    }
                     return index.MkApply(us, TermIndex.EmptyArgs, out wasAdded);
                 }
                 else
@@ -170,7 +174,13 @@
                     for (int i = 0; i < us.Arity; ++i)
                     {
                         ++end;
-                        args[i] = Parse(t, end, index, out end);
+                        Term next = Parse(t, end, index, out end);
+                        if (next == null)
+                        {
+                            end = -1;
+                            return null;
+                        }
+                        args[i] = next;
                         if (i < us.Arity - 1)
                         {
                             end = t.IndexOf(',', end + 1);

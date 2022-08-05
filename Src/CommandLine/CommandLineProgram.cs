@@ -13,10 +13,10 @@
             var envParams = new EnvParams();
             using (var ci = new CommandInterface(sink, chooser, envParams))
             {
-                Console.CancelKeyPress += (x, y) => 
-                { 
+                Console.CancelKeyPress += (x, y) =>
+                {
                     y.Cancel = true;
-                    ci.Cancel();                 
+                    ci.Cancel();
                 };
 
                 //// If errors occured while parsing switches

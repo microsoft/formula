@@ -1,0 +1,20 @@
+domain ListTest
+{
+    MemValue ::= new (addr : Integer, value : Integer).
+    MemList ::= new (entry : MemValue, nxt : any MemList+{NIL}).
+
+//    Revit ::= new (lst : any MemList+{NIL}, revlist : any MemList+{NIL}).
+//    Revit(l, lr) :- lr=lstReverse(#MemList, l), l is MemList.
+
+//    Fetch ::= new (lst : any MemList+{Nil}, addr : Integer, value : Integer).
+//    Fetch(l, addr, v) :- mv = lstFind(#MemList, l, MemValue(3000, x), MemValue(3000, 0)), l is MemList, v=mv.value, addr=mv.addr, mv is MemValue, x is Integer.
+//    Fetch(l, addr, v) :- mv = lstFind(#MemList, l, MemValue(3000, x), MemValue(3000, 0)), l is MemList, v=mv.value, addr=mv.addr, x is Integer, addr is Integer, v is Integer.
+//    Fetch(l, addr, v) :- MemValue(addr, v) = lstFind(#MemList, l, MemValue(3000, _), MemValue(3000, 0)), l is MemList.
+
+    Fetch2 ::= new (lst : any MemList+{Nil}, mv: MemValue).
+    Fetch2(l, mv) :- mv = lstFind(#MemList, l, MemValue(3000, _), MemValue(3000, 0)), l is MemList, mv is MemValue.
+}
+
+model lm of ListTest {
+    ml is MemList(MemValue(1234, 5), MemList(MemValue(3000, 4), MemList(MemValue(2000, 2), NIL))).
+}

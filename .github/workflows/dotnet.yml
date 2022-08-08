@@ -2,9 +2,9 @@ name: .NET
 
 on:
   push:
-    branches: [ unit_testing ]
+    branches: [ master, example-tests ]
   pull_request:
-    branches: [ unit_testing ]
+    branches: [ master, example-tests ]
 
 jobs:
   build:
@@ -13,11 +13,11 @@ jobs:
       matrix:
         os: [ ubuntu-latest, windows-latest, macOS-latest ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: Setup .NET
-      uses: actions/setup-dotnet@v1
+      uses: actions/setup-dotnet@v2
       with:
-        dotnet-version: 5.0.x
+        dotnet-version: 6.0.x
     - name: Restore dependencies
       working-directory: ./Src/CommandLine
       run: dotnet restore

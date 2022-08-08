@@ -1430,6 +1430,24 @@
             return t;
         }
 
+        internal Term ExpandConArgs(Term ttype)
+        {
+            if (ttype.Symbol is ConSymb)
+            {
+                Term[] args = new Term[ttype.Args.Length];
+                for (int i = 0; i < args.Length; i++)
+                {
+                    args[i] = GetCanonicalTerm(((ConSymb)ttype.Symbol).SortSymbol.DataSymbol, i);
+                }
+
+                bool wasAdded = false;
+                return MkApply(((ConSymb)ttype.Symbol).SortSymbol, EmptyArgs, out wasAdded);
+            }
+            else
+            {
+                return ttype;
+            }
+        }
         /// <summary>
         /// Converts all constructor applications f(...) to the sort f. 
         /// </summary>

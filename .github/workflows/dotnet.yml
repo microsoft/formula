@@ -19,21 +19,21 @@ jobs:
       with:
         dotnet-version: 6.0.x
     - name: Setup z3-4.10.2 Ubuntu
-      uses: pavpanchekha/setup-z3
+      uses: pavpanchekha/setup-z3@1.2.2
       if: ${{ matrix.os == 'ubuntu-latest' }}
       with:
         version: '4.10.2'
         distribution: ubuntu-latest
         architecture: x64
     - name: Setup z3-4.10.2 MacOS
-      uses: pavpanchekha/setup-z3
+      uses: pavpanchekha/setup-z3@1.2.2
       if: ${{ matrix.os == 'macOS-latest' }}
       with:
         version: '4.10.2'
         distribution: macOS-latest
         architecture: x64
     - name: Setup z3-4.10.2 Windows
-      uses: pavpanchekha/setup-z3
+      uses: pavpanchekha/setup-z3@1.2.2
       if: ${{ matrix.os == 'windows-latest' }}
       with:
         version: '4.10.2'

@@ -24,21 +24,15 @@ jobs:
     - name: Build
       working-directory: ./Src/CommandLine
       run: dotnet build --no-restore
-    - name: Test
+    - name: Export Libz3 Ubuntu
       if: ${{ matrix.os == 'ubuntu-latest' }}
-      working-directory: ./Src/Tests
-      run: dotnet test --no-build --verbosity normal
-      env:
-        DYLD_LIBRARY_PATH:  ./Src/CommandLine/bin/Debug/net6.0/runtimes/ubuntu-x64/native
-    - name: Test
+      run: echo '$GITHUB_WORKSPACE/Src/CommandLine/bin/Debug/net6.0/runtimes/ubuntu-x64/native' >> $GITHUB_ENV
+    - name: Export Libz3 MacOS
       if: ${{ matrix.os == 'macOS-latest' }}
-      working-directory: ./Src/Tests
-      run: dotnet test --no-build --verbosity normal
-      env:
-        DYLD_LIBRARY_PATH:  ./Src/CommandLine/bin/Debug/net6.0/runtimes/macos/native
-    - name: Test
+      run: echo '$GITHUB_WORKSPACE//Src/CommandLine/bin/Debug/net6.0/runtimes/macos/native' >> $GITHUB_ENV
+    - name: Export Libz3 Windows
       if: ${{ matrix.os == 'windows-latest' }}
+      run: echo '$GITHUB_WORKSPACE/Src/CommandLine/bin/Debug/net6.0/runtimes/win-x64/native' >> $GITHUB_ENV
+    - name: Test
       working-directory: ./Src/Tests
       run: dotnet test --no-build --verbosity normal
-      env:
-        DYLD_LIBRARY_PATH:  ./Src/CommandLine/bin/Debug/net6.0/runtimes/win-x64/native

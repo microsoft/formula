@@ -33,6 +33,12 @@ jobs:
     - name: Export Libz3 Windows
       if: ${{ matrix.os == 'windows-latest' }}
       run: echo "${GITHUB_WORKSPACE}/Src/CommandLine/bin/Debug/net6.0/runtimes/win-x64/native" >> ${GITHUB_PATH}
+    - name: Print Path
+      if: ${{ matrix.os == 'macOS-latest' }}
+      run: echo "${GITHUB_PATH}"
+    - name: List Path
+      if: ${{ matrix.os == 'macOS-latest' }}
+      run: ls ${GITHUB_WORKSPACE}/Src/CommandLine/bin/Debug/net6.0/runtimes/macos/native
     - name: Test
       working-directory: ./Src/Tests
       run: dotnet test --no-build --verbosity normal

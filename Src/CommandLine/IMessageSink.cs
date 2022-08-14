@@ -8,6 +8,8 @@
     {
         TextWriter Writer { get; }
 
+        void ResetPrintedError();
+
         void WriteMessage(string msg);
         
         void WriteMessage(string msg, SeverityKind severity);

@@ -5,11 +5,12 @@ Formal Specifications for Verification and Synthesis
 
 In order to build FORMULA, you will need .NET core installed.
 
-Clone modified jupyter-core into the Src\Kernel folder.
+Clone modified jupyter-core submodule into the Src\Kernel folder.
 
 ```bash
-cd Src\Kernel
-git clone https://github.com/VUISIS/jupyter-core.git
+cd to top directory
+git submodule init
+git submodule update --remote
 ```
 
 To build the interactive kernel, from Src\Kernel\InteractiveKernel:

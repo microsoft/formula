@@ -208,3 +208,6 @@ $RECYCLE.BIN/
 
 /Src/CommandLine/CommandLine.VC.VC.opendb
 /Src/CommandLine/CommandLine.VC.db
+
+# vscode
+Src/Core/.vscode/

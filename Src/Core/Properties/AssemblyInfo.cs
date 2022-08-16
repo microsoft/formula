@@ -50,3 +50,5 @@ using System.Runtime.InteropServices;
                "cf20daab022f8ea79d62ec9b2b005f67925212d8580abe730c5135ed8788b5f4fe7f56f65acaa8" +
                "8f4711781c681c01c658746641cbef8a9216c1cdcc6b36b1eca2cfb6733af0714afc48a585cf0a" +
                "ba14c3dc")]
+
+[assembly: InternalsVisibleTo("Formula.Tests")]

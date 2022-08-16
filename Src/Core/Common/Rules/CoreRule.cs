@@ -2918,12 +2918,7 @@
 
                             return computed;
                         }
-                        else
-                        {
-                            throw new NotImplementedException();
-                        }
-
-                        return null;
+                        throw new NotImplementedException();
                     },
                     success);
 

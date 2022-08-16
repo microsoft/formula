@@ -126,7 +126,7 @@
                         return null;
                     }
                     else if (x.Groundness == Groundness.Ground &&
-                             !x.Symbol.IsSymCount)
+                             !Term.IsSymbolicTerm(x))
                     {
                         return null;
                     }

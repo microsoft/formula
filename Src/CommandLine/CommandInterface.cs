@@ -791,6 +791,10 @@ namespace Microsoft.Formula.CommandLine
             }
             else
             {
+                SolveResult result = ((System.Threading.Tasks.Task<SolveResult>)task).Result;
+                result.GetOutputModel(solNum);
+                return;
+
 #if SOLVER
                 var result = ((System.Threading.Tasks.Task<SolveResult>)task).Result;
                 WriteFlags(new ProgramName("program.4ml"), result.Flags);
@@ -1199,6 +1203,100 @@ namespace Microsoft.Formula.CommandLine
         }
 
         private void DoSolve(string s)
+        {
+            var cmdParts = s.Split(cmdSplitChars, 3, StringSplitOptions.RemoveEmptyEntries);
+            if (cmdParts.Length != 3)
+            {
+                sink.WriteMessageLine(SolveMsg, SeverityKind.Warning);
+                return;
+            }
+
+            int maxSols;
+            if (!int.TryParse(cmdParts[1], out maxSols) || maxSols <= 0)
+            {
+                sink.WriteMessageLine("Expected a positive number of solutions", SeverityKind.Warning);
+                return;
+            }
+
+            var cmdLineName = new ProgramName("CommandLine.4ml");
+            var parse = Factory.Instance.ParseText(
+                cmdLineName,
+                string.Format("domain Dummy {{q :-\n{0}\n.}}", cmdParts[2]));
+            parse.Wait();
+
+            WriteFlags(cmdLineName, parse.Result.Flags);
+            if (!parse.Result.Succeeded)
+            {
+                sink.WriteMessageLine("Could not parse goal", SeverityKind.Warning);
+                return;
+            }
+
+            var rule = parse.Result.Program.FindAny(
+                new API.ASTQueries.NodePred[]
+                {
+                    API.ASTQueries.NodePredFactory.Instance.Star,
+                    API.ASTQueries.NodePredFactory.Instance.MkPredicate(NodeKind.Rule),
+                });
+            Contract.Assert(rule != null);
+            var bodies = ((Rule)rule.Node).Bodies;
+
+            AST<Node> module;
+            if (!TryResolveModuleByName(cmdParts[0], out module))
+            {
+                return;
+            }
+
+            ProgramName progName = null;
+            foreach (var p in module.Path)
+            {
+                if (p.Node.NodeKind == NodeKind.Program)
+                {
+                    progName = ((Program)p.Node).Name;
+                    break;
+                }
+            }
+
+            string name;
+            module.Node.TryGetStringAttribute(AttributeKind.Name, out name);
+
+            List<Flag> flags;
+            System.Threading.Tasks.Task<SolveResult> task;
+            var solveCancel = new CancellationTokenSource();
+            var goals = new AST<Body>[bodies.Count];
+            int i = 0;
+            foreach (var b in bodies)
+            {
+                goals[i++] = (AST<Body>)Factory.Instance.ToAST(b);
+            }
+
+            var result = env.Solve(
+                progName,
+                name,
+                goals,
+                maxSols,
+                out flags,
+                out task,
+                solveCancel.Token);
+
+            if (!result)
+            {
+                sink.WriteMessageLine("Could not start operation; environment is busy", SeverityKind.Warning);
+                return;
+            }
+
+            WriteFlags(cmdLineName, flags);
+            if (task != null)
+            {
+                var id = taskManager.StartTask(task, new Common.Rules.ExecuterStatistics(null), solveCancel);
+                sink.WriteMessageLine(string.Format("Started solve task with Id {0}.", id), SeverityKind.Info);
+            }
+            else
+            {
+                sink.WriteMessageLine("Failed to start solved task.", SeverityKind.Warning);
+            }
+        }
+
+        private void DoSolveOld(string s)
         {
             var cmdParts = s.Split(cmdSplitChars, 3, StringSplitOptions.RemoveEmptyEntries);
             if (cmdParts.Length != 3 || !(String.Equals(cmdParts[1], "=")))

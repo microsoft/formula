@@ -820,7 +820,8 @@
 
             foreach (var tp in queryResults)
             {
-                if (ApplyMatch(index, otherMatcher, tp, ConstraintNode.BLSecond))
+                if (tp != binding &&
+                    ApplyMatch(index, otherMatcher, tp, ConstraintNode.BLSecond))
                 {
                     Contract.Assert(headNode.Binding != null);
                     Pend(
@@ -2917,12 +2918,7 @@
 
                             return computed;
                         }
-                        else
-                        {
-                            throw new NotImplementedException();
-                        }
-
-                        return null;
+                        throw new NotImplementedException();
                     },
                     success);
 

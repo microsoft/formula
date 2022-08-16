@@ -14,6 +14,9 @@
 
   <ItemGroup>
     <Compile Remove="Common\Terms\CanUnnDef.cs" />
+    <AssemblyAttribute Include="System.CLSCompliantAttribute">
+        <_Parameter1>false</_Parameter1>
+    </AssemblyAttribute>
   </ItemGroup>
 
   <ItemGroup>

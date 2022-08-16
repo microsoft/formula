@@ -1,0 +1,21 @@
+domain AlgTrees
+{
+    Node ::= new (left: any Node + {NIL}, right: any Node + {NIL}).
+    Root ::= new (root: any Node).
+
+    height ::= (Node, Integer).
+    height(x,c) :- x.left = NIL, x.right = NIL, c = 0.
+    height(x,c) :- x.left = NIL, x.right != NIL, height(x.right,d), c = d+1.
+    height(x,c) :- x.right = NIL, x.left != NIL, height(x.left,d), c = d+1.
+    height(x,c) :- x.left != NIL, x.right != NIL, height(x.left,d), height(x.right,e), d >= e, c = d+1.
+    height(x,c) :- x.left != NIL, x.right != NIL, height(x.left,d), height(x.right,e), d < e, c = e+1.
+
+}
+
+model LessThanTwoLevels of AlgTrees
+{
+    node1 is Node(NIL,NIL).  
+    node2 is Node(node1, NIL).
+    node3 is Node(node2, NIL).
+    Root(node3).
+}

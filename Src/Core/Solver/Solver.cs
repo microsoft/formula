@@ -38,6 +38,9 @@
 
         private List<List<AST<Node>>> cardInequalities = new List<List<AST<Node>>>();
 
+        private SymExecuter executer;
+        private bool solvable = false;
+
         public List<List<AST<Node>>> CardInequalities
         {
             get { return cardInequalities; }
@@ -270,15 +273,16 @@
             PartialModel = partialModel;
             Env = env;
 
+            // TODO: reintroduce cardinality system with search heuristics
             //// Step 0. Create cardinality system.
-            Cardinalities = new CardSystem(partialModel);
+            //Cardinalities = new CardSystem(partialModel);
 
             //// Step 1. Update the source and partial model
-            if (!Cardinalities.IsUnsat)
-            {
+            //if (!Cardinalities.IsUnsat)
+            //{
                 // TODO: add this after temporary ConSymbs are supported in the TypeEmbedder
                 //ExtendPartialModel();
-            }
+            //}
 
             //// Step 2. Create Z3 Context and Solver
             CreateContextAndSolver();
@@ -290,14 +294,25 @@
             //Cardinalities = new CardSystem(partialModel);
 
             //// Step 4. Try to create the search strategy.
-            if (!Cardinalities.IsUnsat)
-            {
+            //if (!Cardinalities.IsUnsat)
+            //{
                 Strategy = CreateStrategy(solverFlags);
-            }
+            //}
 
             SetRecursionBound();
 
-            var se = new SymExecuter(this);
+            executer = new SymExecuter(this);
+        }
+
+        public bool Solve()
+        {
+            solvable = executer.Solve();
+            return solvable;
+        }
+
+        public void GetSolution(int num)
+        {
+            executer.GetSolution(num);
         }
 
         private void SetRecursionBound()

@@ -182,6 +182,14 @@
                 return true;
             }
 
+            foreach (var child in t.Args)
+            {
+                if (IsSymbolicTerm(child))
+                {
+                    return true;
+                }
+            }
+
             return false;
         }
 

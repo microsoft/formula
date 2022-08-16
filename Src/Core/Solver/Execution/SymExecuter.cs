@@ -79,6 +79,11 @@
         private Dictionary<int, int> ruleCycles =
             new Dictionary<int, int>();
 
+        private List<Dictionary<Z3Expr, Z3Expr>> prevSolutions =
+            new List<Dictionary<Z3Expr, Z3Expr>>();
+
+        private List<List<string>> solutionStrings = new List<List<string>>();
+
         public RuleTable Rules
         {
             get;
@@ -374,25 +379,40 @@
                 }
             }
 
-            Execute();
             
+        }
+
+        public bool Solve()
+        {
+            Execute();
+
+            bool solvable = false;
             bool hasConforms = false;
+            bool hasRequires = false;
+            string requiresPattern = @"_Query_\d+.requires$";
+
             foreach (var elem in lfp)
             {
                 if (elem.Key.Symbol.PrintableName.EndsWith("conforms"))
                 {
                     hasConforms = true;
                 }
+                else if (Regex.IsMatch(elem.Key.Symbol.PrintableName, requiresPattern))
+                {
+                    hasRequires = true;
+                }
             }
 
-            if (hasConforms)
+            if (hasConforms && hasRequires)
             {
-                var assumptions = new List<Z3Expr>();
+                var assumptions = new List<Z3BoolExpr>();
                 Z3BoolExpr topLevelConstraint = null;
-                string pattern = @"conforms\d+$";
+                string conformsPattern = @"conforms\d+$";
+
                 foreach (var elem in lfp)
                 {
-                    if (Regex.IsMatch(elem.Key.Symbol.PrintableName, pattern))
+                    if (Regex.IsMatch(elem.Key.Symbol.PrintableName, conformsPattern) ||
+                        Regex.IsMatch(elem.Key.Symbol.PrintableName, requiresPattern))
                     {
                         SymElement symbolicConforms = elem.Value;
                         var constraint = symbolicConforms.GetSideConstraints(this);
@@ -408,36 +428,36 @@
                     assumptions.Add(kvp.Value);
                 }
 
-                var status = Solver.Z3Solver.Check(assumptions.ToArray());
+                int i = 1;
+                foreach (var assumption in assumptions)
+                {
+                    // TODO: map assumptions back to Terms and Rules
+                    string name = "P" + i++;
+                    Z3BoolExpr p = Solver.Context.MkBoolConst(name);
+                    Solver.Z3Solver.AssertAndTrack(assumption, p);
+                }
+
+                var status = Solver.Z3Solver.Check();
                 if (status == Z3.Status.SATISFIABLE)
                 {
-                    System.Console.WriteLine("Model solvable.\n");
-
+                    solvable = true;
                     var model = Solver.Z3Solver.Model;
-                    PrintSymbolicConstants(model);
-                    PrintNewKindConstructors(model);
+                    Dictionary<Z3Expr, Z3Expr> solutionMap = new Dictionary<Z3Expr, Z3Expr>();
 
-                    Console.WriteLine("Debug output terms:");
-
-                    foreach (var kvp in lfp)
+                    foreach (var kvp in aliasMap)
                     {
-                        if (!kvp.Key.Symbol.PrintableName.StartsWith("~") &&
-                            Encoder.CanGetEncoding(kvp.Key))
+                        if (kvp.Value.Symbol.Kind == SymbolKind.UserCnstSymb)
                         {
-                            if (kvp.Value.HasConstraints())
-                            {
-                                var eval = model.Evaluate(kvp.Value.GetSideConstraints(this));
-                                if (eval.BoolValue == Z3.Z3_lbool.Z3_L_TRUE)
-                                {
-                                    Console.WriteLine("  " + GetModelInterpretation(kvp.Key, model));
-                                }
-                            }
-                            else
-                            {
-                                Console.WriteLine("  " + GetModelInterpretation(kvp.Key, model));
-                            }
+                            Term t = kvp.Value;
+                            UserCnstSymb symb = (UserCnstSymb)kvp.Value.Symbol;
+                            var expr = Encoder.GetVarEnc(t, varToTypeMap[t]);
+                            var interp = model.ConstInterp(expr);
+                            solutionMap.Add(expr, interp);
                         }
                     }
+
+                    prevSolutions.Add(solutionMap);
+                    solutionStrings.Add(GetNewKindConstructors(model));
                 }
                 else if (status == Z3.Status.UNSATISFIABLE)
                 {
@@ -451,7 +471,6 @@
                         }
                         else
                         {
-
                             Console.WriteLine("Expr: " + expr);
                             Console.WriteLine("Terms: ");
                             foreach (var item in lfp)
@@ -470,31 +489,97 @@
                             }
                         }
                     }
-
                 }
             }
             else
             {
                 Console.WriteLine("Model not solvable.\nThe conforms term could not be derived.");
             }
+
+            return solvable;
+        }
+
+        public void GetSolution(int num)
+        {
+            if (num < solutionStrings.Count)
+            {
+                System.Console.WriteLine("Solution number " + num);
+                foreach (var str in solutionStrings[num])
+                {
+                    System.Console.WriteLine(str);
+                }
+                System.Console.WriteLine();
+                return;
+            }
+
+            Z3.Status status;
+            while (solutionStrings.Count <= num)
+            {
+                // Create next solution
+                var prevSolution = prevSolutions[solutionStrings.Count - 1];
+                var negated = new List<Z3BoolExpr>();
+                foreach (var sol in prevSolution)
+                {
+                    negated.Add(Solver.Context.MkNot(Solver.Context.MkEq(sol.Key, sol.Value)));
+                }
+
+                Solver.Z3Solver.Assert(Solver.Context.MkOr(negated));
+                status = Solver.Z3Solver.Check();
+
+                if (status == Z3.Status.SATISFIABLE)
+                {
+                    var model = Solver.Z3Solver.Model;
+                    Dictionary<Z3Expr, Z3Expr> solutionMap = new Dictionary<Z3Expr, Z3Expr>();
+
+                    foreach (var kvp in aliasMap)
+                    {
+                        if (kvp.Value.Symbol.Kind == SymbolKind.UserCnstSymb)
+                        {
+                            Term t = kvp.Value;
+                            UserCnstSymb symb = (UserCnstSymb)kvp.Value.Symbol;
+                            var expr = Encoder.GetVarEnc(t, varToTypeMap[t]);
+                            var interp = model.ConstInterp(expr);
+                            solutionMap.Add(expr, interp);
+                        }
+                    }
+
+                    prevSolutions.Add(solutionMap);
+                    solutionStrings.Add(GetNewKindConstructors(model));
+                }
+                else
+                {
+                    break;
+                }
+            }
+
+            if (num < solutionStrings.Count)
+            {
+                System.Console.WriteLine("Solution number " + num);
+                foreach (var str in solutionStrings[num])
+                {
+                    System.Console.WriteLine(str);
+                }
+                System.Console.WriteLine();
+            }
+            else
+            {
+                System.Console.WriteLine("Could not find solution " + num);
+            }
         }
 
         private void PrintSymbolicConstants(Z3.Model model)
         {
             Console.WriteLine("Symbolic constants:");
-
             foreach (var kvp in aliasMap)
             {
                 Console.WriteLine("  " + kvp.Key.Name.Substring(1) + " = " + GetModelInterpretation(kvp.Value, model));
             }
-
             Console.WriteLine("");
         }
 
-        private void PrintNewKindConstructors(Z3.Model model)
+        private List<string> GetNewKindConstructors(Z3.Model model)
         {
-            Console.WriteLine("New-kind constructors:");
-
+            List<string> strs = new List<string>();
             foreach (var kvp in lfp)
             {
                 Term t = kvp.Key;
@@ -502,22 +587,19 @@
                     !((ConSymb)t.Symbol).IsAutoGen &&
                     Encoder.CanGetEncoding(kvp.Key))
                 {
-                    if (kvp.Value.HasConstraints())
+                    if (!kvp.Value.HasConstraints() ||
+                        model.Evaluate(kvp.Value.GetSideConstraints(this)).BoolValue == Z3.Z3_lbool.Z3_L_TRUE)
                     {
                         var eval = model.Evaluate(kvp.Value.GetSideConstraints(this));
                         if (eval.BoolValue == Z3.Z3_lbool.Z3_L_TRUE)
                         {
-                            Console.WriteLine("  " + GetModelInterpretation(kvp.Key, model));
+                            strs.Add(GetModelInterpretation(kvp.Key, model));
                         }
-                    }
-                    else
-                    {
-                        Console.WriteLine("  " + GetModelInterpretation(kvp.Key, model));
                     }
                 }
             }
 
-            Console.WriteLine("");
+            return strs;
         }
 
         public void Execute()

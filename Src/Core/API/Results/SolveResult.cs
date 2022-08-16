@@ -23,6 +23,7 @@
         private CancellationToken cancel;
         private List<List<string>> modelOutputs = null;
         private Model srcPartialModel;
+        private Solver solver;
 
         public Env Env
         {
@@ -37,6 +38,12 @@
         }
 
         public LiftedInt NumSolutions
+        {
+            get;
+            private set;
+        }
+
+        public LiftedBool Solvable
         {
             get;
             private set;
@@ -73,14 +80,19 @@
 
         internal void Start()
         {
-            var slvr = new Solver(partialModel, srcPartialModel, Env, cancel);
+            solver = new Solver(partialModel, srcPartialModel, Env, cancel);
             StopTime = DateTime.Now;
             if (cancel.IsCancellationRequested)
             {
                 WasCancelled = true;
             }
 
-            return;
+            Solvable = solver.Solve();
+        }
+
+        public void GetOutputModel(int solNum)
+        {
+            solver.GetSolution(solNum);
         }
 
         /// <summary>

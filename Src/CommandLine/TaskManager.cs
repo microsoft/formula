@@ -114,7 +114,6 @@
             return data.Id;
         }
 
-#if SOLVER
         public int StartTask(Task<SolveResult> task, ExecuterStatistics stats, CancellationTokenSource canceller)
         {
             Contract.Requires(task != null && stats != null && canceller != null);
@@ -131,7 +130,6 @@
 
             return data.Id;
         }
-#endif
 
         public void MkTaskTable(out List<string[]> rows, out int[] colWidths)
         {
@@ -245,10 +243,8 @@
                             return ((Task<QueryResult>)Task).Result.StopTime - StartTime;
                         case TaskKind.Apply:
                             return ((Task<ApplyResult>)Task).Result.StopTime - StartTime;
-#if SOLVER
                         case TaskKind.Solve:
                             return ((Task<SolveResult>)Task).Result.StopTime - StartTime;
-#endif
                         default:
                             throw new NotImplementedException();
                     }
@@ -268,10 +264,8 @@
                     {
                         case TaskKind.Query:
                             return ((Task<QueryResult>)Task).Result.Conclusion.ToString();
-#if SOLVER
                         case TaskKind.Solve:
-                            return ((Task<SolveResult>)Task).Result.NumSolutions.ToString();
-#endif
+                            return ((Task<SolveResult>)Task).Result.Solvable.ToString();
                         case TaskKind.Apply:
                             var outs = ((Task<ApplyResult>)Task).Result.OutputNames;
                             var outStr = string.Empty;

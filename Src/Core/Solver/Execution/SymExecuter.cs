@@ -406,7 +406,6 @@
             if (hasConforms && hasRequires)
             {
                 var assumptions = new List<Z3BoolExpr>();
-                Z3BoolExpr topLevelConstraint = null;
                 string conformsPattern = @"conforms\d+$";
 
                 foreach (var elem in lfp)

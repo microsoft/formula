@@ -22,6 +22,7 @@ $ dotnet build CommandLine.csproj /p:Configuration=Release
 
 For native arm64 builds on Mac OS X:
 $ dotnet nuget add source --username USERNAME --password GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/VUISIS/index.json"
+$ dotnet restore CommandLine.csproj 
 $ dotnet build CommandLine.csproj /p:Configuration=Debug|Release /p:Platform=ARM64
 ```
 

@@ -14,7 +14,15 @@ To build the command line interpreter, run the following command from
 Src/CommandLine.
 
 ```bash
+For Debug and x64:
 $ dotnet build
+
+For release builds:
+$ dotnet build CommandLine.csproj /p:Configuration=Release
+
+For native arm64 builds on Mac OS X:
+$ dotnet nuget add source --username USERNAME --password GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/VUISIS/index.json"
+$ dotnet build CommandLine.csproj /p:Configuration=Debug|Release /p:Platform=ARM64
 ```
 
 To run the command line interpreter:

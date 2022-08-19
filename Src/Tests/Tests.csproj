@@ -4,6 +4,7 @@
         <TargetFramework>net6.0</TargetFramework>
         <AssemblyName>Formula.Tests</AssemblyName>
         <IsPackable>false</IsPackable>
+        <Platforms>ARM64;x64</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,8 +22,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\CommandLine\CommandLine.csproj" />
-      <ProjectReference Include="..\Core\Core.csproj" />
-      <ProjectReference Include="..\Extensions\FormulaCodeGeneratorTask\FormulaCodeGeneratorTaskDotNet.csproj" />
     </ItemGroup>
 
 </Project>

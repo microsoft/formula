@@ -81,13 +81,13 @@
         internal void Start()
         {
             solver = new Solver(partialModel, srcPartialModel, Env, cancel);
-            StopTime = DateTime.Now;
             if (cancel.IsCancellationRequested)
             {
                 WasCancelled = true;
             }
 
             Solvable = solver.Solve();
+            StopTime = DateTime.Now;
         }
 
         public void GetOutputModel(int solNum)

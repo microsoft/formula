@@ -1,11 +1,12 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <ApplicationIcon />
     <StartupObject />
-    <Platform>x64</Platform>
+    <Platform>ARM64</Platform>
+    <RepositoryUrl>https://github.com/VUISIS/Microsoft.Z3.OSX.ARM64</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
@@ -17,7 +18,7 @@
 
   <ItemGroup>
     <PackageReference Include="Antlr4.Runtime.Standard" Version="4.7.2" />
-    <PackageReference Include="Microsoft.Z3" Version="4.8.11" />
+    <PackageReference Include="VUISIS.Microsoft.Z3" Version="4.8.11" />
   </ItemGroup>
 
 </Project>

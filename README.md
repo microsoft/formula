@@ -10,15 +10,12 @@ $ nix run github:VUISIS/formula-dotnet
 ```
 
 ### With .NET
-To build the command line interpreter, run the following command from
+To build the command line interpreter, run the following commands from
 Src/CommandLine.
 
 ```bash
-For Debug and x64:
-$ dotnet build
-
-For release builds:
-$ dotnet build CommandLine.csproj /p:Configuration=Release
+For Debug|Release and x64:
+$ dotnet build CommandLine.csproj /p:Configuration=Debug|Release /p:Platform=x64
 
 For native arm64 builds on Mac OS X:
 $ dotnet nuget add source --username USERNAME --password GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/VUISIS/index.json"
@@ -29,7 +26,7 @@ $ dotnet build CommandLine.csproj /p:Configuration=Debug|Release /p:Platform=ARM
 To run the command line interpreter:
 
 ```bash
-$ dotnet run
+$ dotnet ./bin/Release/<PLATFORM>/CommandLine.dll
 ```
 
 You can exit the command line interpreter with the "exit" command.

@@ -6,6 +6,7 @@
     <Platforms>ARM64;x64</Platforms>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <OutDir>bin/$(Configuration)/$(Platform)</OutDir>
   </PropertyGroup>
 
   <Choose>

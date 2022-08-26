@@ -21,12 +21,12 @@ namespace Microsoft.Formula.Compiler
             NodePredFactory.Instance.MkPredicate(NodeKind.Find)
         };
 
-        public static bool ValidateBodyQualifiedIds(Body b, out string v)
+        public static bool ValidateBodyQualifiedIds(Body b, out List<string> v)
         {
             var path = new LinkedList<ChildInfo>();
             path.AddLast(new ChildInfo(b, ChildContextKind.AnyChildContext, -1, -1));
 
-            List<string> listOfVarIds = new List<string>();
+            HashSet<string> listOfVarIds = new HashSet<string>();
             b.FindAll(
             path,
             IdQueryRule, 
@@ -35,12 +35,12 @@ namespace Microsoft.Formula.Compiler
                 var id = (Id) n;
                 if(id.IsQualified)
                 {
-                    var v = id.Fragments[0];
-                    listOfVarIds.Add(v);
+                    var vr = id.Fragments[0];
+                    listOfVarIds.Add(vr);
                 }
             });
 
-            List<string> listOfBindingVars = new List<string>();
+            HashSet<string> listOfBindingVars = new HashSet<string>();
             b.FindAll(
             path,
             DeclQueryRule, 
@@ -57,16 +57,19 @@ namespace Microsoft.Formula.Compiler
                 }
             });
 
+            v = new List<string>();
             foreach(var id in listOfVarIds)
             {
                 if(!listOfBindingVars.Contains(id))
                 {
-                    v = id;
-                    return false;
+                    v.Add(id);
                 }
             }
 
-            v = null;
+            if(v.Count > 0)
+            {
+                return false;
+            }
             return true;
         }
     }

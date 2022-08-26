@@ -1,5 +1,4 @@
 { fetchNuGet }: [
-  (fetchNuGet { pname = "VUISIS.Microsoft.Z3"; version = "4.8.11"; sha256 = "09q51nfv8n048b0liww36s0s0k0r9m95f9nd0w2v5qxpflqww22r"; })
   (fetchNuGet { pname = "Antlr4.Runtime.Standard"; version = "4.7.2"; sha256 = "1pmrpsgqjfj0nzr1zqzk1m2fm0ynd4nklwq3dhvww08yjg5s0586"; })
   (fetchNuGet { pname = "coverlet.collector"; version = "3.0.2"; sha256 = "1xf6z6izmsl4g8w3z1wbp4pa8f8qsf6sil4mf1c9fb22hq8c5hkg"; })
   (fetchNuGet { pname = "Microsoft.Build.Framework"; version = "16.3.0"; sha256 = "1fdgymp11qpv4h152km2wmbykq1rb4b05cyy6d06naw01l61gdz8"; })

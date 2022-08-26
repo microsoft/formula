@@ -26,7 +26,17 @@ $ dotnet build CommandLine.csproj /p:Configuration=Debug|Release /p:Platform=ARM
 To run the command line interpreter:
 
 ```bash
-$ dotnet ./bin/Release/<PLATFORM>/CommandLine.dll
+$ dotnet ./bin/Release/<OS>/<PLATFORM>/CommandLine.dll
+```
+
+To run unit tests with Formula, run the following command from
+Src/Tests.
+
+```bash
+$  dotnet test Tests.csproj /p:Configuration=Debug /p:Platform=ARM64
+
+For specific tests
+$ dotnet test Tests.csproj /p:Configuration=Debug /p:Platform=ARM64 --filter "FullyQualifiedName=<NAMESPACE>.<CLASS>.<METHOD>"
 ```
 
 You can exit the command line interpreter with the "exit" command.

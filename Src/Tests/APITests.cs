@@ -6,19 +6,10 @@ using Xunit.Abstractions;
 
 namespace Tests
 {
-    public class APITests : IDisposable
+    [Collection("FormulaCollection")]
+    public class APITests 
     {
-        private readonly ITestOutputHelper _output;
-
-        public APITests(ITestOutputHelper output)
-        {
-            _output = output;
-        }
-
-        public void Dispose()
-        {
-            
-        }
+        public APITests() {}
 
         [Fact]
         public void TestLexer()

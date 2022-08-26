@@ -5,14 +5,13 @@ using Xunit.Abstractions;
 
 namespace Tests
 {
+    [Collection("FormulaCollection")]
     public class CoreTests
     {
-        private readonly ITestOutputHelper _output;
         private readonly string _fullPath;
 
-        public CoreTests(ITestOutputHelper output)
+        public CoreTests()
         {
-            _output = output;
             _fullPath = Path.GetFullPath("../../../models/graphs.4ml");
         }
         [Fact]

@@ -3,9 +3,15 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net6.0</TargetFramework>
-    <ApplicationIcon />
-    <StartupObject />
+    <TargetFrameworkIdentifier>.NETCOREAPP</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>6.0</TargetFrameworkVersion>
     <Platform>x64</Platform>
+    <PlatformTarget Condition="'$(Platform)' == 'x64'">x64</PlatformTarget>
+    <PlatformTarget Condition="'$(Platform)' == 'ARM64'">arm64</PlatformTarget>
+    <BaseOutputPath Condition="'$(BaseOutputPath)' == ''">bin/</BaseOutputPath>
+    <OutputPath Condition="'$(OutputPath)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">$(BaseOutputPath)$(Configuration)/Windows/$(Platform)/</OutputPath>
+    <OutputPath Condition="'$(OutputPath)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">$(BaseOutputPath)$(Configuration)/Linux/$(Platform)/</OutputPath>
+    <OutputPath Condition="'$(OutputPath)' == '' and $([MSBuild]::IsOSPlatform('MacOS'))">$(BaseOutputPath)$(Configuration)/MacOS/$(Platform)/</OutputPath>
   </PropertyGroup>
 
   <ItemGroup>

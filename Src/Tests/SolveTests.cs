@@ -58,16 +58,23 @@ namespace Tests
         {
             Assert.True(_ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Tst/Tests/Symbolic/SymbolicOLP.4ml")).passed, "SolveTests: Loading SymbolicOLP.4ml failed.");
             Assert.True(_ciFixture.RunCommand("solve pm 1 SymbolicOLP.conforms").passed, "SolveTests: Solve command for SymbolicOLP.4ml failed.");
-            _ciFixture.SendChoice("0");
             Assert.False(_ciFixture.GetResult(), "SolveTests: No solutions found for partial model pm in SymbolicOLP.4ml.");
+        }
 
-            Assert.True(_ciFixture.RunCommand("solve pm1 1 SimpleOLP.conforms").passed, "SolveTests: Solve command for SymbolicOLP.4ml failed.");
-            _ciFixture.SendChoice("1");
-            Assert.False(_ciFixture.GetResult(), "SolveTests: No solutions found for partial model pm1 in SymbolicOLP.4ml.");
+        [Fact]
+        public void TestSimpleOLPExample()
+        {
+            Assert.True(_ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Tst/Tests/Symbolic/SimpleOLP.4ml")).passed, "SolveTests: Loading SimpleOLP.4ml failed.");
+            Assert.True(_ciFixture.RunCommand("solve pm1 1 SimpleOLP.conforms").passed, "SolveTests: Solve command for SimpleOLP.4ml failed.");
+            Assert.False(_ciFixture.GetResult(), "SolveTests: No solutions found for partial model pm1 in SimpleOLP.4ml.");
+        }
 
-            Assert.True(_ciFixture.RunCommand("solve pm2 1 SimpleOLP2.conforms").passed, "SolveTests: Solve command for SymbolicOLP.4ml failed.");
-            _ciFixture.SendChoice("2");
-            Assert.False(_ciFixture.GetResult(), "SolveTests: No solutions found for partial model pm2 in SymbolicOLP.4ml.");
+        [Fact]
+        public void TestSimpleOLP2Example()
+        {
+            Assert.True(_ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Tst/Tests/Symbolic/SimpleOLP2.4ml")).passed, "SolveTests: Loading SimpleOLP2.4ml failed.");
+            Assert.True(_ciFixture.RunCommand("solve pm2 1 SimpleOLP2.conforms").passed, "SolveTests: Solve command for SimpleOLP2.4ml failed.");
+            Assert.False(_ciFixture.GetResult(), "SolveTests: No solutions found for partial model pm2 in SimpleOLP2.4ml.");
         }
     }
 }

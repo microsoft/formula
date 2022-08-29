@@ -32,7 +32,7 @@ namespace Tests
             startInfo.FileName = "dotnet";
             startInfo.UseShellExecute = false;
             var binPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            startInfo.Arguments = binPath + "/CommandLine.dll";
+            startInfo.Arguments = binPath + "/CommandLine.dll --interactive: off";
             startInfo.ErrorDialog = false;
 
             _p.StartInfo = startInfo;
@@ -51,11 +51,7 @@ namespace Tests
             _p.BeginErrorReadLine();
             _waitForExitTask = _p.WaitForExitAsync();
 
-            Assert.True(RunCommand("interactive on").passed, "FormulaFixture: Interactive command failed.");
-
             Assert.True(RunCommand("wait on").passed, "FormulaFixture: Interactive command failed.");
-
-            Assert.True(RunCommand("verbose on").passed, "FormulaFixture: Verbose command failed.");
         }
 
         public void Dispose()
@@ -189,21 +185,6 @@ namespace Tests
 
                 Thread.Sleep(500);
             }
-        }
-
-        public void SendChoice(string choice)
-        {
-            try
-            {
-                _p.StandardInput.WriteLine(choice);
-            }
-            catch(System.IO.IOException e)
-            {
-                Console.Error.WriteLine(e.Message);
-                _isPipeBroken = true;
-            }
-
-            Thread.Sleep(500);
         }
 
         private bool HasCommandRun(string[] output, string[] command)

@@ -1,0 +1,18 @@
+domain SimpleOLP2
+{
+  input    ::= new (w: Integer, x: Integer).
+  trace    ::= (w: Integer, x: Integer).
+  cntrexmp ::= (Integer, Integer).
+
+  cntrexmp(w, x) :- input(w, x), c = count({ t | t is trace, t.w <= t.x}), c = 0.
+
+  trace(w, x) :- input(w, x).
+  trace(x, w) :- trace(w, x), w > x.
+
+  conforms cntrexmp(a, b).
+}
+
+partial model pm2 of SimpleOLP2
+{
+  input(a, b).
+}

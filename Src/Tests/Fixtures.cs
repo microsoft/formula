@@ -69,6 +69,7 @@ namespace Tests
         {
             if(!String.IsNullOrEmpty(evt.Data))
             {
+                Console.WriteLine(evt.Data);
                 lock(_stdOutBr)
                 {
                     _stdOutBr.AppendLine(evt.Data);
@@ -114,7 +115,15 @@ namespace Tests
             if(splitCommand[0].Equals("load") ||
                splitCommand[0].Equals("l"))
             {
-                CheckIfFileLoaded();
+                try
+                {
+                    _p.StandardInput.WriteLine("unload *");
+                }
+                catch(System.IO.IOException e)
+                {
+                    Console.Error.WriteLine(e.Message);
+                    _isPipeBroken = true;
+                }
             }
 
             try
@@ -167,24 +176,6 @@ namespace Tests
             ClearTasks();
             ClearOutput();
             return res;
-        }
-
-        private void CheckIfFileLoaded()
-        {
-            if(RunCommand("print").passed)
-            {
-                try
-                {
-                    _p.StandardInput.WriteLine("unload *");
-                }
-                catch(System.IO.IOException e)
-                {
-                    Console.Error.WriteLine(e.Message);
-                    _isPipeBroken = true;
-                }
-
-                Thread.Sleep(500);
-            }
         }
 
         private bool HasCommandRun(string[] output, string[] command)

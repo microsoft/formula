@@ -169,8 +169,7 @@ namespace Tests
             }
             catch (RegexMatchTimeoutException e)
             {
-                string msg = String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern);
-                Console.Error.WriteLine(msg);
+                Console.Error.WriteLine(String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern));
                 return false;
             }
             ClearTasks();
@@ -183,27 +182,21 @@ namespace Tests
             if(command.Length < 1)
                 return false;
 
-            string[] cmdRegex = null;
+            string cmdRegex = null;
             string lineToValidate = null;
             switch (command[0])
             {
                 case "int":
                 case "interactive":
-                    cmdRegex = new string[2];
-                    cmdRegex[0] = @"(interactive\son)";
-                    cmdRegex[1] = @"(interactive\soff)";
+                    cmdRegex = @"(interactive\s(on|off))";
                     break;
                 case "w":
                 case "wait":
-                    cmdRegex = new string[2];
-                    cmdRegex[0] = @"(wait\son)";
-                    cmdRegex[1] = @"(wait\soff)";
+                    cmdRegex = @"(wait\s(on|off))";
                     break;
                 case "v":
                 case "verbose":
-                    cmdRegex = new string[2];
-                    cmdRegex[0] = @"(verbose\son)";
-                    cmdRegex[1] = @"(verbose\soff)";
+                    cmdRegex = @"(verbose\s(on|off))";
                     break;
                 case "x":
                 case "exit":
@@ -216,56 +209,38 @@ namespace Tests
                     return false;
                 case "p":
                 case "print":
-                    cmdRegex = new string[2];
-                    cmdRegex[0] = @"(\/\/\/\/\sProgram\s.+?(?=\.)\.4ml)";
-                    cmdRegex[1] = @"(No\sfile\swith\sthat\sname)";
+                    cmdRegex = @"(\/\/\/\/\sProgram)";
                     break;
                 case "l":
                 case "load":
-                    cmdRegex = new string[2];
-                    cmdRegex[0] = @"(\(Compiled\)\s.+?(?=\.)\.4ml)";
-                    cmdRegex[1] = @"(The\sinstall\soperation\sfailed)|(\(Failed\)\s.+?(?=\.)\.4ml)";
+                    cmdRegex = @"(\(Compiled\))";
                     break;
                 case "ul":
                 case "unload":
-                    cmdRegex = new string[2];
-                    cmdRegex[0] = @"(\(Uninstalled\)\s\w+\.4ml)";
-                    cmdRegex[1] = @"(No\sfile\swith\sthat\sname)|(\(Failed\)\s.+?(?=\.)\.4ml)";
+                    cmdRegex = @"(\(Uninstalled\))";
                     break;
                 case "tul":
                 case "tunload":
                     return true;
                 case "sl":
                 case "solve":
-                    cmdRegex = new string[2];
-                    cmdRegex[0] = @"(Started\ssolve\stask\swith\sId\s\d+\.)|(Choose:)";
-                    cmdRegex[1] = @"(No\smodule\swith\sthat\sname)|(Failed\sto\sstart\ssolved\stask\.)|(Expected\sa\spositive\snumber\sof\ssolutions)";
-                    break;
-                case "ls" when command.Length > 1:
-                    cmdRegex = new string[1];
-                    cmdRegex[0] = @"(All\stasks)";
+                    cmdRegex = @"(Started\ssolve\stask\swith\sId\s\d+\.)";
                     break;
                 case "ls":
                 case "list":
-                    cmdRegex = new string[1];
-                    cmdRegex[0] = @"(All\stasks)|(Programs\sin\s(file|env)\sroot)|(Environment\svariables)";
+                    cmdRegex = @"(All\stasks)|(Programs\sin\s(file|env)\sroot)|(Environment\svariables)";
                     break;
                 case "h":
                 case "help":
-                    cmdRegex = new string[1];
-                    cmdRegex[0] = @"(apply\s\(ap\)\s+\-.+?(?=:):\sapply\stransformstep)";
+                    cmdRegex = @"(apply\s\(ap\)\s+\-.+?(?=:):\sapply\stransformstep)";
                     break;
                 case "s":
                 case "set" when command.Length > 2:
-                    cmdRegex = new string[2];
-                    cmdRegex[0] = @"(" + command[1] + @"\s=\s" + command[2] + ")";
-                    cmdRegex[1] = @"(The\svariable\s'.+?(?=')'\sis\snot\sdefined)";
+                    cmdRegex = @"(" + command[1] + @"\s=\s" + command[2] + ")";
                     break;
                 case "d":
                 case "del" when command.Length > 1:
-                    cmdRegex = new string[2];
-                    cmdRegex[0] = @"Deleted\svariable\s'"+ command[1] + "'";
-                    cmdRegex[1] = @"(The\svariable\s'.+?(?=')'\sis\snot\sdefined)";
+                    cmdRegex = @"Deleted\svariable\s'"+ command[1] + "'";
                     break;
                 default:
                     Console.WriteLine("FormulaFixture: Command not found.");
@@ -273,34 +248,17 @@ namespace Tests
             }
             lineToValidate = String.Join(" ", output);
             HashSet<string> simpleCmds = new HashSet<string>() { "int", "interactive", "w", "wait", "v", "verbose", "tul", "tunload", "ls tasks", "ls", "list", "h", "help" };
-            for(int idx = 0;idx < cmdRegex.Length;++idx)
+            if(!String.IsNullOrEmpty(lineToValidate))
             {
-                if(!String.IsNullOrEmpty(lineToValidate))
+                try
                 {
-                    try
-                    {
-                        TimeSpan tSpan = new TimeSpan(0,0,10);
-                        bool patMatched = Regex.IsMatch(lineToValidate, cmdRegex[idx], RegexOptions.Compiled | RegexOptions.Singleline, tSpan);
-                        if(simpleCmds.Contains(command[0]))
-                        {
-                            return patMatched;
-                        }
-
-                        if(idx == 0 && patMatched)
-                        {
-                            return true;
-                        }
-                        else if(idx == 1 && patMatched)
-                        {
-                            return false;
-                        }
-                    }
-                    catch (RegexMatchTimeoutException e)
-                    {
-                        string msg = String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern);
-                        Console.Error.WriteLine(msg);
-                        return false;
-                    }
+                    TimeSpan tSpan = new TimeSpan(0,0,10);
+                    return Regex.IsMatch(lineToValidate, cmdRegex, RegexOptions.Compiled | RegexOptions.Singleline, tSpan);
+                }
+                catch (RegexMatchTimeoutException e)
+                {
+                    Console.Error.WriteLine(String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern));
+                    return false;
                 }
             }
             return false;

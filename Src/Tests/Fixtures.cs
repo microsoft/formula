@@ -94,7 +94,7 @@ namespace Tests
 
         public void ClearTasks()
         {
-            Assert.True(RunCommand("tunload 0").passed, "FormulaFixture: tunload command failed.");
+            Assert.True(RunCommand("tunload *").passed, "FormulaFixture: tunload command failed.");
         }
 
         private string[] GetOutput()
@@ -175,7 +175,7 @@ namespace Tests
             {
                 try
                 {
-                    _p.StandardInput.WriteLine("unload");
+                    _p.StandardInput.WriteLine("unload *");
                 }
                 catch(System.IO.IOException e)
                 {
@@ -243,9 +243,7 @@ namespace Tests
                     break;
                 case "tul":
                 case "tunload":
-                    cmdRegex = new string[1];
-                    cmdRegex[0] = @"(\(Unloaded\s\d+\stasks)|(No\stask\swith\sID\s\d+)|(Unloaded\stask\s\d+)";
-                    break;
+                    return true;
                 case "sl":
                 case "solve":
                     cmdRegex = new string[2];

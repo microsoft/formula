@@ -9,20 +9,17 @@ To build and run the command line interpreter with Nix flakes, run
 $ nix run github:VUISIS/formula-dotnet
 ```
 
-### With .NET
-To build the command line interpreter, run the following commands from
-Src/CommandLine.
+### With .NET on x64
+To build the command line interpreter, run the following commands from Src/CommandLine.
 
+```bash
+$ dotnet build CommandLine.sln /p:Configuration=Debug|Release /p:Platform=x64
+```
+
+### With .NET on arm64 MacOS
 ```bash
 For native arm64 builds on Mac OS X run nuget add before restore and build:
 $ dotnet nuget add source --username USERNAME --password GITHUB_TOKEN --store-password-in-clear-text --name github "https://nuget.pkg.github.com/VUISIS/index.json"
-
-$ dotnet restore CommandLine.sln
-
-For Debug|Release and x64:
-$ dotnet build CommandLine.sln /p:Configuration=Debug|Release /p:Platform=x64
-
-For Debug|Release and ARM64:
 $ dotnet build CommandLineARM.sln /p:Configuration=Debug|Release /p:Platform=ARM64
 ```
 

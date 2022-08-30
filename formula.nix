@@ -3,11 +3,14 @@
 buildDotnetModule rec {
   pname = "formula-dotnet";
   version = "2.0";
+  buildType = "Release";
 
   src = ./.;
 
   nugetDeps = ./nuget.nix;
-  projectFile = "Src/CommandLine/CommandLine.csproj";
+  projectFile = "Src/CommandLine/CommandLine.sln";
+
+  dotnetFlags = [ "/p:Configuration=Release" "/p:Platform=x64" ];
 
   dotnet-runtime = dotnetCorePackages.runtime_6_0;
   dotnet-sdk = dotnetCorePackages.sdk_6_0;

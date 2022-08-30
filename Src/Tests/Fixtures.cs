@@ -115,15 +115,7 @@ namespace Tests
             if(splitCommand[0].Equals("load") ||
                splitCommand[0].Equals("l"))
             {
-                try
-                {
-                    _p.StandardInput.WriteLine("unload *");
-                }
-                catch(System.IO.IOException e)
-                {
-                    Console.Error.WriteLine(e.Message);
-                    _isPipeBroken = true;
-                }
+                Assert.True(RunCommand("unload *").passed, "FormulaFixture: unload command failed.");
             }
 
             try
@@ -137,7 +129,7 @@ namespace Tests
                 return (false, null);
             }
 
-            Thread.Sleep(500);
+            Thread.Sleep(2000);
             string[] output = GetOutput();
             ClearOutput();
             return (HasCommandRun(output, splitCommand), output);
@@ -145,12 +137,10 @@ namespace Tests
 
         public bool GetResult()
         {
-            (bool hasRan, string[] output) = RunCommand("ls tasks");
-            if(!hasRan)
-            {
-                return false;
-            }
-
+            (bool passed, string[] output) = RunCommand("ls tasks");
+            Assert.True(passed, "FormulaFixture: ls tasks command failed.");
+            ClearTasks();
+            
             try
             {
                 TimeSpan tSpan = new TimeSpan(0,0,10);
@@ -168,18 +158,14 @@ namespace Tests
                 Console.Error.WriteLine(String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern));
                 return false;
             }
-            finally
-            {
-                ClearTasks();
-                ClearOutput();
-            }
+
             return false;
         }
 
-        private bool HasCommandRun(string[] output, string[] command)
+        private bool HasCommandRun(string[] output = null, string[] command = null)
         {
-            if(command.Length < 1)
-                return false;
+            Assert.NotNull(command);
+            Assert.NotNull(output);
 
             string cmdRegex = null;
             switch (command[0])
@@ -215,8 +201,7 @@ namespace Tests
                     break;
                 case "ul":
                 case "unload":
-                    cmdRegex = @"(\(Uninstalled\))";
-                    break;
+                    return true;
                 case "tul":
                 case "tunload":
                     return true;
@@ -247,16 +232,22 @@ namespace Tests
             TimeSpan tSpan = new TimeSpan(0,0,10);
             try
             {
-                bool res = Regex.IsMatch(output[0], cmdRegex, RegexOptions.Compiled, tSpan);
-                if(res)
+                if(output.Length > 0)
                 {
-                    return true;
+                    bool res = Regex.IsMatch(output[0], cmdRegex, RegexOptions.Compiled, tSpan);
+                    if(res)
+                    {
+                        return true;
+                    }
                 }
-
-                res = Regex.IsMatch(output[output.Length - 2], cmdRegex, RegexOptions.Compiled, tSpan);
-                if(res)
+                
+                if(output.Length > 2)
                 {
-                    return true;
+                    bool res = Regex.IsMatch(output[output.Length - 2], cmdRegex, RegexOptions.Compiled, tSpan);
+                    if(res)
+                    {
+                        return true;
+                    }
                 }
             }
             catch (RegexMatchTimeoutException e)
@@ -265,20 +256,23 @@ namespace Tests
                 return false;
             }
 
-            for(int i = 1;i < output.Length - 2;++i)
+            if(output.Length > 3)
             {
-                try
+                for(int i = 1;i < output.Length - 2;++i)
                 {
-                    bool res = Regex.IsMatch(output[i], cmdRegex, RegexOptions.Compiled, tSpan);
-                    if(res)
+                    try
                     {
-                        return true;
+                        bool res = Regex.IsMatch(output[i], cmdRegex, RegexOptions.Compiled, tSpan);
+                        if(res)
+                        {
+                            return true;
+                        }
                     }
-                }
-                catch (RegexMatchTimeoutException e)
-                {
-                    Console.Error.WriteLine(String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern));
-                    return false;
+                    catch (RegexMatchTimeoutException e)
+                    {
+                        Console.Error.WriteLine(String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern));
+                        return false;
+                    }
                 }
             }
 

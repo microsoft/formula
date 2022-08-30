@@ -13,11 +13,8 @@ namespace Tests
     {
         private readonly FormulaFixture _ciFixture;
 
-        private readonly ITestOutputHelper _output;
-
-        public SolveTests(FormulaFixture fixture, ITestOutputHelper output)
+        public SolveTests(FormulaFixture fixture)
         {
-            _output = output;
             _ciFixture = fixture;
         }
 

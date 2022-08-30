@@ -14,25 +14,20 @@ namespace Tests
     {
         private readonly FormulaFixture _ciFixture;
 
-        private readonly ITestOutputHelper _output;
-
-        public LintingTests(ITestOutputHelper output, FormulaFixture fixture)
+        public LintingTests(FormulaFixture fixture)
         {
-            _output = output;
             _ciFixture = fixture;
         }
 
         [Fact]
         public void TestRuleLinterFixedLoading()
         {           
-            _output.WriteLine(Path.GetFullPath("../../../../../models/weird_domain_fixed.4ml"));
             Assert.True(_ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../models/weird_domain_fixed.4ml")).passed);
         }
 
         [Fact]
         public void TestRuleLinterBrokenLoading()
         {
-            _output.WriteLine(Path.GetFullPath("../../../../../models/weird_domain_broken.4ml"));
             Assert.False(_ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../models/weird_domain_broken.4ml")).passed);
         }
 

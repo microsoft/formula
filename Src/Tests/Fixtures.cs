@@ -151,20 +151,16 @@ namespace Tests
                 return false;
             }
 
-            string o = String.Join(" ", output);
-            bool res = false;
             try
             {
                 TimeSpan tSpan = new TimeSpan(0,0,10);
-                bool patMatched = Regex.IsMatch(o, @"(Solve\s\|\s+Done\s+\|\s+false)", RegexOptions.Compiled | RegexOptions.Singleline, tSpan);
-                if(patMatched)
+                for(int i = 0;i < output.Length;++i)
                 {
-                    res = false;
-                }
-                patMatched = Regex.IsMatch(o, @"(Solve\s\|\s+Done\s+\|\s+true)", RegexOptions.Compiled | RegexOptions.Singleline, tSpan);
-                if(patMatched)
-                {
-                    res = true;
+                    bool res = Regex.IsMatch(output[i], @"(Solve\s\|\s+Done\s+\|\s+true)", RegexOptions.Compiled, tSpan);
+                    if(res)
+                    {
+                        return true;
+                    }
                 }
             }
             catch (RegexMatchTimeoutException e)
@@ -172,9 +168,12 @@ namespace Tests
                 Console.Error.WriteLine(String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern));
                 return false;
             }
-            ClearTasks();
-            ClearOutput();
-            return res;
+            finally
+            {
+                ClearTasks();
+                ClearOutput();
+            }
+            return false;
         }
 
         private bool HasCommandRun(string[] output, string[] command)
@@ -183,7 +182,6 @@ namespace Tests
                 return false;
 
             string cmdRegex = null;
-            string lineToValidate = null;
             switch (command[0])
             {
                 case "int":
@@ -246,14 +244,36 @@ namespace Tests
                     Console.WriteLine("FormulaFixture: Command not found.");
                     return false;
             }
-            lineToValidate = String.Join(" ", output);
-            HashSet<string> simpleCmds = new HashSet<string>() { "int", "interactive", "w", "wait", "v", "verbose", "tul", "tunload", "ls tasks", "ls", "list", "h", "help" };
-            if(!String.IsNullOrEmpty(lineToValidate))
+            TimeSpan tSpan = new TimeSpan(0,0,10);
+            try
+            {
+                bool res = Regex.IsMatch(output[0], cmdRegex, RegexOptions.Compiled, tSpan);
+                if(res)
+                {
+                    return true;
+                }
+
+                res = Regex.IsMatch(output[output.Length - 2], cmdRegex, RegexOptions.Compiled, tSpan);
+                if(res)
+                {
+                    return true;
+                }
+            }
+            catch (RegexMatchTimeoutException e)
+            {
+                Console.Error.WriteLine(String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern));
+                return false;
+            }
+
+            for(int i = 1;i < output.Length - 2;++i)
             {
                 try
                 {
-                    TimeSpan tSpan = new TimeSpan(0,0,10);
-                    return Regex.IsMatch(lineToValidate, cmdRegex, RegexOptions.Compiled | RegexOptions.Singleline, tSpan);
+                    bool res = Regex.IsMatch(output[i], cmdRegex, RegexOptions.Compiled, tSpan);
+                    if(res)
+                    {
+                        return true;
+                    }
                 }
                 catch (RegexMatchTimeoutException e)
                 {
@@ -261,6 +281,7 @@ namespace Tests
                     return false;
                 }
             }
+
             return false;
         }
     }

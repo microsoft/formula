@@ -32,16 +32,16 @@ jobs:
       working-directory: ./Src/Tests
       run: |
         export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${GITHUB_WORKSPACE}/Src/CommandLine/bin/Release/Linux/x64/net6.0/runtimes/linux-x64/native
-        dotnet test Tests.csproj --verbosity normal /p:Configuration=Release /p:Platform=x64
+        dotnet test Tests.csproj --logger "console;verbosity=detailed" /p:Configuration=Release /p:Platform=x64
     - name: Test MacOS
       if: ${{ matrix.os == 'macOS-latest' }}
       working-directory: ./Src/Tests
       run: |
         export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:${GITHUB_WORKSPACE}/Src/CommandLine/bin/Release/MacOS/x64/net6.0/runtimes/osx-x64/native
-        dotnet test Tests.csproj --verbosity normal /p:Configuration=Release /p:Platform=x64
+        dotnet test Tests.csproj --logger "console;verbosity=detailed" /p:Configuration=Release /p:Platform=x64
     - name: Test Windows
       if: ${{ matrix.os == 'windows-latest' }}
       working-directory: ./Src/Tests
       run: |
         set PATH="%PATH%;${GITHUB_WORKSPACE}\Src\CommandLine\bin\Release\Windows\x64\net6.0\runtimes\win-x64\native"
-        dotnet test Tests.csproj --verbosity normal /p:Configuration=Release /p:Platform=x64
+        dotnet test Tests.csproj --logger "console;verbosity=detailed" /p:Configuration=Release /p:Platform=x64

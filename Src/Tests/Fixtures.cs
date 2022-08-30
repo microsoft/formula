@@ -129,7 +129,7 @@ namespace Tests
                 return (false, null);
             }
 
-            Thread.Sleep(2000);
+            Thread.Sleep(5000);
             string[] output = GetOutput();
             ClearOutput();
             return (HasCommandRun(output, splitCommand), output);

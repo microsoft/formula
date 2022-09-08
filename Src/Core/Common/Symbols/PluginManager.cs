@@ -28,10 +28,13 @@ public class PluginManager
             string[] pluginDirs = pluginsPath.Split(";");
             foreach (string pluginDir in pluginDirs)
             {
-                string[] plugins = Directory.GetFiles(pluginDir.Trim(), "*.dll");
-                foreach (string plugin in plugins)
+                if (Directory.Exists(pluginDir.Trim()))
                 {
-                    LoadPlugin(plugin);
+                    string[] plugins = Directory.GetFiles(pluginDir.Trim(), "*.dll");
+                    foreach (string plugin in plugins)
+                    {
+                        LoadPlugin(plugin);
+                    }
                 }
             }
         }

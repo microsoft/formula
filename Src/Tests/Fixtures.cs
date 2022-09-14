@@ -251,5 +251,10 @@ namespace Tests
         {
             AddMessage(severity, msg, true);
         } 
+
+        public void ResetPrintedError()
+        {
+            return;
+        }
     }
 }

@@ -22,13 +22,15 @@ namespace Tests
         [Fact]
         public void TestRuleLinterFixedLoading()
         {           
-            Assert.True(_ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../models/weird_domain_fixed.4ml")).passed);
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../models/weird_domain_fixed.4ml"), "LintingTests: Load command for weird_domain_fixed.4ml failed.");
+            Assert.True(_ciFixture.GetLoadResult(), "LintingTests: Loading weird_domain_fixed.4ml failed.");
         }
 
         [Fact]
         public void TestRuleLinterBrokenLoading()
         {
-            Assert.False(_ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../models/weird_domain_broken.4ml")).passed);
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../models/weird_domain_broken.4ml"), "LintingTests: Load command for weird_domain_broken.4ml failed.");
+            Assert.False(_ciFixture.GetLoadResult(), "LintingTests: Finding errors in weird_domain_broken.4ml failed.");
         }
 
         [Fact]

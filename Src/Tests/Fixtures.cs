@@ -1,282 +1,255 @@
 using System;
-using System.IO;
-using System.Reflection;
-using System.Collections.Generic;
 using System.Text;
+using System.IO;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Xunit;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
+using Microsoft.Formula.CommandLine;
+using Microsoft.Formula.API;
+using Xunit.Abstractions;
 
 namespace Tests
 {
-    [Collection("FormulaCollection")]
+    [CollectionDefinition("FormulaCollection")]
+    public class FormulaCollection : ICollectionFixture<FormulaFixture> {}
+
     public class FormulaFixture : IDisposable
     {
-        private readonly Process _p = new Process();
-
-        private static StringBuilder _stdOutBr = new StringBuilder();
-
-        private readonly Task _waitForExitTask = null;
-
-        private bool _isPipeBroken = false;
+        public TestChooser _chooser { get; private set; }
+        public TestSink _sink { get; private set; }
+        public CommandInterface _ci { get; private set; }
 
         public FormulaFixture()
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.RedirectStandardOutput = true;
-            startInfo.RedirectStandardInput = true;
-            startInfo.RedirectStandardError = true;
-            startInfo.CreateNoWindow = true;
-            startInfo.FileName = "dotnet";
-            startInfo.UseShellExecute = false;
-            var binPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-            startInfo.Arguments = binPath + "/CommandLine.dll --interactive: off";
-            startInfo.ErrorDialog = false;
+            _chooser = new TestChooser();
+            _sink = new TestSink(_chooser);
+            _ci = new CommandInterface(_sink, _chooser);
 
-            _p.StartInfo = startInfo;
-            _p.EnableRaisingEvents = true;
-            _p.OutputDataReceived += new DataReceivedEventHandler(OutputHandler);
+            RunCommand("interactive off", "FormulaFixture: Interactive off failed.");
+            RunCommand("wait on", "FormulaFixture: Wait on failed.");
+            RunCommand("verbose on", "FormulaFixture: Verbose on failed.");
+        }
 
-            _p.ErrorDataReceived += new DataReceivedEventHandler(ErrorHandler);
-
-            _p.Exited += (sender, evt) => 
+        public void RunCommand(string command = "", string assert_msg = "", bool assert_bool = true)
+        {
+            var args = command.Split(' ');
+            switch(args[0])
             {
-                Console.WriteLine("FormulaFixture: Process CommandLine has exited.");
-            };
+                case "load":
+                    _sink.Command = command;
 
-            _p.Start();
-            _p.BeginOutputReadLine();
-            _p.BeginErrorReadLine();
-            _waitForExitTask = _p.WaitForExitAsync();
+                    Assert.True(_ci.DoCommand("unload *"), "FormulaFixture: unload failed.");
 
-            Assert.True(RunCommand("wait on").passed, "FormulaFixture: Interactive command failed.");
+                    _sink.ClearOutput();
+
+                    Assert.True(_ci.DoCommand(command), assert_msg);
+                    break;
+                default:
+                    _sink.Command = command;
+
+                    Assert.True(_ci.DoCommand(command), assert_msg);
+                    break;
+            }
         }
 
         public void Dispose()
         {
-            if(!_p.HasExited)
-            {
-                _p.CancelOutputRead();
-                _p.CancelErrorRead();
-                if(!_waitForExitTask.Wait(5000))
-                    _p.Kill();
-            }
+            _ci.Cancel();
         }
 
-        private void OutputHandler(object sender, DataReceivedEventArgs evt)
+        public bool GetLoadResult()
         {
-            if(!String.IsNullOrEmpty(evt.Data))
+            string[] output = _sink.Output;
+
+            _sink.ClearOutput();
+
+            foreach(var o in output)
             {
-                Console.WriteLine(evt.Data);
-                lock(_stdOutBr)
+                var reg = new Regex(@"\(Compiled\)", RegexOptions.Compiled);
+                if(reg.IsMatch(o))
                 {
-                    _stdOutBr.AppendLine(evt.Data);
+                    return true;
                 }
             }
+            return false;
         }
 
-        private void ErrorHandler(object sender, DataReceivedEventArgs evt)
+        public bool GetSetResult()
         {
-            if (!String.IsNullOrEmpty(evt.Data))
+            string[] output = _sink.Output;
+
+            _sink.ClearOutput();
+
+            foreach(var o in output)
             {
-                Console.WriteLine("FormulaFixture.Process Error: " + evt.Data);
+                if(o.Contains("="))
+                {
+                    return true;
+                }
             }
+            return false;
+        }
+
+        public bool GetDelResult()
+        {
+            string[] output = _sink.Output;
+
+            _sink.ClearOutput();
+
+            foreach(var o in output)
+            {
+                var reg = new Regex(@"Deleted\svariable", RegexOptions.Compiled);
+                if(reg.IsMatch(o))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool GetListResult()
+        {
+            string[] output = _sink.Output;
+
+            _sink.ClearOutput();
+
+            foreach(var o in output)
+            {
+                var reg = new Regex(@"Environment\svariables", RegexOptions.Compiled);
+                if(reg.IsMatch(o))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool GetHelpResult()
+        {
+            string[] output = _sink.Output;
+
+            _sink.ClearOutput();
+
+            foreach(var o in output)
+            {
+                var reg = new Regex(@"apply\s+\(ap\)\s+\-\s+Start\s+an\s+apply\s+task\.\s+Use:\s+apply\s+transformstep", RegexOptions.Compiled);
+                if(reg.IsMatch(o))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool GetSolveResult()
+        {
+            _sink.ClearOutput();
+
+            Assert.True(_ci.DoCommand("ls tasks"), "FormulaFixture: ls tasks failed.");
+
+            string[] output = _sink.Output;
+
+            _sink.ClearOutput();
+
+            Assert.True(_ci.DoCommand("tunload *"), "FormulaFixture: tunload failed.");
+
+            _sink.ClearOutput();
+
+            foreach(var o in output)
+            {
+                var reg = new Regex(@"^\s+0\s+\|\s+Solve\s+\|\s+Done\s+\|\s+true", RegexOptions.Compiled);
+                if(reg.IsMatch(o))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    public class TestChooser : Microsoft.Formula.CommandLine.IChooser
+    {
+        public bool Interactive { get; set; }
+
+        public TestChooser()
+        {
+            Interactive = false;
+        }
+
+        public bool GetChoice(out DigitChoiceKind choice)
+        {
+            choice = DigitChoiceKind.Zero;
+            return true;
+        }
+    }
+
+    public class TestSink : Microsoft.Formula.CommandLine.IMessageSink
+    {
+        private StringBuilder _strBuilder = null;
+
+        public string Command { get; set; }
+
+        private TestChooser _chooser = null;
+
+        public bool PrintedError
+        {
+            get
+            {
+                return false;
+            }
+        }
+
+        public string[] Output {
+            get {
+                return _strBuilder.ToString().Split("\n");
+            }
+        }
+
+        public TestSink(TestChooser chooser) 
+        {
+            _chooser = chooser;
+            _strBuilder = new StringBuilder();
+            Console.SetOut(TextWriter.Null);
         }
 
         public void ClearOutput()
         {
-            lock(_stdOutBr)
-            {
-                _stdOutBr.Clear();
-            }
+            _strBuilder.Clear();
         }
 
-        public void ClearTasks()
+        private void AddMessage(SeverityKind severity = SeverityKind.Info, string msg = "", bool newline = false)
         {
-            Assert.True(RunCommand("tunload *").passed, "FormulaFixture: tunload command failed.");
+            if(newline)
+            {
+                _strBuilder.AppendLine(msg);
+                return;
+            }
+            _strBuilder.Append(msg);
         }
 
-        private string[] GetOutput()
+        public TextWriter Writer
         {
-            lock(_stdOutBr)
-            {
-                return _stdOutBr.ToString().Split(Environment.NewLine);
-            }
+            get { return TextWriter.Null; }
         }
 
-        public (bool passed, string[] output) RunCommand(string command)
+        public void WriteMessage(string msg)
         {
-            if(_isPipeBroken)
-                return (false, null);
-
-            string[] splitCommand = command.Split(" ");
-            if(splitCommand[0].Equals("load") ||
-               splitCommand[0].Equals("l"))
-            {
-                Assert.True(RunCommand("unload *").passed, "FormulaFixture: unload command failed.");
-            }
-
-            try
-            {
-                _p.StandardInput.WriteLine(command);
-            }
-            catch(System.IO.IOException e)
-            {
-                Console.Error.WriteLine(e.Message);
-                _isPipeBroken = true;
-                return (false, null);
-            }
-
-            Thread.Sleep(5000);
-            string[] output = GetOutput();
-            ClearOutput();
-            return (HasCommandRun(output, splitCommand), output);
+            AddMessage(SeverityKind.Info, msg);
         }
 
-        public bool GetResult()
+        public void WriteMessage(string msg, SeverityKind severity)
         {
-            (bool passed, string[] output) = RunCommand("ls tasks");
-            Assert.True(passed, "FormulaFixture: ls tasks command failed.");
-            ClearTasks();
-            
-            try
-            {
-                TimeSpan tSpan = new TimeSpan(0,0,10);
-                for(int i = 0;i < output.Length;++i)
-                {
-                    bool res = Regex.IsMatch(output[i], @"(Solve\s\|\s+Done\s+\|\s+true)", RegexOptions.Compiled, tSpan);
-                    if(res)
-                    {
-                        return true;
-                    }
-                }
-            }
-            catch (RegexMatchTimeoutException e)
-            {
-                Console.Error.WriteLine(String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern));
-                return false;
-            }
-
-            return false;
+            AddMessage(severity, msg);
         }
 
-        private bool HasCommandRun(string[] output = null, string[] command = null)
+        public void WriteMessageLine(string msg)
         {
-            Assert.NotNull(command);
-            Assert.NotNull(output);
-
-            string cmdRegex = null;
-            switch (command[0])
-            {
-                case "int":
-                case "interactive":
-                    cmdRegex = @"(interactive\s(on|off))";
-                    break;
-                case "w":
-                case "wait":
-                    cmdRegex = @"(wait\s(on|off))";
-                    break;
-                case "v":
-                case "verbose":
-                    cmdRegex = @"(verbose\s(on|off))";
-                    break;
-                case "x":
-                case "exit":
-                    if(_waitForExitTask.Wait(5000))
-                    {
-                        _p.CancelOutputRead();
-                        _p.CancelErrorRead();
-                        return true;
-                    }
-                    return false;
-                case "p":
-                case "print":
-                    cmdRegex = @"(\/\/\/\/\sProgram)";
-                    break;
-                case "l":
-                case "load":
-                    cmdRegex = @"(\(Compiled\))";
-                    break;
-                case "ul":
-                case "unload":
-                    return true;
-                case "tul":
-                case "tunload":
-                    return true;
-                case "sl":
-                case "solve":
-                    cmdRegex = @"(Started\ssolve\stask\swith\sId\s\d+\.)";
-                    break;
-                case "ls":
-                case "list":
-                    cmdRegex = @"(All\stasks)|(Programs\sin\s(file|env)\sroot)|(Environment\svariables)";
-                    break;
-                case "h":
-                case "help":
-                    cmdRegex = @"(apply\s\(ap\)\s+\-.+?(?=:):\sapply\stransformstep)";
-                    break;
-                case "s":
-                case "set" when command.Length > 2:
-                    cmdRegex = @"(" + command[1] + @"\s=\s" + command[2] + ")";
-                    break;
-                case "d":
-                case "del" when command.Length > 1:
-                    cmdRegex = @"Deleted\svariable\s'"+ command[1] + "'";
-                    break;
-                default:
-                    Console.WriteLine("FormulaFixture: Command not found.");
-                    return false;
-            }
-            TimeSpan tSpan = new TimeSpan(0,0,10);
-            try
-            {
-                if(output.Length > 0)
-                {
-                    bool res = Regex.IsMatch(output[0], cmdRegex, RegexOptions.Compiled, tSpan);
-                    if(res)
-                    {
-                        return true;
-                    }
-                }
-                
-                if(output.Length > 2)
-                {
-                    bool res = Regex.IsMatch(output[output.Length - 2], cmdRegex, RegexOptions.Compiled, tSpan);
-                    if(res)
-                    {
-                        return true;
-                    }
-                }
-            }
-            catch (RegexMatchTimeoutException e)
-            {
-                Console.Error.WriteLine(String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern));
-                return false;
-            }
-
-            if(output.Length > 3)
-            {
-                for(int i = 1;i < output.Length - 2;++i)
-                {
-                    try
-                    {
-                        bool res = Regex.IsMatch(output[i], cmdRegex, RegexOptions.Compiled, tSpan);
-                        if(res)
-                        {
-                            return true;
-                        }
-                    }
-                    catch (RegexMatchTimeoutException e)
-                    {
-                        Console.Error.WriteLine(String.Format("FormulaFixture: Timeout after {0} matching '{1}' with '{2}'.", e.MatchTimeout, e.Input, e.Pattern));
-                        return false;
-                    }
-                }
-            }
-
-            return false;
+            AddMessage(SeverityKind.Info, msg, true);
         }
+
+        public void WriteMessageLine(string msg, SeverityKind severity)
+        {
+            AddMessage(severity, msg, true);
+        } 
     }
 }

@@ -18,32 +18,47 @@ namespace Tests
         [Fact]
         public void TestHelp()
         {
-            Assert.True(_ciFixture.RunCommand("help").passed);
-            Assert.True(_ciFixture.RunCommand("h").passed);
+            _ciFixture.RunCommand("help", "CommandLineTests: help command failed.");
+            Assert.True(_ciFixture.GetHelpResult(), "CommandLineTests: help result failed.");
+
+            _ciFixture.RunCommand("h", "CommandLineTests: h command failed.");
+            Assert.True(_ciFixture.GetHelpResult(), "CommandLineTests: h result failed.");
         }
         
         [Fact]
         public void TestSet()
         {
-            Assert.True(_ciFixture.RunCommand("set A test").passed);
-            Assert.True(_ciFixture.RunCommand("s A test").passed);
+            _ciFixture.RunCommand("set A test", "CommandLineTests: set command failed.");
+            Assert.True(_ciFixture.GetSetResult(), "CommandLineTests: set result failed.");
+
+            _ciFixture.RunCommand("s A test", "CommandLineTests: s command failed.");
+            Assert.True(_ciFixture.GetSetResult(), "CommandLineTests: s result failed.");
         }
         
         [Fact]
         public void TestDel()
         {
-            Assert.True(_ciFixture.RunCommand("set B test2").passed);
-            Assert.True(_ciFixture.RunCommand("del B").passed);
-            
-            Assert.True(_ciFixture.RunCommand("s B test2").passed);
-            Assert.True(_ciFixture.RunCommand("d B").passed);
+            _ciFixture.RunCommand("set B test2", "CommandLineTests: set command failed.");
+            Assert.True(_ciFixture.GetSetResult(), "CommandLineTests: s result failed.");
+
+            _ciFixture.RunCommand("del B", "CommandLineTests: del command failed.");
+            Assert.True(_ciFixture.GetDelResult(), "CommandLineTests: del result failed.");
+
+            _ciFixture.RunCommand("s B test2", "CommandLineTests: s command failed.");
+            Assert.True(_ciFixture.GetSetResult(), "CommandLineTests: s result failed.");
+
+            _ciFixture.RunCommand("d B", "CommandLineTests: d command failed.");
+            Assert.True(_ciFixture.GetDelResult(), "CommandLineTests: d result failed.");
         }
         
         [Fact]
         public void TestList()
         {
-            Assert.True(_ciFixture.RunCommand("list").passed);
-            Assert.True(_ciFixture.RunCommand("ls").passed);
+            _ciFixture.RunCommand("list", "CommandLineTests: list command failed.");
+            Assert.True(_ciFixture.GetListResult(), "CommandLineTests: list result failed.");
+
+            _ciFixture.RunCommand("ls", "CommandLineTests: ls command failed.");
+            Assert.True(_ciFixture.GetListResult(), "CommandLineTests: ls result failed.");
         }
     }
 }

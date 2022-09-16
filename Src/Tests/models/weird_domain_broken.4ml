@@ -4,7 +4,7 @@ domain AlgTrees
     Root ::= new (root: any Node).
 
     height ::= (Node, Integer).
-    height(x,c) :- x.left = NIL, x.right = NIL, c = 0.
+    height(x,c) :- x.left = NIL, x.right = NIL, y.left = NIL, y.right = NIL, c = 0.
     height(x,c) :- x.left = NIL, x.right != NIL, height(x.right,d), c = d+1.
     height(x,c) :- x.right = NIL, x.left != NIL, height(x.left,d), c = d+1.
     height(x,c) :- x.left != NIL, x.right != NIL, height(x.left,d), height(x.right,e), d >= e, c = d+1.

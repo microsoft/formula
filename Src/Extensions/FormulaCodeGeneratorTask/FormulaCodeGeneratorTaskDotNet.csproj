@@ -3,7 +3,17 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net6.0</TargetFramework>
+    <TargetFrameworkIdentifier>.NETCOREAPP</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>6.0</TargetFrameworkVersion>
     <Platforms>ARM64;x64</Platforms>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition="'$(Platform)' == ''">x64</Platform>
+    <PlatformTarget Condition="'$(Platform)' == 'x64'">x64</PlatformTarget>
+    <PlatformTarget Condition="'$(Platform)' == 'ARM64'">arm64</PlatformTarget>
+    <BaseOutputPath Condition="'$(BaseOutputPath)' == ''">bin/</BaseOutputPath>
+    <OutputPath Condition="'$(OutputPath)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">$(BaseOutputPath)$(Configuration)/Windows/$(Platform)/</OutputPath>
+    <OutputPath Condition="'$(OutputPath)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">$(BaseOutputPath)$(Configuration)/Linux/$(Platform)/</OutputPath>
+    <OutputPath Condition="'$(OutputPath)' == '' and $([MSBuild]::IsOSPlatform('MacOS'))">$(BaseOutputPath)$(Configuration)/MacOS/$(Platform)/</OutputPath>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -16,8 +26,20 @@
     <PackageReference Include="Microsoft.Build.Utilities.Core" Version="16.3.0" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\Core\Core.csproj" />
-  </ItemGroup>
+  <Choose>
+    <When Condition="'$(Platform)' == 'x64'">
+      <ItemGroup>
+        <ProjectReference Include="..\..\Core\Core.csproj" Configuration="$(Configuration)" Platform="x64"/>
+      </ItemGroup>
+    </When>
+    </Choose>
+
+    <Choose>
+    <When Condition="$([MSBuild]::IsOSPlatform('OSX')) and '$(Platform)' == 'ARM64'">
+      <ItemGroup>
+        <ProjectReference Include="..\..\Core\CoreARM.csproj" Configuration="$(Configuration)" Platform="ARM64"/>
+      </ItemGroup>
+    </When>
+    </Choose>
 
 </Project>

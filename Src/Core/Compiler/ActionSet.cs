@@ -159,13 +159,13 @@
             TypeEnvironment bodyEnv;
             foreach (var b in bodies)
             {
-                string varName = null;
-                if(!RuleLinter.ValidateBodyQualifiedIds(b, out varName))
+                List<string> varNames = null;
+                if(!RuleLinter.ValidateBodyQualifiedIds(b, out varNames))
                 {
                     var flag = new Flag(
                     SeverityKind.Error,
                     AST.Node,
-                    Constants.NoBindingTypeError.ToString(varName),
+                    Constants.NoBindingTypeError.ToString(String.Join(",", varNames)),
                     Constants.NoBindingTypeError.Code);
                     flags.Add(flag);
                     return RecordValidationResult(false);

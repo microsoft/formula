@@ -1,7 +1,7 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using Xunit;
-using Microsoft.Formula.CommandLine;
 using Microsoft.Formula.Compiler;
 using Microsoft.Formula.API.Nodes;
 using Microsoft.Formula.API;
@@ -9,68 +9,28 @@ using Xunit.Abstractions;
 
 namespace Tests
 {
-    public class LintingTests : IClassFixture<CommandInterfaceFixture>
+    [Collection("FormulaCollection")]
+    public class LintingTests : IClassFixture<FormulaFixture>
     {
-        private readonly CommandInterfaceFixture _ciFixture;
+        private readonly FormulaFixture _ciFixture;
 
-        public LintingTests(CommandInterfaceFixture fixture)
+        public LintingTests(FormulaFixture fixture)
         {
             _ciFixture = fixture;
         }
 
-        private void ResetStandardOutput()
-        {
-            var standardOutput = new StreamWriter(Console.OpenStandardOutput());
-            standardOutput.AutoFlush = true;
-            Console.SetOut(standardOutput);
-        }
-
-        private void CheckIfProgramLoaded()
-        {
-            _ciFixture._sink.ResetPrintedError();
-            using(StringWriter sw = new StringWriter())
-            using (_ciFixture._ci)
-            {
-                Console.SetOut(sw);
-
-                Assert.True(_ciFixture._ci.DoCommand("print"));
-
-                string output = sw.ToString();
-
-                ResetStandardOutput();
-
-                bool ctns = output.Contains("No file with that name");
-                if(!ctns)
-                {
-                    Assert.True(_ciFixture._ci.DoCommand("unload"));
-                }
-            }
-        }
-
         [Fact]
         public void TestRuleLinterFixedLoading()
-        {
-            using (_ciFixture._ci)
-            {
-                CheckIfProgramLoaded();
-                
-                string[] cmdPath = { "load", Path.GetFullPath("../../../models/weird_domain_fixed.4ml") };
-                Assert.True(_ciFixture._ci.DoCommand(String.Join(" ", cmdPath)));
-                Assert.False(_ciFixture._sink.PrintedError);
-            }
+        {           
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../models/weird_domain_fixed.4ml"), "LintingTests: Load command for weird_domain_fixed.4ml failed.");
+            Assert.True(_ciFixture.GetLoadResult(), "LintingTests: Loading weird_domain_fixed.4ml failed.");
         }
 
         [Fact]
         public void TestRuleLinterBrokenLoading()
         {
-            using (_ciFixture._ci)
-            {
-                CheckIfProgramLoaded();
-                
-                string[] cmdPath = { "load", Path.GetFullPath("../../../models/weird_domain_broken.4ml") };
-                Assert.True(_ciFixture._ci.DoCommand(String.Join(" ", cmdPath)));
-                Assert.True(_ciFixture._sink.PrintedError);
-            }
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../models/weird_domain_broken.4ml"), "LintingTests: Load command for weird_domain_broken.4ml failed.");
+            Assert.False(_ciFixture.GetLoadResult(), "LintingTests: Finding errors in weird_domain_broken.4ml failed.");
         }
 
         [Fact]
@@ -83,12 +43,12 @@ namespace Tests
             body.Node.AddConstr(find.Node);
 
             var nil = Factory.Instance.MkId("NIL");
-            var relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            var relConstr = Factory.Instance.MkRelConstr(RelKind.Eq, varId, nil);
             body.Node.AddConstr(relConstr.Node);
 
-            string varName = "theta";
-            Assert.True(RuleLinter.ValidateBodyQualifiedIds(body.Node, out varName));
-            Assert.Null(varName);
+            List<string> varNames;
+            Assert.True(RuleLinter.ValidateBodyQualifiedIds(body.Node, out varNames));
+            Assert.Empty(varNames);
         }
 
         [Fact]
@@ -98,12 +58,12 @@ namespace Tests
             var varId = Factory.Instance.MkId("x");
             Assert.False(varId.Node.IsQualified);
             var nil = Factory.Instance.MkId("NIL");
-            var relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            var relConstr = Factory.Instance.MkRelConstr(RelKind.Eq, varId, nil);
             body.Node.AddConstr(relConstr.Node);
 
-            string varName = "theta";
-            Assert.True(RuleLinter.ValidateBodyQualifiedIds(body.Node, out varName));
-            Assert.Null(varName);
+            List<string> varNames;
+            Assert.True(RuleLinter.ValidateBodyQualifiedIds(body.Node, out varNames));
+            Assert.Empty(varNames);
         }
 
         [Fact]
@@ -113,31 +73,150 @@ namespace Tests
             var varId = Factory.Instance.MkId("x.right");
             Assert.True(varId.Node.IsQualified);
             var nil = Factory.Instance.MkId("NIL");
+            var relConstr = Factory.Instance.MkRelConstr(RelKind.Eq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            List<string> varNames;
+            Assert.False(RuleLinter.ValidateBodyQualifiedIds(body.Node, out varNames));
+            Assert.Single(varNames);
+            Assert.Collection(varNames,
+                item => Assert.Equal("x", item)
+            );
+        }
+
+        [Fact]
+        public void TestInvalidRuleLinterValidateMultiVarMultiBodyQualifiedIds()
+        {
+            var body = Factory.Instance.MkBody();
+            var varId = Factory.Instance.MkId("x.right");
+            Assert.True(varId.Node.IsQualified);
+            var nil = Factory.Instance.MkId("NIL");
             var relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
             body.Node.AddConstr(relConstr.Node);
 
-            string varName = "theta";
-            Assert.False(RuleLinter.ValidateBodyQualifiedIds(body.Node, out varName));
-            Assert.Equal("x", varName);
+            varId = Factory.Instance.MkId("x.left");
+            Assert.True(varId.Node.IsQualified);
+            nil = Factory.Instance.MkId("NIL");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            varId = Factory.Instance.MkId("y.left");
+            Assert.True(varId.Node.IsQualified);
+            nil = Factory.Instance.MkId("NIL");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            varId = Factory.Instance.MkId("y.right");
+            Assert.True(varId.Node.IsQualified);
+            nil = Factory.Instance.MkId("NIL");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            varId = Factory.Instance.MkId("c");
+            nil = Factory.Instance.MkId("0");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            List<string> varNames;
+            Assert.False(RuleLinter.ValidateBodyQualifiedIds(body.Node, out varNames));
+            Assert.Equal(2, varNames.Count);
+            Assert.Collection(varNames,
+                item => Assert.Equal("x", item),
+                item => Assert.Equal("y", item)
+            );
         }
-    }
 
-    public class CommandInterfaceFixture : IDisposable
-    {
-        private readonly CommandLineProgram.ConsoleChooser _chooser;
-        public CommandLineProgram.ConsoleSink _sink;
-        public CommandInterface _ci { get; private set; }
-
-        public CommandInterfaceFixture()
+        [Fact]
+        public void TestValidRuleLinterValidateMuliVarMultiBodyQualifiedIds()
         {
-            _chooser = new CommandLineProgram.ConsoleChooser();
-            _sink = new CommandLineProgram.ConsoleSink();
-            _ci = new CommandInterface(_sink, _chooser);
+            var body = Factory.Instance.MkBody();
+            var varId = Factory.Instance.MkId("x.right");
+            Assert.True(varId.Node.IsQualified);
+            var nil = Factory.Instance.MkId("NIL");
+            var relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            varId = Factory.Instance.MkId("x.left");
+            Assert.True(varId.Node.IsQualified);
+            nil = Factory.Instance.MkId("NIL");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            varId = Factory.Instance.MkId("y.left");
+            Assert.True(varId.Node.IsQualified);
+            nil = Factory.Instance.MkId("NIL");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            varId = Factory.Instance.MkId("y.right");
+            Assert.True(varId.Node.IsQualified);
+            nil = Factory.Instance.MkId("NIL");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            var typeTerm = Factory.Instance.MkId("Node");
+            varId = Factory.Instance.MkId("x");
+            var find = Factory.Instance.MkFind(varId, typeTerm);
+            body.Node.AddConstr(find.Node);
+
+            varId = Factory.Instance.MkId("y");
+            find = Factory.Instance.MkFind(varId, typeTerm);
+            body.Node.AddConstr(find.Node);
+
+            varId = Factory.Instance.MkId("c");
+            nil = Factory.Instance.MkId("0");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            List<string> varNames;
+            Assert.True(RuleLinter.ValidateBodyQualifiedIds(body.Node, out varNames));
+            Assert.Empty(varNames);
         }
 
-        public void Dispose()
+        [Fact]
+        public void TestValidRuleLinterValidateSingleVarMultiBodyQualifiedIds()
         {
-            _ci.Cancel();
+            var body = Factory.Instance.MkBody();
+            var varId = Factory.Instance.MkId("x.right");
+            Assert.True(varId.Node.IsQualified);
+            var nil = Factory.Instance.MkId("NIL");
+            var relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            varId = Factory.Instance.MkId("x.left");
+            Assert.True(varId.Node.IsQualified);
+            nil = Factory.Instance.MkId("NIL");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            varId = Factory.Instance.MkId("y.left");
+            Assert.True(varId.Node.IsQualified);
+            nil = Factory.Instance.MkId("NIL");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            varId = Factory.Instance.MkId("y.right");
+            Assert.True(varId.Node.IsQualified);
+            nil = Factory.Instance.MkId("NIL");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            var typeTerm = Factory.Instance.MkId("Node");
+            varId = Factory.Instance.MkId("x");
+            var find = Factory.Instance.MkFind(varId, typeTerm);
+            body.Node.AddConstr(find.Node);
+
+            varId = Factory.Instance.MkId("c");
+            nil = Factory.Instance.MkId("0");
+            relConstr = Factory.Instance.MkRelConstr(RelKind.Neq, varId, nil);
+            body.Node.AddConstr(relConstr.Node);
+
+            List<string> varNames;
+            Assert.False(RuleLinter.ValidateBodyQualifiedIds(body.Node, out varNames));
+            Assert.Single(varNames);
+            Assert.Collection(varNames,
+                item => Assert.Equal("y", item)
+            );
         }
     }
 }

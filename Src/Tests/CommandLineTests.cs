@@ -1,100 +1,64 @@
 using System;
 using System.IO;
 using Xunit;
-using Microsoft.Formula.CommandLine;
 using Xunit.Abstractions;
 
 namespace Tests
 {
-    public class CommandLineTests : IDisposable
+    [Collection("FormulaCollection")]
+    public class CommandLineTests : IClassFixture<FormulaFixture>
     {
-        private readonly ITestOutputHelper _output;
-        private readonly CommandLineProgram.ConsoleChooser _chooser;
-        private readonly CommandLineProgram.ConsoleSink _sink;
-        private readonly CommandInterface _ci;
-        private readonly string _fullPath;
+        private readonly FormulaFixture _ciFixture;
 
-        public CommandLineTests(ITestOutputHelper output)
+        public CommandLineTests(FormulaFixture fixture)
         {
-            _output = output;
-            _chooser = new CommandLineProgram.ConsoleChooser();
-            _sink = new CommandLineProgram.ConsoleSink();
-            _ci = new CommandInterface(_sink, _chooser);
-            _fullPath = Path.GetFullPath("../../../../models/graphs.4ml");
-        }
-
-        public void Dispose()
-        {
-            _ci.Cancel();
-        }
-
-        [Fact]
-        public void TestExit()
-        {
-            using (_ci)
-            {
-                Assert.True(_ci.DoCommand("exit"));
-                Assert.False(_sink.PrintedError);
-                
-                Assert.True(_ci.DoCommand("x"));
-                Assert.False(_sink.PrintedError);
-            }
+            _ciFixture = fixture;
         }
         
         [Fact]
         public void TestHelp()
         {
-            using (_ci)
-            {
-                Assert.True(_ci.DoCommand("help"));
-                Assert.False(_sink.PrintedError);
-                
-                Assert.True(_ci.DoCommand("h"));
-                Assert.False(_sink.PrintedError);
-            }
+            _ciFixture.RunCommand("help", "CommandLineTests: help command failed.");
+            Assert.True(_ciFixture.GetHelpResult(), "CommandLineTests: help result failed.");
+
+            _ciFixture.RunCommand("h", "CommandLineTests: h command failed.");
+            Assert.True(_ciFixture.GetHelpResult(), "CommandLineTests: h result failed.");
         }
         
         [Fact]
         public void TestSet()
         {
-            using (_ci)
-            {
-                Assert.True(_ci.DoCommand("set A test"));
-                Assert.False(_sink.PrintedError);
-                
-                Assert.True(_ci.DoCommand("s A test"));
-                Assert.False(_sink.PrintedError);
-            }
+            _ciFixture.RunCommand("set A test", "CommandLineTests: set command failed.");
+            Assert.True(_ciFixture.GetSetResult(), "CommandLineTests: set result failed.");
+
+            _ciFixture.RunCommand("s A test", "CommandLineTests: s command failed.");
+            Assert.True(_ciFixture.GetSetResult(), "CommandLineTests: s result failed.");
         }
         
         [Fact]
         public void TestDel()
         {
-            using (_ci)
-            {
-                Assert.True(_ci.DoCommand("set B test2"));
-                Assert.False(_sink.PrintedError);
-                Assert.True(_ci.DoCommand("del B"));
-                Assert.False(_sink.PrintedError);
-                
-                Assert.True(_ci.DoCommand("s B test2"));
-                Assert.False(_sink.PrintedError);
-                Assert.True(_ci.DoCommand("d B"));
-                Assert.False(_sink.PrintedError);
-            }
+            _ciFixture.RunCommand("set B test2", "CommandLineTests: set command failed.");
+            Assert.True(_ciFixture.GetSetResult(), "CommandLineTests: s result failed.");
+
+            _ciFixture.RunCommand("del B", "CommandLineTests: del command failed.");
+            Assert.True(_ciFixture.GetDelResult(), "CommandLineTests: del result failed.");
+
+            _ciFixture.RunCommand("s B test2", "CommandLineTests: s command failed.");
+            Assert.True(_ciFixture.GetSetResult(), "CommandLineTests: s result failed.");
+
+            _ciFixture.RunCommand("d B", "CommandLineTests: d command failed.");
+            Assert.True(_ciFixture.GetDelResult(), "CommandLineTests: d result failed.");
         }
         
         [Fact]
         public void TestList()
         {
-            using (_ci)
-            {
-                Assert.True(_ci.DoCommand("list"));
-                Assert.False(_sink.PrintedError);
-                
-                Assert.True(_ci.DoCommand("ls"));
-                Assert.False(_sink.PrintedError);
-            }
+            _ciFixture.RunCommand("list", "CommandLineTests: list command failed.");
+            Assert.True(_ciFixture.GetListResult(), "CommandLineTests: list result failed.");
+
+            _ciFixture.RunCommand("ls", "CommandLineTests: ls command failed.");
+            Assert.True(_ciFixture.GetListResult(), "CommandLineTests: ls result failed.");
         }
     }
 }

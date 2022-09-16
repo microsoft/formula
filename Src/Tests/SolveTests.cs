@@ -1,139 +1,91 @@
 using System;
 using System.IO;
+using System.Text.RegularExpressions;
+using System.Collections.Generic;
 using Xunit;
 using Microsoft.Formula.CommandLine;
 using Xunit.Abstractions;
 
 namespace Tests
 {
-    public class SolveTests : IClassFixture<CommandInterfaceFixture>
+    [Collection("FormulaCollection")]
+    public class SolveTests : IClassFixture<FormulaFixture>
     {
-        private readonly CommandInterfaceFixture _ciFixture;
+        private readonly FormulaFixture _ciFixture;
 
-        public SolveTests(CommandInterfaceFixture fixture)
+        public SolveTests(FormulaFixture fixture)
         {
             _ciFixture = fixture;
         }
 
-        private void ResetStandardOutput()
+        [Fact]
+        public void TestSolvingMappingExample()
         {
-            var standardOutput = new StreamWriter(Console.OpenStandardOutput());
-            standardOutput.AutoFlush = true;
-            Console.SetOut(standardOutput);
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Tst/Tests/Symbolic/MappingExample.4ml"), "SolveTests: Load command for MappingExample.4ml failed.");
+            Assert.True(_ciFixture.GetLoadResult(), "SolveTests: Loading MappingExample.4ml failed.");
+
+            _ciFixture.RunCommand("solve pm 1 Mapping.conforms", "SolveTests: Solve command for MappingExample.4ml failed.");
+            Assert.True(_ciFixture.GetSolveResult(), "SolveTests: No solutions found for partial model pm in MappingExample.4ml.");
         }
-
-        private bool SolvePartialModel(string partial_model)
+    
+        [Fact]
+        public void TestSolvingSendMoreMoneyExample()
         {
-            using(StringWriter sw = new StringWriter())
-            using (_ciFixture._ci)
-            {
-                Console.SetOut(sw);
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Tst/Tests/Symbolic/SendMoreMoney.4ml"), "SolveTests: Load command for SendMoreMoney.4ml failed.");
+            Assert.True(_ciFixture.GetLoadResult(), "SolveTests: Loading SendMoreMoney.4ml failed.");
 
-                if(!_ciFixture._ci.DoCommand("solve x = " + partial_model))
-                {
-                    return false;
-                }
-
-                string output = sw.ToString();
-
-                ResetStandardOutput();
-
-                bool ctns = output.Contains("Model solvable.");
-                if(ctns)
-                {
-                    Console.WriteLine("Model Solvable");
-                    return true;
-                }
-                
-                Console.WriteLine("Model Not Solvable");
-                return false;
-            }
-        }
-
-        private bool loadExample(string examplePath)
-        {
-            using (_ciFixture._ci)
-            {
-                if(!_ciFixture._ci.DoCommand("unload"))
-                {
-                    return false;
-                }
-                
-                string[] cmdPath = { "load", examplePath };
-                if(!_ciFixture._ci.DoCommand(String.Join(" ", cmdPath)))
-                {
-                    return false;
-                }
-
-                return true;
-            }
+            _ciFixture.RunCommand("solve pm 1 Money.conforms", "SolveTests: Solve command for SendMoreMoney.4ml failed.");
+            Assert.True(_ciFixture.GetSolveResult(), "SolveTests: No solutions found for partial model pm in SendMoreMoney.4ml.");
         }
 
         [Fact]
-        public void TestLoadMappingExample()
+        public void TestSolvingSymbolicAggregationExample()
         {
-            Assert.True(loadExample(Path.GetFullPath("../../../../../Tst/Tests/Symbolic/MappingExample.4ml")));
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Tst/Tests/Symbolic/SymbolicAggregation.4ml"), "SolveTests: Load command for SymbolicAggregation.4ml failed.");
+            Assert.True(_ciFixture.GetLoadResult(), "SolveTests: Loading SymbolicAggregation.4ml failed.");
+
+            _ciFixture.RunCommand("solve pm 1 SymbolicAggregation.conforms", "SolveTests: Solve command for SymbolicAggregation.4ml failed.");
+            Assert.True(_ciFixture.GetSolveResult(), "SolveTests: No solutions found for partial model pm in SymbolicAggregation.4ml.");
         }
 
         [Fact]
-        public void TestSolveMappingExample()
+        public void TestSolvingSymbolicMaxExample()
         {
-            Assert.True(SolvePartialModel("pm"));
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Tst/Tests/Symbolic/SymbolicMax.4ml"), "SolveTests: Load command for SymbolicMax.4ml failed.");
+            Assert.True(_ciFixture.GetLoadResult(), "SolveTests: Loading SymbolicMax.4ml failed.");
+
+            _ciFixture.RunCommand("solve pm 1 SymbolicMax.conforms", "SolveTests: Solve command for SymbolicMax.4ml failed.");
+            Assert.True(_ciFixture.GetSolveResult(), "SolveTests: No solutions found for partial model pm in SymbolicMax.4ml.");
         }
 
         [Fact]
-        public void TestLoadSendMoreMoneyExample()
+        public void TestSymbolicOLPExample()
         {
-            Assert.True(loadExample(Path.GetFullPath("../../../../../Tst/Tests/Symbolic/SendMoreMoney.4ml")));
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Tst/Tests/Symbolic/SymbolicOLP.4ml"), "SolveTests: Load command for SymbolicOLP.4ml failed.");
+            Assert.True(_ciFixture.GetLoadResult(), "SolveTests: Loading SymbolicOLP.4ml failed.");
+
+            _ciFixture.RunCommand("solve pm 1 SymbolicOLP.conforms", "SolveTests: Solve command for SymbolicOLP.4ml failed.");
+            Assert.False(_ciFixture.GetSolveResult(), "SolveTests: No solutions found for partial model pm in SymbolicOLP.4ml.");
         }
 
         [Fact]
-        public void TestSolveSendMoreMoneyExample()
+        public void TestSimpleOLPExample()
         {
-            Assert.True(SolvePartialModel("pm"));
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Tst/Tests/Symbolic/SimpleOLP.4ml"), "SolveTests: Load command for SimpleOLP.4ml failed.");
+            Assert.True(_ciFixture.GetLoadResult(), "SolveTests: Loading SimpleOLP.4ml failed.");
+
+            _ciFixture.RunCommand("solve pm1 1 SimpleOLP.conforms", "SolveTests: Solve command for SimpleOLP.4ml failed.");
+            Assert.False(_ciFixture.GetSolveResult(), "SolveTests: No solutions found for partial model pm1 in SimpleOLP.4ml.");
         }
 
         [Fact]
-        public void TestLoadSymbolicAggregationExample()
+        public void TestSimpleOLP2Example()
         {
-            Assert.True(loadExample(Path.GetFullPath("../../../../../Tst/Tests/Symbolic/SymbolicAggregation.4ml")));
-        }
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Tst/Tests/Symbolic/SimpleOLP2.4ml"), "SolveTests: Load command for SimpleOLP2.4ml failed.");
+            Assert.True(_ciFixture.GetLoadResult(), "SolveTests: Loading SimpleOLP2.4ml failed.");
 
-        [Fact]
-        public void TestSolveSymbolicAggregationExample()
-        {
-            Assert.True(SolvePartialModel("pm"));
-        }
-
-        [Fact]
-        public void TestLoadSymbolicMaxExample()
-        {
-            Assert.True(loadExample(Path.GetFullPath("../../../../../Tst/Tests/Symbolic/SymbolicMax.4ml")));
-        }
-
-        [Fact]
-        public void TestSolveSymbolicMaxExample()
-        {
-            Assert.True(SolvePartialModel("pm"));
-        }
-    }
-
-    public class CommandInterfaceFixture : IDisposable
-    {
-        private readonly CommandLineProgram.ConsoleChooser _chooser;
-        private readonly CommandLineProgram.ConsoleSink _sink;
-        public CommandInterface _ci { get; private set; }
-
-        public CommandInterfaceFixture()
-        {
-            _chooser = new CommandLineProgram.ConsoleChooser();
-            _sink = new CommandLineProgram.ConsoleSink();
-            _ci = new CommandInterface(_sink, _chooser);
-        }
-
-        public void Dispose()
-        {
-            _ci.Cancel();
+            _ciFixture.RunCommand("solve pm2 1 SimpleOLP2.conforms", "SolveTests: Solve command for SimpleOLP2.4ml failed.");
+            Assert.False(_ciFixture.GetSolveResult(), "SolveTests: No solutions found for partial model pm2 in SimpleOLP2.4ml.");
         }
     }
 }

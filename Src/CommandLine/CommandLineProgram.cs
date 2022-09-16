@@ -29,7 +29,8 @@
                     return;
                 }
 
-                if (OperatingSystem.IsMacOS())
+                if (OperatingSystem.IsMacOS() &&
+                    chooser.Interactive)
                 {
                     InteractivePrompt.Run(ci);
                     Environment.ExitCode = sink.PrintedError ? 1 : 0;

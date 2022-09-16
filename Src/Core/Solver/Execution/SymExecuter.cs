@@ -490,10 +490,6 @@
                     }
                 }
             }
-            else
-            {
-                Console.WriteLine("Model not solvable.\nThe conforms term could not be derived.");
-            }
 
             return solvable;
         }
@@ -734,7 +730,6 @@
             var status = Solver.Z3Solver.Check(currConstraint);
             if (status == Z3.Status.UNSATISFIABLE)
             {
-                System.Console.WriteLine("Unsat constraint: \n" + currConstraint + "\n\n");
                 return false;
             }
 

@@ -749,6 +749,25 @@
             return Convert.ToInt32(rawNum, fromBase);
         }
 
+        private Rational MakeRational(string s)
+        {
+            if (s.Contains('/'))
+            {
+                var pieces = s.Split('/');
+                var num = new BigInteger(Int32.Parse(pieces[0]));
+                var den = new BigInteger(Int32.Parse(pieces[1]));
+                return new Rational(num, den);
+            }
+            else if (s.Contains('.'))
+            {
+                return new Rational(Double.Parse(s));
+            }
+            else
+            {
+                return new Rational(int.Parse(s));
+            }
+        }
+
         public string GetModelInterpretation(Term t, Z3.Model model)
         {
             if (t.Groundness == Groundness.Ground)
@@ -800,46 +819,26 @@
                     }
                     else if (x.Symbol.Kind == SymbolKind.BaseOpSymb)
                     {
-                        int arg1, arg2, res;
+                        Rational r1, r2;
                         string str;
                         switch (((BaseOpSymb)x.Symbol).OpKind)
                         {
                             case OpKind.Add:
-                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
-                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
-                                {
-                                    throw new NotImplementedException();
-                                }
-                                res = arg1 + arg2;
-                                str = "" + res;
-                                return str;
+                                r1 = MakeRational(ch.ElementAt(0));
+                                r2 = MakeRational(ch.ElementAt(1));
+                                return (r1 + r2).ToString();
                             case OpKind.Sub:
-                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
-                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
-                                {
-                                    throw new NotImplementedException();
-                                }
-                                res = arg1 - arg2;
-                                str = "" + res;
-                                return str;
+                                r1 = MakeRational(ch.ElementAt(0));
+                                r2 = MakeRational(ch.ElementAt(1));
+                                return (r1 - r2).ToString();
                             case OpKind.Mul:
-                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
-                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
-                                {
-                                    throw new NotImplementedException();
-                                }
-                                res = arg1 * arg2;
-                                str = "" + res;
-                                return str;
+                                r1 = MakeRational(ch.ElementAt(0));
+                                r2 = MakeRational(ch.ElementAt(1));
+                                return (r1 * r2).ToString();
                             case OpKind.Div:
-                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
-                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
-                                {
-                                    throw new NotImplementedException();
-                                }
-                                res = arg1 / arg2;
-                                str = "" + res;
-                                return str;
+                                r1 = MakeRational(ch.ElementAt(0));
+                                r2 = MakeRational(ch.ElementAt(1));
+                                return (r1 / r2).ToString();
                             case OpKind.SymAnd:
                                 if (ch.ElementAt(0) == "TRUE" && ch.ElementAt(1) == "TRUE")
                                 {
@@ -855,14 +854,9 @@
                                 str = hasFalse ? "FALSE" : "TRUE";
                                 return str;
                             case OpKind.SymMax:
-                                if (!Int32.TryParse(ch.ElementAt(0), out arg1) ||
-                                    !Int32.TryParse(ch.ElementAt(1), out arg2))
-                                {
-                                    throw new NotImplementedException();
-                                }
-                                res = arg1 > arg2 ? arg1 : arg2;
-                                str = "" + res;
-                                return str;
+                                r1 = MakeRational(ch.ElementAt(0));
+                                r2 = MakeRational(ch.ElementAt(1));
+                                return r1 > r2 ? r1.ToString() : r2.ToString();
                             default:
                                 throw new NotImplementedException();
                         }

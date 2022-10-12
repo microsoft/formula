@@ -159,18 +159,6 @@
             TypeEnvironment bodyEnv;
             foreach (var b in bodies)
             {
-                /*List<string> varNames = null;
-                if(!RuleLinter.ValidateBodyQualifiedIds(b, out varNames))
-                {
-                    var flag = new Flag(
-                    SeverityKind.Error,
-                    AST.Node,
-                    Constants.NoBindingTypeError.ToString(String.Join(",", varNames)),
-                    Constants.NoBindingTypeError.Code);
-                    flags.Add(flag);
-                    return RecordValidationResult(false);
-                }*/
-
                 bodyEnv = TypeEnvironment.AddChild(b);
                 var cs = new ConstraintSystem(Index, b, bodyEnv, myComprData);
                 if (!cs.Validate(flags, varList, cancel))

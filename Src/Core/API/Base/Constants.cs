@@ -83,6 +83,10 @@
         LCMAll,
         LstLength,
         LstReverse,
+        LstFind,
+        LstFindAll,
+        LstFindAllNot,
+        LstGetAt,
         Max,
         MaxAll,
         Min,
@@ -110,6 +114,10 @@
         StrLower,
         StrReverse,
         StrUpper,
+        SymAnd,
+        SymAndAll,
+        SymCount,
+        SymMax,
         Sub,
         Sum,
         ToNatural,
@@ -331,6 +339,8 @@
         public static readonly MessageString ProductivityCaseWarning = new MessageString("Case {0}: {1}[{2} : {3}]", 47);
 
         public static readonly MessageString ProductivityWarning = new MessageString("Rule may construct any value accepted by constructor {0} at indices {1}", 48);
+
+        public static readonly MessageString NoBindingTypeError = new MessageString("Rule contains a variable(s) {0} with no binding type. Types are not implicitly generated for variables. Example: x is Type.", 49);
 
         public struct MessageString
         {

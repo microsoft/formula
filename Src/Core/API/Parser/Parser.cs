@@ -4,11 +4,10 @@
     using System.Collections.Generic;
     using System.Diagnostics.Contracts;
     using System.Linq;
-    using System.Numerics;
-    using Nodes;
+    using Microsoft.Formula.API.Nodes;
+    using Microsoft.Formula.Common;
     using QUT.Gppg;
 
-    using Microsoft.Formula.Common;
     internal partial class Parser : ShiftReduceParser<LexValue, LexLocation>
     {
         private enum ModRefState 

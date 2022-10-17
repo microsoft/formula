@@ -46,12 +46,23 @@
 
         private List<CardConstraint> constraints = new List<CardConstraint>();
 
+        public IEnumerable<Map<CardVar, MutableTuple<CardRange>>> SolverState
+        {
+            get { return solverState; }
+        }
+
+
         /// <summary>
         /// The number of DoFs forced by "requires some"
         /// </summary>
         public IEnumerable<KeyValuePair<UserSymbol, int>> ForcedDoFs
         {
             get { return forcedDoFs; }
+        }
+
+        public IEnumerable<CardConstraint> Constraints
+        {
+            get { return constraints; }
         }
 
         /// <summary>
@@ -126,6 +137,7 @@
         {
             Contract.Requires(newRange.Lower != Cardinality.Infinity);
             MutableTuple<CardRange> range;
+            
             if (solverState.Peek().TryFindValue(cvar, out range))
             {
                 range.Item1 = newRange;
@@ -703,6 +715,49 @@
                 PruneBin(ngbin);
             }
 
+            //// Step 2a. Compute bounds from partial model contracts
+            int n;
+            CardCnst bound;
+            API.Nodes.CardPair cp;
+            UserSymbol symb, other;
+            foreach (var contract in Facts.Model.Node.Contracts)
+            {
+                foreach (var cs in contract.Specification)
+                {
+                    cp = (API.Nodes.CardPair)cs;
+                    bound = new CardCnst(new Cardinality(new BigInteger(cp.Cardinality)));
+                    symb = Facts.Index.SymbolTable.Resolve(cp.TypeId.Name, out other, null);
+                    Contract.Assert(symb != null && other == null);
+                    foreach (var con in EnumerateNewConstructors(symb))
+                    {
+                        switch (contract.ContractKind)
+                        {
+                            case ContractKind.RequiresAtMost:
+                                AddConstraint(varMap[con].Item3 <= bound);
+                                break;
+                            case ContractKind.RequiresAtLeast:
+                                AddConstraint(varMap[con].Item3 >= bound);
+                                break;
+                            case ContractKind.RequiresSome:
+                                {
+                                    if (forcedDoFs.TryFindValue(con, out n))
+                                    {
+                                        forcedDoFs[con] = Math.Max(n, cp.Cardinality);
+                                    }
+                                    else
+                                    {
+                                        forcedDoFs.Add(con, cp.Cardinality);
+                                    }
+
+                                    break;
+                                }
+                            default:
+                                throw new NotImplementedException();
+                        }
+                    }
+                }
+            }
+
             //// Step 3. Iteratively compute the minimal elements until a fixpoint is reached.
             Term mgu;
             bool changed;
@@ -908,7 +963,7 @@
                });
         }
 
-        private class CardConstraint
+        public class CardConstraint
         {
             public enum OpKind { LEq, GEq };
 
@@ -984,7 +1039,7 @@
             }
         }
      
-        private abstract class CardExpr
+        public abstract class CardExpr
         {
             public enum ExprKind { Cnst, Var, Unn, Prod };
 
@@ -1092,8 +1147,46 @@
                 }
             }
         }
+        public sealed class CardVarComparer : IComparer<CardVar>
+        {
+            private CardVarComparer() { }
 
-        private class CardVar : CardExpr
+            private static readonly CardVarComparer cardVarComparer = new CardVarComparer();
+
+            public static CardVarComparer GetCardVarComparer()
+            {
+                return cardVarComparer;
+            }
+
+            public int Compare(CardVar v1, CardVar v2)
+            {
+                if (v1 == v2)
+                {
+                    return 0;
+                }
+
+                var cmp = Microsoft.Formula.Common.Terms.Symbol.Compare(v1.Symbol, v2.Symbol);
+                if (cmp != 0)
+                {
+                    return cmp;
+                }
+
+                if (v1.IsLFPCard && v2.IsLFPCard)
+                {
+                    return 0;
+                }
+                else if (!v1.IsLFPCard)
+                {
+                    return -1;
+                }
+                else
+                {
+                    return 1;
+                }
+            }
+        }
+
+        public class CardVar : CardExpr
         {
             public override ExprKind Kind
             {
@@ -1180,7 +1273,7 @@
             }
         }
 
-        private class CardCnst : CardExpr
+        public class CardCnst : CardExpr
         {
             private Cardinality cardVal;
             private CardRange cardValAsRange;

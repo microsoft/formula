@@ -1,0 +1,23 @@
+domain SimpleOLP
+{
+  foo    ::= new (w: Integer, x: Integer).
+  input    ::= new (w: Integer, x: Integer).
+  trace    ::= (w: Integer, x: Integer).
+  cntrexmp ::= (Integer, Integer).
+
+  cntrexmp(w, x) :- input(w, x), c = count({ t | t is trace, t.w <= t.x}), c = 0.
+
+  trace(w, x) :- input(w, x).
+  trace(x, w) :- trace(w, x), w > x.
+
+  input(w, x) :- foo(w, x), w > x.
+
+  conforms cntrexmp(a, b).
+  conforms input(a, b).
+}
+
+partial model pm1 of SimpleOLP
+[solver_RecursionBound = 100]
+{
+  foo(a, b).
+}

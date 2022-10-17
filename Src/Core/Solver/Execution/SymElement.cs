@@ -45,6 +45,183 @@
             private set;
         }
 
+        public bool HasConstraints()
+        {
+            return !constraintData.IsEmpty();
+        }
+
+        public bool IsDirectlyProvable
+        {
+            get;
+            private set;
+        }
+
+        public void SetDirectlyProvable()
+        {
+            IsDirectlyProvable = true;
+        }
+
+        private List<ConstraintData> constraintData = new List<ConstraintData>();
+
+        private HashSet<Z3BoolExpr> cachedConstraints = new HashSet<Z3BoolExpr>();
+
+        public void AddConstraintData(HashSet<Z3BoolExpr> exprs, Set<Term> posTerms, Set<Term> negTerms)
+        {
+            bool needToAdd = true;
+
+            foreach (var item in constraintData)
+            {
+                if (item.IsSameConstraintData(exprs, posTerms, negTerms))
+                {
+                    needToAdd = false;
+                    break;
+                }
+            }
+
+            if (needToAdd)
+            {
+                var data = new ConstraintData(exprs, posTerms, negTerms);
+                constraintData.Add(data);
+            }
+        }
+
+        public bool ContainsConstraint(Z3BoolExpr expr)
+        {
+            return cachedConstraints.Contains(expr);
+        }
+
+        private Z3BoolExpr CreateAndCacheConstraint(SymExecuter executer, Z3BoolExpr currConstraint, Z3BoolExpr nextConstraint)
+        {
+            cachedConstraints.Add(nextConstraint);
+
+            if (currConstraint == null)
+            {
+                return nextConstraint;
+            }
+            else
+            {
+                return executer.Solver.Context.MkAnd(currConstraint, nextConstraint);
+            }
+        }
+
+        private Z3BoolExpr GetSideConstraints(SymExecuter executer, Set<Term> processed)
+        {
+            List<Z3BoolExpr> constraints = new List<Z3BoolExpr>();
+            Term t = this.Term;
+            processed.Add(t);
+            SymElement next;
+            Z3BoolExpr topConstraint = null;
+            Z3BoolExpr currConstraint = null;
+            Set<Term> localProcessed = null;
+
+            if (IsDirectlyProvable)
+            {
+                return executer.Solver.Context.MkTrue();
+            }
+
+            foreach (var constraint in constraintData)
+            {
+                currConstraint = null;
+                localProcessed = new Set<Term>(Term.Compare, processed);
+                foreach (var posTerm in constraint.PosConstraints)
+                {
+                    if (!localProcessed.Contains(posTerm) &&
+                        executer.GetSymbolicTerm(posTerm, out next))
+                    {
+                        var nextConstraint = next.GetSideConstraints(executer, localProcessed);
+                        currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
+                    }
+                }
+
+                localProcessed = new Set<Term>(Term.Compare, processed);
+                foreach (var negTerm in constraint.NegConstraints)
+                {
+                    if (!processed.Contains(negTerm) &&
+                        executer.GetSymbolicTerm(negTerm, out next))
+                    {
+                        var nextConstraint = next.GetSideConstraints(executer, localProcessed);
+                        nextConstraint = executer.Solver.Context.MkNot(nextConstraint);
+                        currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
+                    }
+                }
+
+                foreach (var nextConstraint in constraint.DirConstraints)
+                {
+                    currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
+                }
+
+                if (topConstraint == null)
+                {
+                    topConstraint = currConstraint;
+                }
+                else
+                {
+                    topConstraint = executer.Solver.Context.MkOr(topConstraint, currConstraint);
+                }
+            }
+
+            return topConstraint;
+        }
+
+        public Z3BoolExpr GetSideConstraints(SymExecuter executer)
+        {
+            List<Z3BoolExpr> constraints = new List<Z3BoolExpr>();
+            Set<Term> processed = new Set<Term>(Term.Compare);
+            Term t = this.Term;
+            SymElement next;
+            Z3BoolExpr topConstraint = null;
+            Z3BoolExpr currConstraint = null;
+            Z3Context context = executer.Solver.Context;
+
+            if (IsDirectlyProvable)
+            {
+                return executer.Solver.Context.MkTrue();
+            }
+
+            foreach (var constraint in constraintData)
+            {
+                currConstraint = null;
+                foreach (var posTerm in constraint.PosConstraints)
+                {
+                    processed.Clear();
+                    processed.Add(t);
+                    if (executer.GetSymbolicTerm(posTerm, out next))
+                    {
+                        var nextConstraint = next.GetSideConstraints(executer, processed);
+                        currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
+                    }
+                }
+
+                foreach (var negTerm in constraint.NegConstraints)
+                {
+                    processed.Clear();
+                    processed.Add(t);
+                    if (executer.GetSymbolicTerm(negTerm, out next))
+                    {
+                        var nextConstraint = next.GetSideConstraints(executer, processed);
+                        nextConstraint = context.MkNot(nextConstraint);
+                        currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
+                    }
+                }
+
+                foreach (var nextConstraint in constraint.DirConstraints)
+                {
+                    currConstraint = CreateAndCacheConstraint(executer, currConstraint, nextConstraint);
+                }
+
+                if (topConstraint == null)
+                {
+                    topConstraint = currConstraint;
+                }
+                else
+                {
+                    topConstraint = executer.Solver.Context.MkOr(topConstraint, currConstraint);
+                }
+            }
+
+            return topConstraint;
+        }
+
         /// <summary>
         ///  The earliest index at which the side constraint is known to be a tautology.
         /// </summary>
@@ -60,24 +237,7 @@
             Term = term;
             Encoding = encoding;
             SideConstraints = new Map<int, Z3BoolExpr>(Compare);
-        }
-
-        /// <summary>
-        /// Disjoins the current side constraint with constr
-        /// </summary>
-        /// <param name="constr"></param>
-        /// <param name="context"></param>
-        public void ExtendSideConstraint(int index, Z3BoolExpr constr, Z3Context context)
-        {
-            Z3BoolExpr crntConstr;
-            if (SideConstraints.TryFindValue(index, out crntConstr))
-            {
-                SideConstraints[index] = context.MkOr(crntConstr, constr);
-            }
-            else
-            {
-                SideConstraints.Add(index, constr);
-            }
+            IsDirectlyProvable = false;
         }
 
         /// <summary>
@@ -140,6 +300,46 @@
             {
                 return 0;
             }
+        }
+    }
+
+    internal class ConstraintData
+    {
+        public HashSet<Z3BoolExpr> DirConstraints
+        {
+            get;
+            private set;
+        }
+
+        public Set<Term> PosConstraints
+        {
+            get;
+            private set;
+        }
+
+        public Set<Term> NegConstraints
+        {
+            get;
+            private set;
+        }
+
+        public ConstraintData(HashSet<Z3BoolExpr> exprs, Set<Term> posTerms, Set<Term> negTerms)
+        {
+            DirConstraints = exprs;
+            PosConstraints = posTerms;
+            NegConstraints = negTerms;
+        }
+
+        public bool IsSameConstraintData(HashSet<Z3BoolExpr> exprs, Set<Term> posTerms, Set<Term> negTerms)
+        {
+            if (DirConstraints.SetEquals(exprs) &&
+                PosConstraints.IsSameSet(posTerms) &&
+                NegConstraints.IsSameSet(negTerms))
+            {
+                return true;
+            }
+
+            return false;
         }
     }
 }

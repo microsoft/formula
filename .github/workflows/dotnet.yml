@@ -1,0 +1,47 @@
+name: .NET
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+    branches: [ '**' ]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macOS-latest ]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v2
+      with:
+        dotnet-version: 6.0.x
+    - name: Restore dependencies
+      working-directory: ./Src/CommandLine
+      run: dotnet restore CommandLine.sln
+    - name: Build
+      working-directory: ./Src/CommandLine
+      run: dotnet build CommandLine.sln /p:Configuration=Release /p:Platform=x64
+    - name: Copy to Liblibz3 MacOS
+      if: ${{ matrix.os == 'macOS-latest' }}
+      run: cp ${GITHUB_WORKSPACE}/Src/CommandLine/bin/Release/MacOS/x64/net6.0/runtimes/osx-x64/native/libz3.dylib ${GITHUB_WORKSPACE}/Src/CommandLine/bin/Release/MacOS/x64/net6.0/runtimes/osx-x64/native/liblibz3.dylib
+    - name: Test Ubuntu
+      if: ${{ matrix.os == 'ubuntu-latest' }}
+      working-directory: ./Src/Tests
+      run: |
+        export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${GITHUB_WORKSPACE}/Src/CommandLine/bin/Release/Linux/x64/net6.0/runtimes/linux-x64/native
+        dotnet test Tests.csproj --logger "console;verbosity=detailed" /p:Configuration=Release /p:Platform=x64
+    - name: Test MacOS
+      if: ${{ matrix.os == 'macOS-latest' }}
+      working-directory: ./Src/Tests
+      run: |
+        export DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}:${GITHUB_WORKSPACE}/Src/CommandLine/bin/Release/MacOS/x64/net6.0/runtimes/osx-x64/native
+        dotnet test Tests.csproj --logger "console;verbosity=detailed" /p:Configuration=Release /p:Platform=x64
+    - name: Test Windows
+      if: ${{ matrix.os == 'windows-latest' }}
+      working-directory: ./Src/Tests
+      run: |
+        set PATH="%PATH%;${GITHUB_WORKSPACE}\Src\CommandLine\bin\Release\Windows\x64\net6.0\runtimes\win-x64\native"
+        dotnet test Tests.csproj --logger "console;verbosity=detailed" /p:Configuration=Release /p:Platform=x64

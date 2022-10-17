@@ -10,6 +10,7 @@
     using API.ASTQueries;
     using API.Nodes;
 
+    using Range = Microsoft.Formula.API.Nodes.Range;
     internal class CanUnnDef
     {
         private SymbolTable table;

@@ -15,6 +15,11 @@
     using Common.Extras;
     using Common.Rules;
     using Compiler;
+    using Solver;
+
+    using Z3Expr = Microsoft.Z3.Expr;
+    using Z3ArithExpr = Microsoft.Z3.ArithExpr;
+    using Z3BoolExpr = Microsoft.Z3.BoolExpr;
 
     internal static class OpLibrary
     {
@@ -30,6 +35,8 @@
         private static readonly LiftedBool[] BinSecCompr = new LiftedBool[] { LiftedBool.False, LiftedBool.True };
         private static readonly LiftedBool[] TerNoCompr = new LiftedBool[] { LiftedBool.False, LiftedBool.False, LiftedBool.False };
         private static readonly LiftedBool[] TerTerCompr = new LiftedBool[] { LiftedBool.False, LiftedBool.False, LiftedBool.True };
+        private static readonly LiftedBool[] FourNoCompr = new LiftedBool[] { LiftedBool.False, LiftedBool.False, LiftedBool.False, LiftedBool.False };
+        private static readonly LiftedBool[] FiveNoCompr = new LiftedBool[] { LiftedBool.False, LiftedBool.False, LiftedBool.False, LiftedBool.False, LiftedBool.False };
 
         /// <summary>
         /// Validates that the syntactic application of an operator satisfies some basic rules.
@@ -145,6 +152,30 @@
             var ft = (FuncTerm)n;
             Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.Count);
             return ValidateArity(ft, "count", UnCompr, flags);
+        }
+
+        internal static bool ValidateUse_SymAnd(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.SymAnd);
+            return ValidateArity(ft, "symand", UnCompr, flags);
+        }
+
+        internal static bool ValidateUse_SymAndAll(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.SymAndAll);
+            return ValidateArity(ft, "symandall", UnCompr, flags);
+        }
+
+        internal static bool ValidateUse_SymCount(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.SymCount);
+            return ValidateArity(ft, "symcount", UnCompr, flags);
         }
 
         internal static bool ValidateUse_GCD(Node n, List<Flag> flags)
@@ -337,6 +368,38 @@
             var ft = (FuncTerm)n;
             Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstReverse);
             return ValidateArity(ft, "lstReverse", BinNoCompr, flags);
+        }
+
+        internal static bool ValidateUse_LstFind(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstFind);
+            return ValidateArity(ft, "lstFind", FourNoCompr, flags);
+        }
+
+        internal static bool ValidateUse_LstFindAll(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstFindAll);
+            return ValidateArity(ft, "lstFindAll", TerNoCompr, flags);
+        }
+
+        internal static bool ValidateUse_LstFindAllNot(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstFindAllNot);
+            return ValidateArity(ft, "lstFindAllNot", TerNoCompr, flags);
+        }
+
+        internal static bool ValidateUse_LstGetAt(Node n, List<Flag> flags)
+        {
+            Contract.Requires(n.NodeKind == NodeKind.FuncTerm);
+            var ft = (FuncTerm)n;
+            Contract.Assert(ft.Function is OpKind && ((OpKind)ft.Function) == OpKind.LstGetAt);
+            return ValidateArity(ft, "lstGetAt", TerNoCompr, flags);
         }
 
         internal static bool ValidateUse_RflIsMember(Node n, List<Flag> flags)
@@ -604,6 +667,133 @@
             }
 
             return revList;
+        }
+
+        internal static Term Evaluator_LstFind(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 4);
+            Term listConSort;
+            if (!ToType(values[0].Binding, out listConSort))
+            {
+                return null;
+            }
+
+            var listSymbol = ((UserSortSymb)listConSort.Symbol).DataSymbol;
+            var list = values[1].Binding;
+            var searchValue = values[2].Binding;
+            while (list.Symbol == listSymbol)
+            {
+                if (Unifier.IsUnifiable(list.Args[0], searchValue))
+                {
+                    return list.Args[0];
+                }
+                list = list.Args[1];
+            }
+
+            return values[3].Binding;
+        }
+
+        internal static Term Evaluator_LstFindAll(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 3);
+            Term listConSort;
+            if (!ToType(values[0].Binding, out listConSort))
+            {
+                return null;
+            }
+
+            var listSymbol = ((UserSortSymb)listConSort.Symbol).DataSymbol;
+            var list = values[1].Binding;
+            var searchValue = values[2].Binding;
+            var listStack = new Stack<Term>();
+            int pos = 0;
+            bool wasAdded;
+            while (list.Symbol == listSymbol)
+            {
+                if (Unifier.IsUnifiable(list.Args[0], searchValue))
+                {
+                    var newTerm = facts.TermIndex.MkCnst(new Rational(pos, BigInteger.One), out wasAdded);
+                    listStack.Push(newTerm);
+                }
+
+                pos++;
+                list = list.Args[1];
+            }
+
+            var newList = list;
+            while (!listStack.IsEmpty())
+            {
+                newList = facts.TermIndex.MkApply(listSymbol, new Term[] { listStack.Pop(), newList }, out wasAdded); 
+            }
+
+            return newList;
+        }
+
+        internal static Term Evaluator_LstFindAllNot(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 3);
+            Term listConSort;
+            if (!ToType(values[0].Binding, out listConSort))
+            {
+                return null;
+            }
+
+            var listSymbol = ((UserSortSymb)listConSort.Symbol).DataSymbol;
+            var list = values[1].Binding;
+            var searchValue = values[2].Binding;
+            var listStack = new Stack<Term>();
+            while (list.Symbol == listSymbol)
+            {
+                if (!Unifier.IsUnifiable(list.Args[0], searchValue))
+                {
+                    listStack.Push(list.Args[0]);
+                }
+                list = list.Args[1];
+            }
+
+            bool wasAdded;
+            var newList = list;
+            while (!listStack.IsEmpty())
+            {
+                newList = facts.TermIndex.MkApply(listSymbol, new Term[] { listStack.Pop(), newList }, out wasAdded); 
+            }
+
+            return newList;
+        }
+
+        internal static Term Evaluator_LstGetAt(Executer facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 3);
+            Term listConSort;
+            if (!ToType(values[0].Binding, out listConSort))
+            {
+                return null;
+            }
+
+            Rational ind;
+            
+            if (!ToNumerics(values[2].Binding, out ind) ||
+                !ind.IsInteger ||
+                ind.Sign < 0)
+            {
+                return null;
+            }
+            
+            var listSymbol = ((UserSortSymb)listConSort.Symbol).DataSymbol;
+            var list = values[1].Binding;
+            var targetIndex = (int) ind.Numerator;
+            var listStack = new Stack<Term>();
+            while (list.Symbol == listSymbol)
+            {
+                if (targetIndex <= 0)
+                {
+                    return list.Args[0];
+                }
+                list = list.Args[1];
+                targetIndex -= 1;
+            }
+
+            return null;
         }
 
         internal static Term Evaluator_RflGetArgType(Executer facts, Bindable[] values)
@@ -968,6 +1158,60 @@
             return facts.TermIndex.MkCnst(new Rational(r1.Sign), out wasAdded);
         }
 
+        internal static Term SymEvaluator_Add(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Add);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                // If we're a UserCnstSymb variable, then we lookup our Type in the SymExecuter
+                Term normalized;
+                if (t1.Symbol.Kind == SymbolKind.UserCnstSymb && t1.Symbol.IsVariable)
+                {
+                    var tTerm = facts.varToTypeMap[t1];
+                    Contract.Assert(tTerm != null);
+                    facts.Encoder.GetVarEnc(t1, tTerm);
+                }
+                else
+                {
+                    facts.Encoder.GetTerm(t1, out normalized);
+                }
+
+                if (t2.Symbol.Kind == SymbolKind.UserCnstSymb && t2.Symbol.IsVariable)
+                {
+                    var tTerm = facts.varToTypeMap[t2];
+                    Contract.Assert(tTerm != null);
+                    facts.Encoder.GetVarEnc(t2, tTerm);
+                }
+                else
+                {
+                    facts.Encoder.GetTerm(t2, out normalized);
+                }
+
+                // Encode the Term with Z3
+                facts.Encoder.GetTerm(res, out normalized);
+                return res;
+            }
+            else
+            {
+                Rational r1, r2;
+                bool added;
+                if (!ToNumerics(values[0].Binding, values[1].Binding, out r1, out r2))
+                {
+                    return null;
+                }
+
+                return facts.Index.MkCnst(r1 + r2, out added);
+            }
+        }
+
         internal static Term Evaluator_Add(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -994,6 +1238,33 @@
             return facts.TermIndex.MkCnst(r1 - r2, out wasAdded);
         }
 
+        internal static Term SymEvaluator_Sub(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Sub);
+                return facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+            }
+            else
+            {
+                Rational r1, r2;
+                bool added;
+                if (!ToNumerics(values[0].Binding, values[1].Binding, out r1, out r2))
+                {
+                    return null;
+                }
+
+                return facts.Index.MkCnst(r1 - r2, out added);
+            }
+        }
+
         internal static Term Evaluator_Mul(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1007,6 +1278,33 @@
             return facts.TermIndex.MkCnst(r1 * r2, out wasAdded);
         }
 
+        internal static Term SymEvaluator_Mul(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Mul);
+                return facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+            }
+            else
+            {
+                Rational r1, r2;
+                bool wasAdded;
+                if (!ToNumerics(values[0].Binding, values[1].Binding, out r1, out r2))
+                {
+                    return null;
+                }
+
+                return facts.Index.MkCnst(r1 * r2, out wasAdded);
+            }
+        }
+
         internal static Term Evaluator_Div(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1018,6 +1316,33 @@
             }
 
             return facts.TermIndex.MkCnst(r1 / r2, out wasAdded);
+        }
+
+        internal static Term SymEvaluator_Div(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Div);
+                return facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+            }
+            else
+            {
+                Rational r1, r2;
+                bool wasAdded;
+                if (!ToNumerics(values[0].Binding, values[1].Binding, out r1, out r2) || r2.IsZero)
+                {
+                    return null;
+                }
+
+                return facts.Index.MkCnst(r1 / r2, out wasAdded);
+            }
         }
 
         internal static Term Evaluator_Mod(Executer facts, Bindable[] values)
@@ -1183,6 +1508,56 @@
             return cmp <= 0 ? facts.TermIndex.TrueValue : facts.TermIndex.FalseValue;
         }
 
+        internal static Term SymEvaluator_Le(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Le);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                Term normalized;
+                facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
+                return res;
+            }
+            else
+            {
+                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
+                return cmp <= 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
+        }
+
+        internal static Term SymEvaluator_Lt(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Lt);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                Term normalized;
+                facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
+                return res;
+            }
+            else
+            {
+                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
+                return cmp < 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
+        }
+
         internal static Term Evaluator_Lt(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1197,6 +1572,100 @@
             return cmp >= 0 ? facts.TermIndex.TrueValue : facts.TermIndex.FalseValue;
         }
 
+        internal static Term SymEvaluator_Count(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 1);
+            int nResults;
+            bool wasAdded;
+            var res = facts.Query(values[0].Binding, out nResults);
+
+            int baseCount = 0; // always 0 for now
+            List<Term> realTerms = new List<Term>();
+            List<Term> fakeTerms = new List<Term>();
+
+            foreach (var term in res)
+            {
+                realTerms.Add(term.Args[0]); // it's a comprehension, so extract Args[0]
+                fakeTerms.Add(term);
+            }
+
+            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymCount);
+            Term baseTerm = facts.Index.MkCnst(new Rational(baseCount), out wasAdded);
+
+            int symCount = facts.GetSymbolicCountIndex(realTerms[0]);
+            Term symCountTerm = facts.Index.MkCnst(new Rational(symCount), out wasAdded);
+
+            Term[] allRealTerms = new Term[realTerms.Count + 2];
+            Term[] allFakeTerms = new Term[fakeTerms.Count + 2];
+
+            allRealTerms[0] = baseTerm; // use the same base count for both
+            allFakeTerms[0] = baseTerm;
+
+            allRealTerms[1] = symCountTerm; // use the same symbolic count for both
+            allFakeTerms[1] = symCountTerm;
+
+            for (int i = 0; i < realTerms.Count; i++)
+            {
+                allRealTerms[i + 2] = realTerms.ElementAt(i); // first two indices are reserved
+                allFakeTerms[i + 2] = fakeTerms.ElementAt(i);
+            }
+
+            Term realSymCount = facts.Index.MkApply(bos, allRealTerms, out wasAdded);
+            Term fakeSymCount = facts.Index.MkApply(bos, allFakeTerms, out wasAdded);
+            facts.AddSymbolicCountTerm(realTerms[0], fakeSymCount);
+            return realSymCount;
+        }
+
+        internal static Term SymEvaluator_Ge(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Ge);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                Term normalized;
+                facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
+                return res;
+            }
+            else
+            {
+                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
+                return cmp >= 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
+        }
+
+        internal static Term SymEvaluator_Gt(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Gt);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                Term normalized;
+                facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
+                return res;
+            }
+            else
+            {
+                var cmp = facts.Index.LexicographicCompare(values[0].Binding, values[1].Binding);
+                return cmp > 0 ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
+        }
+
         internal static Term Evaluator_Gt(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1208,6 +1677,30 @@
         {
             Contract.Requires(values.Length == 2);
             return values[0].Binding != values[1].Binding ? facts.TermIndex.TrueValue : facts.TermIndex.FalseValue;
+        }
+
+        internal static Term SymEvaluator_Neq(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+
+            Term t1 = values[0].Binding;
+            Term t2 = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(t1, t2))
+            {
+                // Create the Term that we will return
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(RelKind.Neq);
+                Term res = facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+
+                Term normalized;
+                facts.PendConstraint((Z3BoolExpr)facts.Encoder.GetTerm(res, out normalized, facts));
+                return res;
+            }
+            else
+            {
+                return values[0].Binding != values[1].Binding ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
         }
 
         internal static Term Evaluator_Min(Executer facts, Bindable[] values)
@@ -1224,6 +1717,25 @@
             return cmp >= 0 ? values[0].Binding : values[1].Binding;
         }
 
+        internal static Term SymEvaluator_Max(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            Term x = values[0].Binding;
+            Term y = values[1].Binding;
+
+            if (Term.IsSymbolicTerm(x, y))
+            {
+                bool wasAdded;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymMax);
+                return facts.Index.MkApply(bos, new Term[] { x, y }, out wasAdded);
+            }
+            else
+            {
+                var cmp = facts.Index.LexicographicCompare(x, y);
+                return cmp >= 0 ? x : y;
+            }
+        }
+
         internal static Term Evaluator_And(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1234,6 +1746,29 @@
             }
 
             return b1 && b2 ? facts.TermIndex.TrueValue : facts.TermIndex.FalseValue;
+        }
+
+        internal static Term SymEvaluator_And(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            if (Term.IsSymbolicTerm(values[0].Binding, values[1].Binding))
+            {
+                bool wasAdded;
+                Term t1 = values[0].Binding;
+                Term t2 = values[1].Binding;
+                BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymAnd);
+                return facts.Index.MkApply(bos, new Term[] { t1, t2 }, out wasAdded);
+            }
+            else
+            {
+                bool b1, b2;
+                if (!ToBooleans(values[0].Binding, values[1].Binding, out b1, out b2))
+                {
+                    return null;
+                }
+
+                return b1 && b2 ? facts.Index.TrueValue : facts.Index.FalseValue;
+            }
         }
 
         internal static Term Evaluator_AndAll(Executer facts, Bindable[] values)
@@ -1265,6 +1800,51 @@
             }
 
             return hasBool ? facts.TermIndex.TrueValue : values[0].Binding;
+        }
+
+        internal static Term SymEvaluator_AndAll(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            int nResults;
+            var acc = BigInteger.Zero;
+            bool hasBool = false;
+            Term t;
+            bool hasSymbolics = false;
+            using (var it = facts.Query(values[1].Binding, out nResults).GetEnumerator())
+            {
+                if (nResults == 0)
+                {
+                    return values[0].Binding;
+                }
+
+                while (it.MoveNext())
+                {
+                    t = it.Current.Args[it.Current.Symbol.Arity - 1];
+                    if (Term.IsSymbolicTerm(t))
+                    {
+                        hasSymbolics = true;
+                        break;
+                    }
+                    if (t == facts.Index.FalseValue)
+                    {
+                        return facts.Index.FalseValue;
+                    }
+                    else if (t == facts.Index.TrueValue)
+                    {
+                        hasBool = true;
+                    }
+                }
+            }
+
+            if (!hasSymbolics)
+            {
+                return hasBool ? facts.Index.TrueValue : values[0].Binding;
+            }
+
+            BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.SymAndAll);
+            Term[] terms = facts.Query(values[1].Binding, out nResults).Select(t => t.Args[t.Symbol.Arity - 1]).ToArray();
+            bool wasAdded;
+            return facts.Index.MkApply(bos, terms, out wasAdded);
         }
 
         internal static Term Evaluator_Or(Executer facts, Bindable[] values)
@@ -1342,6 +1922,33 @@
             return nResults == 0 ? facts.TermIndex.TrueValue : facts.TermIndex.FalseValue;
         }
 
+        internal static Term SymEvaluator_No(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 1);
+            int nResults;
+            var res = facts.Query(values[0].Binding, out nResults);
+            if (nResults == 0)
+            {
+                return facts.Index.TrueValue;
+            }
+
+            bool hasConstraints = false;
+            
+            foreach (var item in res)
+            {
+                hasConstraints = (facts.AddNegativeConstraint(item) || hasConstraints);
+            }
+
+            if (nResults == 0 || hasConstraints)
+            {
+                return facts.Index.TrueValue;
+            }
+            else
+            {
+                return facts.Index.FalseValue;
+            }
+        }
+
         internal static Term Evaluator_Count(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 1);
@@ -1414,6 +2021,35 @@
             }
         }
 
+        internal static Term SymEvaluator_Select(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            var target = values[0].Binding;
+            if (!target.Symbol.IsDataConstructor)
+            {
+                return null;
+            }
+
+            //// This cast should succeed, because second argument to selector should
+            //// always be a string.
+            var label = (string)((BaseCnstSymb)values[1].Binding.Symbol).Raw;
+            int index;
+            bool labelExists;
+            switch (target.Symbol.Kind)
+            {
+                case SymbolKind.ConSymb:
+                    labelExists = ((ConSymb)target.Symbol).GetLabelIndex(label, out index);
+                    break;
+                case SymbolKind.MapSymb:
+                    labelExists = ((MapSymb)target.Symbol).GetLabelIndex(label, out index);
+                    break;
+                default:
+                    throw new NotImplementedException();
+            }
+
+            return labelExists ? target.Args[index] : null;
+        }
+
         internal static Term Evaluator_Select(Executer facts, Bindable[] values)
         {
             Contract.Requires(values.Length == 2);
@@ -1441,6 +2077,89 @@
             }
 
             return labelExists ? target.Args[index] : null;
+        }
+
+        internal static Term SymEvaluator_Sum(SymExecuter facts, Bindable[] values)
+        {
+            Contract.Requires(values.Length == 2);
+            int nResults;
+            var acc = Rational.Zero;
+            bool hasNumeric = false;
+            Symbol symb;
+            BaseCnstSymb bsymb;
+
+            IEnumerable<Term> terms = facts.Query(values[1].Binding, out nResults);
+            if (nResults == 0)
+            {
+                return values[0].Binding;
+            }
+
+
+            bool hasVariables = false;
+            foreach (var term in terms)
+            {
+                if (Term.IsSymbolicTerm(term))
+                {
+                    hasVariables = true;
+                    break;
+                }
+            }
+
+            if (hasVariables)
+            {
+                Term currExpr = null;
+                Term normalized;
+
+                foreach (var term in terms)
+                {
+                    Term currTerm = term.Args[term.Symbol.Arity - 1];
+                    if (currTerm.Symbol.Kind == SymbolKind.UserCnstSymb && currTerm.Symbol.IsVariable)
+                    {
+                        var typeTerm = facts.varToTypeMap[currTerm];
+                        Contract.Assert(typeTerm != null);
+                        facts.Encoder.GetVarEnc(currTerm, typeTerm);
+                    }
+                    else
+                    {
+                        facts.Encoder.GetTerm(currTerm, out normalized);
+                    }
+
+                    if (currExpr == null)
+                    {
+                        currExpr = currTerm;
+                    }
+                    else
+                    {
+                        bool wasAdded;
+                        BaseOpSymb bos = facts.Index.SymbolTable.GetOpSymbol(OpKind.Add);
+                        currExpr = facts.Index.MkApply(bos, new Term[] { currExpr, currTerm }, out wasAdded);
+                    }
+                }
+
+                facts.Encoder.GetTerm(currExpr, out normalized);
+                return currExpr;
+            }
+            else
+            {
+                foreach (var term in terms)
+                {
+                    symb = term.Args[term.Symbol.Arity - 1].Symbol;
+                    if (symb.Kind != SymbolKind.BaseCnstSymb)
+                    {
+                        continue;
+                    }
+
+                    bsymb = (BaseCnstSymb)symb;
+                    if (bsymb.CnstKind == CnstKind.Numeric)
+                    {
+                        hasNumeric = true;
+                        acc += ((Rational)bsymb.Raw);
+                    }
+                }
+
+                bool wasAdded;
+                return hasNumeric ? facts.Index.MkCnst(acc, out wasAdded) : values[0].Binding;
+            }
         }
 
         internal static Term Evaluator_Sum(Executer facts, Bindable[] values)
@@ -2329,6 +3048,46 @@
         public static Func<TermIndex, Term[], Term[]> TypeApprox_LstReverse_Down
         {
             get { return LstReverseDownwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstFind_Up
+        {
+            get { return LstFindUpwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstFind_Down
+        {
+            get { return LstFindDownwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstFindAll_Up
+        {
+            get { return LstFindAllUpwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstFindAll_Down
+        {
+            get { return LstFindAllDownwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstFindAllNot_Up
+        {
+            get { return LstFindAllNotUpwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstFindAllNot_Down
+        {
+            get { return LstFindAllNotDownwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstGetAt_Up
+        {
+            get { return LstGetAtUpwardApprox.Instance.Approximate; }
+        }
+
+        public static Func<TermIndex, Term[], Term[]> TypeApprox_LstGetAt_Down
+        {
+            get { return LstGetAtDownwardApprox.Instance.Approximate; }
         }
 
         public static Func<TermIndex, Term[], Term[]> TypeApprox_RflIsMember_Up
@@ -7272,6 +8031,277 @@
                 }
 
                 return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType };
+            }
+        }
+
+        private class LstFindUpwardApprox : GaloisApproxTable
+        {
+            private static readonly LstFindUpwardApprox theInstance = new LstFindUpwardApprox();
+            public static LstFindUpwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstFindUpwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 4);
+                Set<Term> types;
+                if (!GetTypeConstantTypes(args[0], index, out types, true))
+                {
+                    return null;
+                }
+
+                if (types.Count == 1 && args[1].Groundness == Groundness.Ground)
+                {
+                    var listSymb = ((UserSortSymb)types.GetSomeElement().Symbol).DataSymbol;
+                    var list = args[1];
+                    while (list.Symbol == listSymb)
+                    {
+                        if (Unifier.IsUnifiable(list.Args[0], args[2]))
+                        {
+                            return new Term[] { list.Args[0] };
+                        }
+                        list = list.Args[1];
+                    }
+
+                    return new Term[] {args[3]};
+
+                }
+                else
+                {
+                    return new Term[] {index.MkDataWidenedType(args[3])};
+                }
+            }
+        }
+
+        private class LstFindDownwardApprox : GaloisApproxTable
+        {
+            private static readonly LstFindDownwardApprox theInstance = new LstFindDownwardApprox();
+            public static LstFindDownwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstFindDownwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 1);
+                if (index.ListTypeConstantsType == null)
+                {
+                    //// Then just return some value, which will be filtered by upward approx.
+                    return new Term[] { index.FalseValue, index.CanonicalAnyType, index.CanonicalAnyType, index.CanonicalAnyType };
+                }
+
+                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType, index.CanonicalAnyType, index.CanonicalAnyType };
+            }
+        }
+
+        private class LstFindAllUpwardApprox : GaloisApproxTable
+        {
+            private static readonly LstFindAllUpwardApprox theInstance = new LstFindAllUpwardApprox();
+            public static LstFindAllUpwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstFindAllUpwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 3);
+                Set<Term> types;
+                if (!GetTypeConstantTypes(args[0], index, out types, true))
+                {
+                    return null;
+                }
+
+                if (types.Count == 1 && args[1].Groundness == Groundness.Ground)
+                {
+                    var listSymb = ((UserSortSymb)types.GetSomeElement().Symbol).DataSymbol;
+                    var list = args[1];
+                    var listStack = new Stack<Term>();
+                    while (list.Symbol == listSymb)
+                    {
+                        if (Unifier.IsUnifiable(list.Args[0], args[2]))
+                        {
+                            listStack.Push(list.Args[0]);
+                        }
+                        list = list.Args[1];
+                    }
+
+                    bool wasAdded;
+                    var newList = list;
+                    while (listStack.Count > 0)
+                    {
+                        newList = index.MkApply(listSymb, new Term[] { listStack.Pop(), newList }, out wasAdded);
+                    }
+
+                    return new Term[] { newList };
+                }
+                else
+                {
+                    return new Term[] {index.MkDataWidenedType(args[1])};
+                }
+            }
+        }
+
+        private class LstFindAllDownwardApprox : GaloisApproxTable
+        {
+            private static readonly LstFindAllDownwardApprox theInstance = new LstFindAllDownwardApprox();
+            public static LstFindAllDownwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstFindAllDownwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 1);
+                if (index.ListTypeConstantsType == null)
+                {
+                    //// Then just return some value, which will be filtered by upward approx.
+                    return new Term[] { index.FalseValue, index.CanonicalAnyType, index.CanonicalAnyType };
+                }
+
+                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType, index.CanonicalAnyType };
+            }
+        }
+
+        private class LstFindAllNotUpwardApprox : GaloisApproxTable
+        {
+            private static readonly LstFindAllNotUpwardApprox theInstance = new LstFindAllNotUpwardApprox();
+            public static LstFindAllNotUpwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstFindAllNotUpwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 3);
+                Set<Term> types;
+                if (!GetTypeConstantTypes(args[0], index, out types, true))
+                {
+                    return null;
+                }
+
+                if (types.Count == 1 && args[1].Groundness == Groundness.Ground)
+                {
+                    var listSymb = ((UserSortSymb)types.GetSomeElement().Symbol).DataSymbol;
+                    var list = args[1];
+                    var listStack = new Stack<Term>();
+                    while (list.Symbol == listSymb)
+                    {
+                        if (!Unifier.IsUnifiable(list.Args[0], args[2]))
+                        {
+                            listStack.Push(list.Args[0]);
+                        }
+                        list = list.Args[1];
+                    }
+
+                    bool wasAdded;
+                    var newList = list;
+                    while (listStack.Count > 0)
+                    {
+                        newList = index.MkApply(listSymb, new Term[] { listStack.Pop(), newList }, out wasAdded);
+                    }
+
+                    return new Term[] { newList };
+                }
+                else
+                {
+                    return new Term[] {index.MkDataWidenedType(args[1])};
+                }
+            }
+        }
+
+        private class LstFindAllNotDownwardApprox : GaloisApproxTable
+        {
+            private static readonly LstFindAllNotDownwardApprox theInstance = new LstFindAllNotDownwardApprox();
+            public static LstFindAllNotDownwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstFindAllNotDownwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 1);
+                if (index.ListTypeConstantsType == null)
+                {
+                    //// Then just return some value, which will be filtered by upward approx.
+                    return new Term[] { index.FalseValue, index.CanonicalAnyType, index.CanonicalAnyType };
+                }
+
+                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType, index.CanonicalAnyType };
+            }
+        }
+
+        private class LstGetAtUpwardApprox : GaloisApproxTable
+        {
+            private static readonly LstGetAtUpwardApprox theInstance = new LstGetAtUpwardApprox();
+            public static LstGetAtUpwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstGetAtUpwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 3);
+                Set<Term> types;
+                if (!GetTypeConstantTypes(args[0], index, out types, true))
+                {
+                    return null;
+                }
+
+                return new Term[] {index.MkDataWidenedType(args[2])};
+            }
+        }
+
+        private class LstGetAtDownwardApprox : GaloisApproxTable
+        {
+            private static readonly LstGetAtDownwardApprox theInstance = new LstGetAtDownwardApprox();
+            public static LstGetAtDownwardApprox Instance
+            {
+                get { return theInstance; }
+            }
+
+            private LstGetAtDownwardApprox()
+                : base(Approx)
+            { }
+
+            private static Term[] Approx(TermIndex index, Term[] args)
+            {
+                Contract.Requires(index != null && args != null && args.Length == 1);
+                if (index.ListTypeConstantsType == null)
+                {
+                    //// Then just return some value, which will be filtered by upward approx.
+                    return new Term[] { index.FalseValue, index.CanonicalAnyType, index.CanonicalAnyType };
+                }
+
+                return new Term[] { index.ListTypeConstantsType, index.CanonicalAnyType, index.CanonicalAnyType };
             }
         }
 

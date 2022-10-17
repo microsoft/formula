@@ -362,6 +362,15 @@
 
             var modData = (ModuleData)modLoc.AST.Node.CompilerData;
             table = modData.FinalOutput as Common.Rules.RuleTable;
+            if (table != null)
+            {
+                goto Unlock;
+            }
+            else if (modData.FinalOutput is FactSet)
+            {
+                table = (modData.FinalOutput as FactSet).Rules;
+            }
+
             if (table == null)
             {
                 var flag = new Flag(
@@ -954,7 +963,109 @@
             return true;
         }
 
-#if SOLVER
+        public Program GetProgram(string name)
+        {
+            foreach (var prog in Programs)
+            {
+                if (String.Equals(name, prog.Key.ToString()))
+                {
+                    return prog.Value;
+                }
+            }
+
+            return null;
+        }
+
+        public bool Solve(ProgramName progName,
+                          string modelName,
+                          int maxSols,
+                          out List<Flag> flags,
+                          out Task<SolveResult> task,
+                          CancellationToken cancel = default(CancellationToken))
+        {
+            Contract.Requires(progName != null && modelName != null);
+            Contract.Requires(maxSols > 0);
+
+            flags = new List<Flag>();
+            if (!GetEnvLock())
+            {
+                task = null;
+                return false;
+            }
+
+            Program program;
+            if (!programs.TryGetValue(progName, out program))
+            {
+                task = null;
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.UndefinedSymbol.ToString("program", progName.ToString(Parameters)),
+                    Constants.UndefinedSymbol.Code));
+                goto Unlock;
+            }
+
+            var progConf = program.Config.CompilerData as Configuration;
+            Contract.Assert(progConf != null);
+            Location modLoc;
+            if (!progConf.TryResolveLocalModule(modelName, out modLoc) ||
+                modLoc.AST.Node.NodeKind != NodeKind.Model)
+            {
+                task = null;
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    default(Span),
+                    Constants.UndefinedSymbol.ToString("model", modelName),
+                    Constants.UndefinedSymbol.Code));
+                goto Unlock;
+            }
+
+            var modData = (ModuleData)modLoc.AST.Node.CompilerData;
+            var redModel = (Model)modData.Reduced.Node;
+            var span = redModel.Span;
+
+            if (!redModel.IsPartial)
+            {
+                task = null;
+                flags.Add(new Flag(
+                    SeverityKind.Error,
+                    redModel,
+                    Constants.BadSyntax.ToString("cannot solve a model; expected partiality."),
+                    Constants.BadSyntax.Code));
+                goto Unlock;
+            }
+
+            //modData = queryModel.Node.CompilerData as ModuleData;
+            // Just use the CompilerData from the (original) partial model.
+            /*
+            task = new Task<SolveResult>(() =>
+            {
+                var sr = new SolveResult(
+                    redModel,
+                    (FactSet)modData.FinalOutput,
+                    maxSols,
+                    cancel);
+                sr.Start();
+                return sr;
+            },
+            TaskCreationOptions.LongRunning);
+            */
+
+            var sr = new SolveResult(
+                        redModel,
+                        (FactSet)modData.FinalOutput,
+                        maxSols,
+                        this,
+                        cancel);
+            sr.Start();
+
+            task = null;
+
+        Unlock:
+            ReleaseEnvLock();
+            return true;
+        }
+
         /// <summary>
         /// Tries to solve a model for a disjunction of goals. Currently reduces this to
         /// old formula, so this interface is under-defined.
@@ -1078,6 +1189,7 @@
                     redModel,
                     (FactSet)modData.FinalOutput,
                     maxSols,
+                    this,
                     cancel);
                 sr.Start();
                 return sr;
@@ -1088,7 +1200,6 @@
             ReleaseEnvLock();
             return true;
         }
-#endif
                                                           
         public bool Install(string filename, out InstallResult result)
         {
@@ -1109,11 +1220,13 @@
         public bool Install(AST<Program> program, out InstallResult result)
         {
             Contract.Requires(program != null);
+            /*
             if (!GetEnvLock())
             {
                 result = null;
                 return false;
             }
+            */
 
             LockedInstall(program, out result);
 

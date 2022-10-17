@@ -30,9 +30,21 @@
 
     internal class Solver : ISolver, IDisposable
     {
+        public static readonly uint DefaultRecursionBound = 10;
+
         private CancellationToken cancel;
         private bool disposed = false;
         private List<Flag> solverFlags = new List<Flag>();
+
+        private List<List<AST<Node>>> cardInequalities = new List<List<AST<Node>>>();
+
+        private SymExecuter executer;
+        private bool solvable = false;
+
+        public List<List<AST<Node>>> CardInequalities
+        {
+            get { return cardInequalities; }
+        }
 
         public CardSystem Cardinalities
         {
@@ -48,6 +60,18 @@
         public SymbolTable SymbolTable
         {
             get { return PartialModel.Index.SymbolTable; }
+        }
+
+        public Env Env
+        {
+            get;
+            private set;
+        }
+
+        public uint RecursionBound
+        {
+            get;
+            private set;
         }
 
         internal IEnumerable<Flag> Flags
@@ -90,6 +114,8 @@
             get { return PartialModel.Index; }
         }
 
+        private uint symbCnstId = 0;
+
         /// <summary>
         /// The search strategy. Can be null if goal decided as Unsat prior to
         /// instantiation, or if Strategy.Begin(...) failed.
@@ -100,31 +126,207 @@
             set;
         }
 
-        internal Solver(FactSet partialModel, Model source, CancellationToken cancel)
+        private BuilderRef MkModelDecl(string modelName, string modelRefName, string modelLocName, Builder bldr)
+        {
+            BuilderRef result;
+            var domLoc = (Location)PartialModel.Model.Node.Domain.CompilerData;
+
+            // 1. PushModRef to the model we are extending
+            bldr.PushModRef(modelRefName, null, modelLocName);
+
+            // 2. PushModRef to the domain of the model
+            bldr.PushModRef(((Domain)domLoc.AST.Node).Name, null, ((Program)domLoc.AST.Root).Name.ToString());
+
+            // 3. Push the new model that will extend the previous model
+            bldr.PushModel(modelName, true, ComposeKind.Extends);
+
+            // Now bldr.AddModelCompose
+            bldr.AddModelCompose();
+
+            bldr.Store(out result);
+            return result;
+        }
+
+        // Introduce Terms for cardinality constraints
+        public void ExtendPartialModel()
+        {
+            ProgramName programName = new ProgramName("env:///dummy.4ml");
+            AST<Program> prog = Factory.Instance.MkProgram(programName);
+            String modName = "dummy";
+
+            Builder bldr = new Builder();
+            string modLocation = Source.Span.Program.ToString();
+            var modelRef = MkModelDecl(modName, Source.Name, modLocation, bldr);
+
+            Map<UserSymbol, List<BuilderRef>> termNodes = new Map<UserSymbol, List<BuilderRef>>(Symbol.Compare);
+
+            foreach (var entry in Cardinalities.SolverState)
+            {
+                foreach (var item in entry)
+                {
+                    var cardVar = item.Key;
+                    var cardLower = item.Value.Item1.Lower;
+                    int arity = cardVar.Symbol.Arity;
+
+                    if (cardVar.Symbol.IsDataConstructor &&
+                        cardVar.IsLFPCard &&
+                        cardLower > 0)
+                    {
+                        List<BuilderRef> builderRefs;
+                        if (!termNodes.TryFindValue(cardVar.Symbol, out builderRefs))
+                        {
+                            builderRefs = new List<BuilderRef>();
+                            termNodes.Add(cardVar.Symbol, builderRefs);
+                        }
+
+                        for (BigInteger i = 0; i < (BigInteger)cardLower; i++)
+                        {
+                            for (int j = 0; j < arity; j++)
+                            {
+                                // TODO: try ~
+                                bldr.PushId("SC" + symbCnstId++ + "SCNew");
+                            }
+
+                            bldr.PushId(cardVar.Symbol.Name);
+                            bldr.PushFuncTerm();
+
+                            for (int j = 0; j < arity; j++)
+                            {
+                                bldr.AddFuncTermArg();
+                            }
+
+                            // Store the terms temporarily
+                            BuilderRef termNode = new BuilderRef();
+                            bldr.Store(out termNode);
+                            builderRefs.Add(termNode);
+
+                            bldr.Load(termNode);
+                            bldr.PushModelFactNoBinding();
+                            bldr.Load(modelRef);
+                            bldr.AddModelFact();
+                            bldr.Pop();
+                        }
+                    }
+                }
+            }
+
+            // Load all of the added facts
+            foreach (var kvp in termNodes)
+            {
+                foreach (var node in kvp.Value)
+                {
+                    bldr.Load(node);
+                }
+            }
+
+            // Load the newly created model
+            bldr.Load(modelRef);
+            bldr.Close();
+
+            ImmutableArray<AST<Node>> asts;
+            bldr.GetASTs(out asts);
+
+            Contract.Assert(asts[0].Node.NodeKind == NodeKind.Model);
+            prog = Factory.Instance.AddModule(prog, asts[0]);
+
+            // Now retrieve all of the facts
+            int currNodeIndex = 1;
+            foreach (var kvp in termNodes)
+            {
+                List<AST<Node>> nodes = new List<AST<Node>>();
+                for (int i = 0; i < kvp.Value.Count; i++)
+                {
+                    nodes.Add(asts[currNodeIndex++]);
+                }
+                cardInequalities.Add(nodes);
+            }
+
+            InstallResult result;
+            Env.Install(prog, out result);
+            if (!result.Succeeded)
+            {
+                System.Console.WriteLine("Error installing partial model!");
+            }
+
+            Program compiledProg = Env.GetProgram("env:///dummy.4ml");
+            var progConf = compiledProg.Config.CompilerData as Configuration;
+            Location modLoc;
+            if (!progConf.TryResolveLocalModule(modName, out modLoc) ||
+                modLoc.AST.Node.NodeKind != NodeKind.Model)
+            {
+                System.Console.WriteLine("Error installing partial model!");
+            }
+
+            ModuleData modData = (ModuleData)modLoc.AST.Node.CompilerData;
+            Source = (Model)modData.Reduced.Node;
+            PartialModel = (FactSet)modData.FinalOutput;
+        }
+
+        internal Solver(FactSet partialModel, Model source, Env env, CancellationToken cancel)
         {
             Contract.Requires(partialModel != null);
             Contract.Requires(source != null);
             this.cancel = cancel;
 
+            // Source and PartialModel may be updated by ExtendPartialModel()
             Source = source;
             PartialModel = partialModel;
+            Env = env;
 
-            //// Step 1. Create Z3 Context and Solver
+            // TODO: reintroduce cardinality system with search heuristics
+            //// Step 0. Create cardinality system.
+            //Cardinalities = new CardSystem(partialModel);
+
+            //// Step 1. Update the source and partial model
+            //if (!Cardinalities.IsUnsat)
+            //{
+                // TODO: add this after temporary ConSymbs are supported in the TypeEmbedder
+                //ExtendPartialModel();
+            //}
+
+            //// Step 2. Create Z3 Context and Solver
             CreateContextAndSolver();
 
-            //// Step 2. Create type embedder
+            //// Step 3. Create type embedder
             CreateTypeEmbedder();
 
-            //// Step 3. Create cardinality system.
-            Cardinalities = new CardSystem(partialModel);
+            //// Step 4. Create cardinality system.
+            //Cardinalities = new CardSystem(partialModel);
 
             //// Step 4. Try to create the search strategy.
-            if (!Cardinalities.IsUnsat)
-            {
-               Strategy = CreateStrategy(solverFlags);
-            }
+            //if (!Cardinalities.IsUnsat)
+            //{
+                Strategy = CreateStrategy(solverFlags);
+            //}
 
-            var se = new SymExecuter(this);
+            SetRecursionBound();
+
+            executer = new SymExecuter(this);
+        }
+
+        public bool Solve()
+        {
+            solvable = executer.Solve();
+            return solvable;
+        }
+
+        public void GetSolution(int num)
+        {
+            executer.GetSolution(num);
+        }
+
+        private void SetRecursionBound()
+        {
+            Cnst value;
+            var conf = (Configuration)Source.Config.CompilerData;
+            if (conf.TryGetSetting(Configuration.Solver_RecursionBoundSetting, out value))
+            {
+                RecursionBound = (uint)((Rational)value.Raw).Numerator;
+            }
+            else
+            {
+                RecursionBound = DefaultRecursionBound;
+            }
         }
 
         public SearchState GetState(IEnumerable<KeyValuePair<UserSymbol, int>> dofs)
@@ -220,8 +422,17 @@
         /// </summary>
         private void CreateContextAndSolver()
         {
-            Context = new Z3Context();
+            var settings = new Dictionary<string, string>()
+            {
+                { "unsat_core", "true" },
+                { "proof", "true" },
+                { "model", "true" }
+            };
+
+            Context = new Z3Context(settings);
             Z3Solver = Context.MkSolver();
+            Z3Solver.Set("core.minimize", true);
+            Z3Solver.Set("core.minimize_partial", true);
         }
 
         /// <summary>

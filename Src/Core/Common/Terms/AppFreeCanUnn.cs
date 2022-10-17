@@ -12,6 +12,8 @@
     using API.Nodes;
     using Common.Extras;
 
+    using Range = Microsoft.Formula.API.Nodes.Range;
+
     /// <summary>
     /// The canonical form of a type term that does not contain any 
     /// applications of constructors / operators.

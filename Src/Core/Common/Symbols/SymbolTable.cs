@@ -1,4 +1,7 @@
-﻿namespace Microsoft.Formula.Common.Terms
+﻿using System.IO;
+using System.Reflection;
+
+namespace Microsoft.Formula.Common.Terms
 {
     using System;
     using System.Collections.Generic;
@@ -171,6 +174,7 @@
 
             MkSorts();
             MkBaseOps();
+            LoadPlugins();
 
             dependentTables.Add(name, this);
         }
@@ -217,6 +221,7 @@
 
             MkSorts();
             MkBaseOps();
+            LoadPlugins();
 
             dependentTables.Add(tempDom, this);
 
@@ -2504,6 +2509,14 @@
             return result;
         }
 
+        private void LoadPlugins()
+        {
+            OpPluginFunc[] pluginFuncs = PluginManager.GetPluginFunctions();
+            foreach (OpPluginFunc pluginFunc in pluginFuncs)
+            {
+                AddBaseOp(pluginFunc.GetBaseOpSymb());
+            }
+        }
 
         private void MkBaseOps()
         {
@@ -2513,7 +2526,9 @@
                 OpLibrary.ValidateUse_Add, 
                 OpLibrary.TypeApprox_Add_Up,
                 OpLibrary.TypeApprox_Add_Down,
-                OpLibrary.Evaluator_Add));
+                OpLibrary.Evaluator_Add,
+                null,
+                OpLibrary.SymEvaluator_Add));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.And, 
@@ -2521,7 +2536,9 @@
                 OpLibrary.ValidateUse_And,
                 OpLibrary.TypeApprox_And_Up,
                 OpLibrary.TypeApprox_And_Down,
-                OpLibrary.Evaluator_And));
+                OpLibrary.Evaluator_And,
+                null,
+                OpLibrary.SymEvaluator_And));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.AndAll,
@@ -2529,7 +2546,19 @@
                 OpLibrary.ValidateUse_AndAll,
                 OpLibrary.TypeApprox_AndAll_Up,
                 OpLibrary.TypeApprox_AndAll_Down,
-                OpLibrary.Evaluator_AndAll));
+                OpLibrary.Evaluator_AndAll,
+                null,
+                OpLibrary.SymEvaluator_AndAll));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.SymAndAll,
+                2,
+                OpLibrary.ValidateUse_AndAll,
+                OpLibrary.TypeApprox_AndAll_Up,
+                OpLibrary.TypeApprox_AndAll_Down,
+                OpLibrary.Evaluator_AndAll,
+                null,
+                OpLibrary.SymEvaluator_AndAll));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.Count, 
@@ -2537,7 +2566,29 @@
                 OpLibrary.ValidateUse_Count,
                 OpLibrary.TypeApprox_Count_Up,
                 OpLibrary.TypeApprox_Count_Down,
-                OpLibrary.Evaluator_Count));
+                OpLibrary.Evaluator_Count,
+                null,
+                OpLibrary.SymEvaluator_Count));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.SymAnd,
+                2,
+                OpLibrary.ValidateUse_SymAnd,
+                OpLibrary.TypeApprox_Count_Up,
+                OpLibrary.TypeApprox_Count_Down,
+                OpLibrary.Evaluator_And,
+                null,
+                OpLibrary.SymEvaluator_And));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.SymCount,
+                2, // Number of args can vary at runtime
+                OpLibrary.ValidateUse_SymCount,
+                OpLibrary.TypeApprox_Count_Up,
+                OpLibrary.TypeApprox_Count_Down,
+                OpLibrary.Evaluator_Count,
+                null,
+                OpLibrary.SymEvaluator_Count));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.Div, 
@@ -2546,7 +2597,8 @@
                 OpLibrary.TypeApprox_Div_Up,
                 OpLibrary.TypeApprox_Div_Down,
                 OpLibrary.Evaluator_Div,
-                OpLibrary.AppConstrainer_BinArg2NonZero));
+                OpLibrary.AppConstrainer_BinArg2NonZero,
+                OpLibrary.SymEvaluator_Div));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.GCD, 
@@ -2594,7 +2646,20 @@
                 OpLibrary.ValidateUse_Max,
                 OpLibrary.TypeApprox_Max_Up,
                 OpLibrary.TypeApprox_Max_Down,
-                OpLibrary.Evaluator_Max));
+                OpLibrary.Evaluator_Max,
+                null,
+                OpLibrary.SymEvaluator_Max
+                ));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.SymMax,
+                2,
+                OpLibrary.ValidateUse_Max,
+                OpLibrary.TypeApprox_Max_Up,
+                OpLibrary.TypeApprox_Max_Down,
+                OpLibrary.Evaluator_Max,
+                null,
+                OpLibrary.SymEvaluator_Max));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.MaxAll, 
@@ -2635,7 +2700,9 @@
                 OpLibrary.ValidateUse_Mul,
                 OpLibrary.TypeApprox_Mul_Up,
                 OpLibrary.TypeApprox_Mul_Down,
-                OpLibrary.Evaluator_Mul));
+                OpLibrary.Evaluator_Mul,
+                null,
+                OpLibrary.SymEvaluator_Mul));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.Neg, 
@@ -2692,7 +2759,9 @@
                 OpLibrary.ValidateUse_Sub,
                 OpLibrary.TypeApprox_Sub_Up,
                 OpLibrary.TypeApprox_Sub_Down,
-                OpLibrary.Evaluator_Sub));
+                OpLibrary.Evaluator_Sub,
+                null,
+                OpLibrary.SymEvaluator_Sub));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.Sum, 
@@ -2700,7 +2769,9 @@
                 OpLibrary.ValidateUse_Sum,
                 OpLibrary.TypeApprox_Sum_Up,
                 OpLibrary.TypeApprox_Sum_Down,
-                OpLibrary.Evaluator_Sum));
+                OpLibrary.Evaluator_Sum,
+                null,
+                OpLibrary.SymEvaluator_Sum));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.Sign,
@@ -2725,6 +2796,38 @@
                 OpLibrary.TypeApprox_LstReverse_Up,
                 OpLibrary.TypeApprox_LstReverse_Down,
                 OpLibrary.Evaluator_LstReverse));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.LstFind,
+                4,
+                OpLibrary.ValidateUse_LstFind,
+                OpLibrary.TypeApprox_LstFind_Up,
+                OpLibrary.TypeApprox_LstFind_Down,
+                OpLibrary.Evaluator_LstFind));
+            
+            AddBaseOp(new BaseOpSymb(
+                OpKind.LstFindAll,
+                3,
+                OpLibrary.ValidateUse_LstFindAll,
+                OpLibrary.TypeApprox_LstFindAll_Up,
+                OpLibrary.TypeApprox_LstFindAll_Down,
+                OpLibrary.Evaluator_LstFindAll));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.LstFindAllNot,
+                3,
+                OpLibrary.ValidateUse_LstFindAllNot,
+                OpLibrary.TypeApprox_LstFindAllNot_Up,
+                OpLibrary.TypeApprox_LstFindAllNot_Down,
+                OpLibrary.Evaluator_LstFindAllNot));
+
+            AddBaseOp(new BaseOpSymb(
+                OpKind.LstGetAt,
+                3,
+                OpLibrary.ValidateUse_LstGetAt,
+                OpLibrary.TypeApprox_LstGetAt_Up,
+                OpLibrary.TypeApprox_LstGetAt_Down,
+                OpLibrary.Evaluator_LstGetAt));
 
             AddBaseOp(new BaseOpSymb(
                 OpKind.RflIsMember,
@@ -2894,7 +2997,8 @@
                 OpLibrary.ValidateUse_No,
                 OpLibrary.TypeApprox_No_Up,
                 OpLibrary.TypeApprox_No_Down,
-                OpLibrary.Evaluator_No));
+                OpLibrary.Evaluator_No,
+                OpLibrary.SymEvaluator_No));
 
             AddBaseOp(new BaseOpSymb(
                 RelKind.Eq, 
@@ -2910,7 +3014,8 @@
                 OpLibrary.ValidateUse_Neq,
                 OpLibrary.TypeApprox_NEq_Up,
                 OpLibrary.TypeApprox_NEq_Down,
-                OpLibrary.Evaluator_Neq));
+                OpLibrary.Evaluator_Neq,
+                OpLibrary.SymEvaluator_Neq));
 
             AddBaseOp(new BaseOpSymb(
                 RelKind.Le, 
@@ -2918,7 +3023,8 @@
                 OpLibrary.ValidateUse_Le,
                 OpLibrary.TypeApprox_Le_Up,
                 OpLibrary.TypeApprox_Le_Down,
-                OpLibrary.Evaluator_Le));
+                OpLibrary.Evaluator_Le,
+                OpLibrary.SymEvaluator_Le));
 
             AddBaseOp(new BaseOpSymb(
                 RelKind.Lt, 
@@ -2926,7 +3032,8 @@
                 OpLibrary.ValidateUse_Lt,
                 OpLibrary.TypeApprox_Lt_Up,
                 OpLibrary.TypeApprox_Lt_Down,
-                OpLibrary.Evaluator_Lt));
+                OpLibrary.Evaluator_Lt,
+                OpLibrary.SymEvaluator_Lt));
 
             AddBaseOp(new BaseOpSymb(
                 RelKind.Ge, 
@@ -2934,7 +3041,8 @@
                 OpLibrary.ValidateUse_Ge,
                 OpLibrary.TypeApprox_Ge_Up,
                 OpLibrary.TypeApprox_Ge_Down,
-                OpLibrary.Evaluator_Ge));
+                OpLibrary.Evaluator_Ge,
+                OpLibrary.SymEvaluator_Ge));
 
             AddBaseOp(new BaseOpSymb(
                 RelKind.Gt, 
@@ -2942,7 +3050,8 @@
                 OpLibrary.ValidateUse_Gt,
                 OpLibrary.TypeApprox_Gt_Up,
                 OpLibrary.TypeApprox_Gt_Down,
-                OpLibrary.Evaluator_Gt));
+                OpLibrary.Evaluator_Gt,
+                OpLibrary.SymEvaluator_Gt));
 
             AddBaseOp(new BaseOpSymb(
                 RelKind.Typ, 
@@ -3038,7 +3147,8 @@
                 OpLibrary.ValidateUse_Reserved,
                 OpLibrary.TypeApprox_Sel_Up,
                 OpLibrary.TypeApprox_Sel_Down,
-                OpLibrary.Evaluator_Select));
+                OpLibrary.Evaluator_Select,
+                OpLibrary.SymEvaluator_Select));
 
             AddBaseOp(new BaseOpSymb(
                 ReservedOpKind.Relabel, 

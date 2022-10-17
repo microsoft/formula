@@ -1,4 +1,6 @@
-﻿namespace Microsoft.Formula.API.ASTQueries
+﻿using Microsoft.Formula.Common.Terms;
+
+namespace Microsoft.Formula.API.ASTQueries
 {
     using System;
     using System.Collections.Generic;
@@ -112,13 +114,16 @@
         /// It is assumed that two nodes of the same kind in the same context can always
         /// be replaced.
         /// </summary>
-        private Set<ReplaceData> replaceables = new Set<ReplaceData>(ReplaceData.Compare);
+        private GenericSet<ReplaceData> replaceables = new GenericSet<ReplaceData>(Common.ReplaceDataComparer.GetReplaceDataComparer());
+        //private Set<ReplaceData> replaceables = new Set<ReplaceData>(ReplaceData.Compare);
+
 
         private Map<string, OpKind> namedFuncs = new Map<string, OpKind>(string.Compare);
 
         private Tuple<string, OpStyleKind>[] opKindStrings;
 
-        private Set<string> reservedWords = new Set<string>(string.CompareOrdinal);
+        //private Set<string> reservedWords = new Set<string>(string.CompareOrdinal);
+        private GenericSet<string> reservedWords = new GenericSet<string>(Common.StringComparer.GetStringComparer());
 
         private string[] relKindStrings;
 
@@ -134,7 +139,16 @@
             compKindStrings = new string[typeof(ComposeKind).GetEnumValues().Length];
             mapKindStrings = new string[typeof(MapKind).GetEnumValues().Length];
             relKindStrings = new string[typeof(RelKind).GetEnumValues().Length];
-            opKindStrings = new Tuple<string, OpStyleKind>[typeof(OpKind).GetEnumValues().Length];
+            OpPluginFunc[] funcs = PluginManager.GetPluginFunctions();
+            int maxOpKind = typeof(OpKind).GetEnumValues().Length;
+            foreach (OpPluginFunc func in funcs)
+            {
+                if ((int) func.GetOpKind() >= maxOpKind)
+                {
+                    maxOpKind = (int) func.GetOpKind() + 1;
+                }
+            }
+            opKindStrings = new Tuple<string, OpStyleKind>[maxOpKind];
 
             adjList[(int)NodeKind.Folder] = new ChildData[]
             {
@@ -1183,6 +1197,10 @@
 
             Register(OpKind.LstLength, "lstLength", OpStyleKind.Apply);
             Register(OpKind.LstReverse, "lstReverse", OpStyleKind.Apply);
+            Register(OpKind.LstFind, "lstFind", OpStyleKind.Apply);
+            Register(OpKind.LstFindAll, "lstFindAll", OpStyleKind.Apply);
+            Register(OpKind.LstFindAllNot, "lstFindAllNot", OpStyleKind.Apply);
+            Register(OpKind.LstGetAt, "lstGetAt", OpStyleKind.Apply);
 
             Register(OpKind.RflIsMember, "rflIsMember", OpStyleKind.Apply);
             Register(OpKind.RflIsSubtype, "rflIsSubtype", OpStyleKind.Apply);
@@ -1234,6 +1252,7 @@
             Register(ContractKind.ConformsProp, "conforms");
 
             RegisterReservedWords();
+            RegisterPluginFunctions();
         }
 
         private void RegisterReservedWords()
@@ -1269,6 +1288,15 @@
             reservedWords.Add("boot");
         }
 
+        private void RegisterPluginFunctions()
+        {
+            OpPluginFunc[] pluginFuncs = PluginManager.GetPluginFunctions();
+            foreach (OpPluginFunc pluginFunc in pluginFuncs)
+            {
+                Register(pluginFunc.GetOpKind(), pluginFunc.GetName(), OpStyleKind.Apply);
+            }
+        }
+        
         private void Register(OpKind kind, string name, OpStyleKind style)
         {
             opKindStrings[(int)kind] = new Tuple<string, OpStyleKind>(name, style);
@@ -1298,9 +1326,10 @@
             contrKindStrings[(int)kind] = name;
         }
 
-        private class SearchState
+        public class SearchState
         {
-            private Set<Pair> seen = new Set<Pair>(Pair.Compare);
+            //private Set<Pair> seen = new Set<Pair>(Pair.Compare);
+            private GenericSet<Pair> seen = new GenericSet<Pair>(Common.PairComparer.GetPairComparer());
 
             public bool this[NodeKind k, ChildContextKind c]
             {
@@ -1322,7 +1351,7 @@
                 }            
             }
 
-            private struct Pair
+            public struct Pair
             {
                 public NodeKind nodeKind;
                 public ChildContextKind context;
@@ -1345,7 +1374,7 @@
             }
         }
 
-        private struct ReplaceData
+        public struct ReplaceData
         {
             public NodeKind parentKind;
             public ChildContextKind context;

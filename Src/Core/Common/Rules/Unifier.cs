@@ -28,7 +28,8 @@
         //// Then t is tracked; only one such t is tracked per class.
         private const int Track_FreeApply = 0;
 
-        public static bool IsUnifiable(Term tA, Term tB, bool standardize = true)
+        //public static bool IsUnifiable(Term tA, Term tB, bool standardize = true, Map<Term, Term> bindings = null)
+        public static bool IsUnifiable(Term tA, Term tB, bool standardize = true, Map<Term, Set<Term>> partitions = null)
         {
             Contract.Requires(tA != null && tB != null);
             Contract.Requires(tA.Owner == tB.Owner);
@@ -112,7 +113,26 @@
                 return false;
             }
 
-            return OccursCheck(allVars, eqs);
+            if (!OccursCheck(allVars, eqs))
+            {
+                return false;
+            }
+
+            if (partitions != null)
+            {
+                foreach (var part in eqs.GetBindings())
+                {
+                    Term keyTerm = part.Key.term;
+                    Set<Term> vals = new Set<Term>(Term.Compare);
+                    partitions.Add(keyTerm, vals);
+                    foreach (var valTerm in part.Value)
+                    {
+                        vals.Add(valTerm.term);
+                    }
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -300,8 +320,8 @@
             }
 
             var index = bindee.term.Owner;
-            Contract.Assert(bindee.term.Symbol == index.SelectorSymbol || bindee.term.Symbol.IsVariable);
-            Contract.Assert(binding.term.Symbol == index.SelectorSymbol || binding.term.Symbol.IsVariable || binding.term.Symbol.IsDataConstructor || binding.term.Symbol.IsNonVarConstant);
+            //Contract.Assert(bindee.term.Symbol == index.SelectorSymbol || bindee.term.Symbol.IsVariable);
+            //Contract.Assert(binding.term.Symbol == index.SelectorSymbol || binding.term.Symbol.IsVariable || binding.term.Symbol.IsDataConstructor || binding.term.Symbol.IsNonVarConstant);
 
             RegisterSelectors(allVars, eqs, bindee);
             if (binding.term.Symbol.IsDataConstructor || binding.term.Symbol.IsNonVarConstant)
@@ -345,7 +365,7 @@
                 t = t.Args[0];
             }
 
-            Contract.Assert(t.Symbol.IsVariable);
+            //Contract.Assert(t.Symbol.IsVariable);
             allVars.Add(t.Standardize(stdterm.label));
         }
 

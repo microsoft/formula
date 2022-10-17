@@ -97,6 +97,33 @@
             MkConUnnTypes(sortToIndex);
             SetDefaultValues();
             RegisterEmbeddingAtoms();
+            RegisterSymbolicConstants(Index.SymbolTable.Root);
+        }
+
+        // TODO: review whether we need to register symbolic constants
+        private void RegisterSymbolicConstants(Namespace ns)
+        {
+            foreach (var s in ns.Symbols)
+            {
+                if (s.Kind == SymbolKind.UserCnstSymb)
+                {
+                    bool wasAdded;
+                    Term type = Index.MkApply(s, TermIndex.EmptyArgs, out wasAdded);
+                    if (!typeAtomsToEmbeddings.ContainsKey(type))
+                    {
+                        if (s.IsNonVarConstant && !s.IsNewConstant)
+                        {
+                            ITypeEmbedding factor = new SingletonEmbedding(this, s);
+                            Register(factor);
+                        }
+                    }
+                }
+            }
+
+            foreach (var nsp in ns.Children)
+            {
+                RegisterSymbolicConstants(nsp);
+            }
         }
 
         public ITypeEmbedding GetEmbedding(Z3Sort sort)
@@ -650,30 +677,38 @@
             UserSortSymb usrSort;
             foreach (var s in ns.Symbols)
             {
-                if (s.Kind != SymbolKind.ConSymb && s.Kind != SymbolKind.MapSymb)
+                switch (s.Kind)
                 {
-                    continue;
-                }
+                    case SymbolKind.ConSymb:
+                    case SymbolKind.MapSymb:
+                        usrSort = s.Kind == SymbolKind.ConSymb ? ((ConSymb)s).SortSymbol : ((MapSymb)s).SortSymbol;
+                        type = Index.MkApply(usrSort, TermIndex.EmptyArgs, out wasAdded);
+                        if (!sortToIndex.ContainsKey(type))
+                        {
+                            sortToIndex.Add(
+                                type,
+                                new Tuple<uint, UserSymbol>((uint)sortToIndex.Count, (UserSymbol)s));
+                        }
 
-                usrSort = s.Kind == SymbolKind.ConSymb ? ((ConSymb)s).SortSymbol : ((MapSymb)s).SortSymbol;
-                type = Index.MkApply(usrSort, TermIndex.EmptyArgs, out wasAdded);
-                if (!sortToIndex.ContainsKey(type))
-                {
-                    sortToIndex.Add(
-                        type, 
-                        new Tuple<uint, UserSymbol>((uint)sortToIndex.Count, (UserSymbol)s));
-                }
+                        for (int i = 0; i < s.Arity; ++i)
+                        {
+                            FactorizeConstants(s, i);
+                            type = Index.GetCanonicalTerm(s, i);
+                            if (!sortToIndex.ContainsKey(type) && !typeToEmbedding.ContainsKey(type))
+                            {
+                                sortToIndex.Add(
+                                    type,
+                                    new Tuple<uint, UserSymbol>((uint)sortToIndex.Count, (UserSymbol)s));
+                            }
+                        }
+                        break;
 
-                for (int i = 0; i < s.Arity; ++i)
-                {
-                    FactorizeConstants(s, i);
-                    type = Index.GetCanonicalTerm(s, i);
-                    if (!sortToIndex.ContainsKey(type) && !typeToEmbedding.ContainsKey(type))
-                    {
-                        sortToIndex.Add(
-                            type, 
-                            new Tuple<uint, UserSymbol>((uint)sortToIndex.Count, (UserSymbol)s));
-                    }
+                    case SymbolKind.UserCnstSymb:
+                        // TODO: can store these for quicker lookup later
+                        break;
+
+                    default:
+                        break;
                 }
             }
 
@@ -955,19 +990,7 @@
                         }
                     }
                 }
-            }
-
-            /*
-            foreach (var kv in typeToEmbedding)
-            {
-                Console.WriteLine(
-                    "Default value of {0}: {1}, {2}", 
-                    kv.Value.Type.Debug_GetSmallTermString(),
-                    kv.Value.DefaultMember.Item1.Debug_GetSmallTermString(),
-                    kv.Value.DefaultMember.Item2);
-                Console.WriteLine();
-            }
-            */
+            }          
         }
 
         private ITypeEmbedding Register(ITypeEmbedding embedding)

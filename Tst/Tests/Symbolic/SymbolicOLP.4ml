@@ -1,0 +1,21 @@
+domain SymbolicOLP
+{
+  input    ::= new (w: Integer, x: Integer, y: Integer, z: Integer).
+  trace    ::= (w: Integer, x: Integer, y: Integer, z: Integer).
+  cntrexmp ::= (Integer, Integer, Integer, Integer).
+
+  cntrexmp(w, x, y, z) :- input(w, x, y, z), c = count({ t | t is trace, t.w <= t.x, t.x <= t.y, t.y <= t.z}), c = 0.
+
+  trace(w, x, y, z) :- input(w, x, y, z).
+  trace(x, w, y, z) :- trace(w, x, y, z), w > x.
+  trace(w, y, x, z) :- trace(w, x, y, z), x > y.
+  trace(w, x, z, y) :- trace(w, x, y, z), y > z.
+
+  conforms cntrexmp(a, b, c, d).
+}
+
+partial model pm of SymbolicOLP
+[solver_RecursionBound = 200]
+{
+  input(a, b, c, d).
+}

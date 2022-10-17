@@ -10,6 +10,7 @@
     using API;
     using API.Nodes;
     using API.ASTQueries;
+    using Solver;
     using Compiler;
     using Extras;
     using Terms;
@@ -717,6 +718,129 @@
         }
 
         public virtual void Execute(
+            Term binding,
+            int findNumber,
+            SymExecuter index,
+            bool keepDerivations,
+            Map<Term, Set<Derivation>> pending)
+        {
+            if (initStatus == InitStatusKind.Uninit)
+            {
+                initStatus = Initialize(index) ? InitStatusKind.Success : InitStatusKind.Fail;
+            }
+
+            if (initStatus == InitStatusKind.Fail)
+            {
+                return;
+            }
+
+            //// Case 1. There are no finds.
+            ConstraintNode headNode = nodes[Head];
+            index.AddPositiveConstraint(binding);
+            if (Find1.IsNull && Find2.IsNull)
+            {
+                Contract.Assert(headNode.Binding != null);
+                Pend(keepDerivations, index, pending, headNode.Binding, Index.FalseValue, Index.FalseValue);
+                return;
+            }
+
+            //// Case 2. There is a least one find.
+            Matcher matcher;
+            switch (findNumber)
+            {
+                case 0:
+                    matcher = matcher1;
+                    break;
+                case 1:
+                    matcher = matcher2;
+                    break;
+                default:
+                    throw new Impossible();
+            }
+
+            if (!ApplyMatch(index, matcher, binding, ConstraintNode.BLFirst))
+            {
+                return;
+            }
+            else if (Find1.IsNull || Find2.IsNull)
+            {
+                Contract.Assert(headNode.Binding != null);
+                Pend(
+                    keepDerivations,
+                    index,
+                    pending,
+                    headNode.Binding,
+                    findNumber == 0 ? binding : Index.FalseValue,
+                    findNumber == 1 ? binding : Index.FalseValue);
+
+                UndoPropagation(ConstraintNode.BLFirst);
+
+                return;
+            }
+
+            Term pattern;
+            FindData otherFind;
+            Matcher otherMatcher;
+            ConstraintNode[] projVector;
+            switch (findNumber)
+            {
+                case 0:
+                    pattern = Trigger2;
+                    otherFind = Find2;
+                    projVector = projVector2;
+                    otherMatcher = matcher2;
+                    break;
+                case 1:
+                    pattern = Trigger1;
+                    otherFind = Find1;
+                    projVector = projVector1;
+                    otherMatcher = matcher1;
+                    break;
+                default:
+                    throw new Impossible();
+            }
+
+            //// Query the pattern and enumerate over all bindings.
+            IEnumerable<Term> queryResults;
+            if (pattern.Symbol.IsVariable)
+            {
+                queryResults = index.Query(otherFind.Type, nodes[otherFind.Pattern].Binding);
+            }
+            else
+            {
+                var projection = new Term[projVector.Length];
+                for (int i = 0; i < projection.Length; ++i)
+                {
+                    Contract.Assert(projVector[i].Binding != null);
+                    projection[i] = projVector[i].Binding;
+                }
+
+                queryResults = index.Query(pattern, projection);
+            }
+
+            foreach (var tp in queryResults)
+            {
+                if (tp != binding &&
+                    ApplyMatch(index, otherMatcher, tp, ConstraintNode.BLSecond))
+                {
+                    Contract.Assert(headNode.Binding != null);
+                    Pend(
+                        keepDerivations,
+                        index,
+                        pending,
+                        headNode.Binding,
+                        findNumber == 0 ? binding : tp,
+                        findNumber == 1 ? binding : tp);
+
+                    index.AddPositiveConstraint(tp);
+                    UndoPropagation(ConstraintNode.BLSecond);
+                }
+            }
+
+            UndoPropagation(ConstraintNode.BLFirst);
+        }
+
+        public virtual void Execute(
             Term binding, 
             int findNumber, 
             Executer index, 
@@ -907,7 +1031,7 @@
 
             if (Head.Symbol.PrintableName.StartsWith(SymbolTable.ManglePrefix))
             {
-                builder.AppendFormat(Head.Debug_GetSmallTermString());
+                builder.AppendFormat("{0}\n", Head.Debug_GetSmallTermString());
             }
             else
             {
@@ -917,7 +1041,7 @@
                     HeadType.Debug_GetSmallTermString());
             }
 
-            builder.AppendFormat("  :-");
+            builder.AppendFormat("  :-\n");
             if (!Find1.IsNull)
             {
                 if (Find1.Binding.Symbol.IsReservedOperation)
@@ -955,7 +1079,7 @@
                 builder.AppendFormat("    {0}\n", c.Debug_GetSmallTermString());
             }
 
-            builder.AppendFormat("    .\n");
+            builder.AppendFormat("  .\n\n");
         }
 
         public virtual void Debug_PrintRule()
@@ -1016,6 +1140,40 @@
             }
 
             Console.WriteLine("    .");
+        }
+
+        protected void Pend(
+            bool keepDerivations,
+            SymExecuter index,
+            Map<Term, Set<Derivation>> pending,
+            Term t,
+            Term bind1,
+            Term bind2)
+        {
+            if (!keepDerivations)
+            {
+                if (!index.Exists(t) && !pending.ContainsKey(t))
+                {
+                    pending.Add(t, null);
+                }
+
+                return;
+            }
+
+            var d = new Derivation(this, bind1, bind2);
+            if (index.IfExistsThenDerive(t, d))
+            {
+                return;
+            }
+
+            Set<Derivation> dervs;
+            if (!pending.TryFindValue(t, out dervs))
+            {
+                dervs = new Set<Derivation>(Derivation.Compare);
+                pending.Add(t, dervs);
+            }
+
+            dervs.Add(d);
         }
 
         protected void Pend(
@@ -1090,6 +1248,169 @@
                     eqs.Add(def);
                 }
             }
+        }
+
+        private Map<Term, Term> GetBindings(SymExecuter facts, Term tA, Term tB, Map<Term, Set<Term>> partitions)
+        {
+            Map<Term, Term> bindings = new Map<Term, Term>(Term.Compare);
+            Set<Term> lhsVars = new Set<Term>(Term.Compare);
+            Set<Term> rhsVars = new Set<Term>(Term.Compare);
+
+            // Collect all variables in the LHS term
+            tA.Compute<Term>(
+                (x, s) => x.Groundness == Groundness.Variable ? x.Args : null,
+                (x, ch, s) =>
+                {
+                    if (x.Groundness != Groundness.Variable)
+                    {
+                        return null;
+                    }
+                    else if (x.Symbol.IsVariable)
+                    {
+                        lhsVars.Add(x);
+                    }
+                    else
+                    {
+                        foreach (var t in x.Args)
+                        {
+                            if (t.Symbol.IsVariable)
+                            {
+                                lhsVars.Add(t);
+                            }
+                        }
+                    }
+
+                    return null;
+                });
+
+            // Collect all variables in the RHS term
+            tB.Compute<Term>(
+                (x, s) =>
+                {
+                    if (x.Symbol.Kind == SymbolKind.BaseOpSymb)
+                    {
+                        return null; // don't descend into base op symbols
+                        }
+                    else
+                    {
+                        return x.Groundness == Groundness.Variable ? x.Args : null;
+                    }
+                },
+                (x, ch, s) =>
+                {
+                    if (x.Groundness != Groundness.Variable)
+                    {
+                        return null;
+                    }
+                    else if (x.Symbol.IsVariable || x.Symbol.Kind == SymbolKind.BaseOpSymb || x.Symbol.Kind == SymbolKind.ConSymb)
+                    {
+                        rhsVars.Add(x);
+                    }
+                    else
+                    {
+                        foreach (var t in x.Args)
+                        {
+                            if (t.Symbol.IsVariable)
+                            {
+                                rhsVars.Add(t);
+                            }
+                        }
+                    }
+
+                    return null;
+                });
+
+            foreach (var part in partitions)
+            {
+                Set<Term> constants = new Set<Term>(Term.Compare);
+                Set<Term> lhsPartVars = new Set<Term>(Term.Compare);
+                Set<Term> rhsPartVars = new Set<Term>(Term.Compare);
+                Set<Term> rhsPartGround = new Set<Term>(Term.Compare);
+
+                foreach (var term in part.Value)
+                {
+                    if (term.Symbol.IsNonVarConstant)
+                    {
+                        constants.Add(term);
+                    }
+                    else if (lhsVars.Contains(term))
+                    {
+                        lhsPartVars.Add(term);
+                    }
+                    else if (rhsVars.Contains(term))
+                    {
+                        rhsPartVars.Add(term);
+                    }
+                    else if (term.Symbol.IsDataConstructor && term.Groundness == Groundness.Ground)
+                    {
+                        rhsPartGround.Add(term);
+                    }
+                }
+
+                if (!constants.IsEmpty())
+                {
+                    Term normalized;
+                    Term constant = constants.First();
+                    foreach (var rhs in rhsPartVars)
+                    {
+                        var expr1 = facts.Encoder.GetTerm(rhs, out normalized);
+                        var expr2 = facts.Encoder.GetTerm(constant, out normalized);
+                        facts.PendEqualityConstraint(expr1, expr2);
+                    }
+                }
+
+                if (!rhsPartVars.IsEmpty())
+                {
+                    foreach (var lhsVar in lhsPartVars)
+                    {
+                        bindings.Add(lhsVar, rhsPartVars.First());
+                    }
+                }
+                else if (!constants.IsEmpty())
+                {
+                    foreach (var lhsVar in lhsPartVars)
+                    {
+                        bindings.Add(lhsVar, constants.First());
+                    }
+                }
+                else if (!rhsPartGround.IsEmpty())
+                {
+                    foreach (var lhsVar in lhsPartVars)
+                    {
+                        bindings.Add(lhsVar, rhsPartGround.First());
+                    }
+                }
+            }
+
+            return bindings;
+        }
+
+        private bool ApplyMatch(SymExecuter facts, Matcher m, Term t, int bindingLevel)
+        {
+            Term pattern = m.Pattern;
+            Map<Term, Set<Term>> partitions = new Map<Term, Set<Term>>(Term.Compare);
+            bool result = true;
+
+            if (Unifier.IsUnifiable(pattern, t, true, partitions))
+            {
+                var bindings = facts.GetBindings(pattern, t, partitions);
+                foreach (var kv in bindings)
+                {
+                    if (!Propagate(facts, kv.Key, kv.Value, bindingLevel))
+                    {
+                        result = false;
+                        break;
+                    }
+                }
+            }
+
+            if (!result)
+            {
+                UndoPropagation(bindingLevel);
+                return false;
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -1310,6 +1631,102 @@
         /// <summary>
         /// Execute and propagate all ground nodes. 
         /// </summary>
+        private bool Initialize(SymExecuter facts)
+        {
+            var stack = new Stack<ConstraintNode>();
+            foreach (var kv in nodes)
+            {
+                kv.Value.BindingLevel = ConstraintNode.BLUnbound;
+                kv.Value.EvaluationLevel = ConstraintNode.BLUnbound;
+                if (kv.Value.Kind == ConstrainNodeKind.Ground)
+                {
+                    if (!kv.Value.TryEval(facts, ConstraintNode.BLInit))
+                    {
+                        return false;
+                    }
+
+                    stack.Push(kv.Value);
+                }
+            }
+
+            bool canEval;
+            ConstraintNode top, arg;
+            while (stack.Count > 0)
+            {
+                top = stack.Pop();
+                foreach (var u in top.UseList)
+                {
+                    if (u.Item1.IsEvaluated)
+                    {
+                        continue;
+                    }
+
+                    if (u.Item1.Kind == ConstrainNodeKind.EqRel)
+                    {
+                        arg = u.Item1[u.Item2 == 0 ? 1 : 0];
+                        if (arg.Binding == null)
+                        {
+                            if (!arg.TryBind(top.Binding, ConstraintNode.BLInit))
+                            {
+                                return false;
+                            }
+
+                            // If symbolic binding, an equality constraint may be asserted later
+                            //arg.SetSymbolicBinding();
+                            stack.Push(arg);
+                        }
+                    }
+
+                    canEval = true;
+                    for (int i = 0; i < u.Item1.NArgs; ++i)
+                    {
+                        if (u.Item1[i].Binding == null)
+                        {
+                            canEval = false;
+                            break;
+                        }
+                    }
+
+                    if (canEval)
+                    {
+                        if (!u.Item1.TryEval(facts, ConstraintNode.BLInit))
+                        {
+                            return false;
+                        }
+
+                        stack.Push(u.Item1);
+                    }
+                }
+
+                if (top.Term.Groundness == Groundness.Variable &&
+                    top.Term.Symbol.IsDataConstructor)
+                {
+                    for (int i = 0; i < top.NArgs; ++i)
+                    {
+                        arg = top[i];
+                        if (arg.Binding == null)
+                        {
+                            if (!arg.TryBind(top.Binding.Args[i], ConstraintNode.BLInit))
+                            {
+                                return false;
+                            }
+
+                            stack.Push(arg);
+                        }
+                        else if (!arg.TryBind(top.Binding.Args[i], ConstraintNode.BLInit))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Execute and propagate all ground nodes. 
+        /// </summary>
         private bool Initialize(Executer facts)
         {
             var stack = new Stack<ConstraintNode>();
@@ -1401,9 +1818,121 @@
             return true;           
         }
 
-        /// <summary>
-        /// Propagate a variable binding.
-        /// </summary>
+        private bool Propagate(SymExecuter facts, Term varTerm, Term binding, int bindingLevel)
+        {
+            Contract.Requires(facts != null && binding != null);
+            Contract.Requires(varTerm != null && varTerm.Symbol.IsVariable);
+
+            var stack = new Stack<ConstraintNode>();
+            var varNode = nodes[varTerm];
+            if (varNode.Binding != null)
+            {
+                if (varNode.Binding.Symbol.IsVariable && binding.Symbol.IsVariable)
+                {
+                    if (varNode.Binding != binding)
+                    {
+                        facts.PendEqualityConstraint(varNode.Binding, binding);
+                    }
+
+                    return true;
+                }
+                else if (varNode.TryBind(binding, bindingLevel))
+                {
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            else if (!varNode.TryBind(binding, bindingLevel))
+            {
+                return false;
+            }
+
+            stack.Push(varNode);
+
+            bool canEval;
+            ConstraintNode top, arg;
+            while (stack.Count > 0)
+            {
+                top = stack.Pop();
+                foreach (var u in top.UseList)
+                {
+                    if (u.Item1.IsEvaluated)
+                    {
+                        continue;
+                    }
+
+                    if (u.Item1.Kind == ConstrainNodeKind.EqRel)
+                    {
+                        arg = u.Item1[u.Item2 == 0 ? 1 : 0];
+                        if (arg.Binding == null)
+                        {
+                            if (!arg.TryBind(top.Binding, bindingLevel))
+                            {
+                                return false;
+                            }
+
+                            stack.Push(arg);
+                        }
+                    }
+
+                    canEval = true;
+                    for (int i = 0; i < u.Item1.NArgs; ++i)
+                    {
+                        if (u.Item1[i].Binding == null)
+                        {
+                            canEval = false;
+                            break;
+                        }
+                    }
+
+                    if (canEval)
+                    {
+                        if (!u.Item1.TryEval(facts, bindingLevel))
+                        {
+                            return false;
+                        }
+
+                        stack.Push(u.Item1);
+                    }
+                }
+
+                if (top.Term.Groundness == Groundness.Variable &&
+                    top.Term.Symbol.IsDataConstructor)
+                {
+                    if (top.NArgs != top.Binding.Args.Length)
+                    {
+                        return false;
+                    }
+
+                    for (int i = 0; i < top.NArgs; ++i)
+                    {
+                        arg = top[i];
+                        if (arg.Binding == null)
+                        {
+                            if (!arg.TryBind(top.Binding.Args[i], bindingLevel))
+                            {
+                                return false;
+                            }
+
+                            stack.Push(arg);
+                        }
+                        else if (!arg.TryBind(top.Binding.Args[i], bindingLevel))
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+
+                return true;
+        }
+
+            /// <summary>
+            /// Propagate a variable binding.
+            /// </summary>
         private bool Propagate(Executer facts, Term varTerm, Term binding, int bindingLevel)
         {
             Contract.Requires(facts != null && binding != null);
@@ -1638,6 +2167,8 @@
             protected LinkedList<Tuple<ConstraintNode, int>> useList =
                 new LinkedList<Tuple<ConstraintNode, int>>();
 
+            protected bool isSymbolicBinding = false;
+
             public Term Term
             {
                 get;
@@ -1691,6 +2222,9 @@
                 {
                     Binding = null;
                     BindingLevel = BLUnbound;
+
+                    // TODO: ensure that we don't need to always remove the symbolic binding
+                    RemoveSymbolicBinding();
                 }
 
                 if (EvaluationLevel >= bindingLevel)
@@ -1718,6 +2252,16 @@
                 useList.AddLast(new Tuple<ConstraintNode, int>(n, index));
             }
 
+            public void SetSymbolicBinding()
+            {
+                isSymbolicBinding = true;
+            }
+
+            public void RemoveSymbolicBinding()
+            {
+                isSymbolicBinding = false;
+            }
+
             /// <summary>
             /// Try to set of the expected result of this constraint node.
             /// </summary>
@@ -1727,6 +2271,11 @@
             /// Try to evaluate this node at the binding level.
             /// </summary>
             public abstract bool TryEval(Executer facts, int bindingLevel);
+
+            /// <summary>
+            /// Try to evaluate this node at the binding level.
+            /// </summary>
+            public abstract bool TryEval(SymExecuter facts, int bindingLevel);
         }
 
         private class TypeRelNode : ConstraintNode
@@ -1783,6 +2332,63 @@
                 }
 
                 return Binding == t;
+            }
+
+            public override bool TryEval(SymExecuter facts, int bindingLevel)
+            {
+                Contract.Assert(!IsEvaluated);
+                EvaluationLevel = bindingLevel;
+
+                Term typeTerm;
+                BaseCnstSymb cs;
+                var bindSymb = arg.Binding.Symbol;
+                switch (bindSymb.Kind)
+                {
+                    case SymbolKind.UserCnstSymb:
+                        break;
+                    case SymbolKind.ConSymb:
+                        bindSymb = ((ConSymb)bindSymb).SortSymbol;
+                        break;
+                    case SymbolKind.MapSymb:
+                        bindSymb = ((MapSymb)bindSymb).SortSymbol;
+                        break;
+                    case SymbolKind.BaseCnstSymb:
+                        cs = (BaseCnstSymb)bindSymb;
+                        if (cs.CnstKind == CnstKind.Numeric)
+                        {
+                            bindSymb = zero.Symbol;
+                        }
+                        else if (cs.CnstKind == CnstKind.String)
+                        {
+                            bindSymb = emptyString.Symbol;
+                        }
+                        else
+                        {
+                            throw new NotImplementedException();
+                        }
+
+                        break;
+                }
+
+                if (!typeBins.TryFindValue(bindSymb, out typeTerm))
+                {
+                    return false;
+                }
+                else if (!typeTerm.Owner.IsGroundMember(typeTerm, arg.Binding))
+                {
+                    // TODO: this may be ok for symbolic terms
+                    return false;
+                }
+                else if (Binding == null)
+                {
+                    Binding = typeTerm.Owner.TrueValue;
+                    BindingLevel = bindingLevel;
+                    return true;
+                }
+                else
+                {
+                    return Binding == typeTerm.Owner.TrueValue;
+                }
             }
 
             public override bool TryEval(Executer facts, int bindingLevel)
@@ -1974,6 +2580,58 @@
                 return true;
             }
 
+            public override bool TryEval(SymExecuter facts, int bindingLevel)
+            {
+                Contract.Assert(!IsEvaluated);
+                EvaluationLevel = bindingLevel;
+
+                if (lhs.Binding == rhs.Binding)
+                {
+                    if (Binding == null)
+                    {
+                            Binding = facts.Index.TrueValue;
+                            BindingLevel = bindingLevel;
+                    }
+
+                    return true;
+                }
+
+                bool symbolicEval = Term.IsSymbolicTerm(lhs.Binding, rhs.Binding);
+                bool hasEncoding = false;
+
+                if (symbolicEval)
+                {
+                    hasEncoding = (facts.Encoder.CanGetEncoding(lhs.Binding) &&
+                                   facts.Encoder.CanGetEncoding(rhs.Binding));
+                }
+
+                if (symbolicEval && hasEncoding)
+                {
+                    Term normalized;
+                    var lhsEncoding = facts.Encoder.GetTerm(lhs.Binding, out normalized, facts);
+                    var rhsEncoding = facts.Encoder.GetTerm(rhs.Binding, out normalized, facts);
+                    facts.PendEqualityConstraint(lhsEncoding, rhsEncoding);
+
+                    Binding = facts.Index.TrueValue;
+                    BindingLevel = bindingLevel;
+                    return true;
+                }
+                else
+                {
+                    if (lhs.Binding != rhs.Binding)
+                    {
+                        return false;
+                    }
+                    else if (Binding == null)
+                    {
+                        Binding = facts.Index.TrueValue;
+                        BindingLevel = bindingLevel;
+                    }
+
+                    return true;
+                }
+            }
+
             public override bool TryEval(Executer facts, int bindingLevel)
             {
                 Contract.Assert(!IsEvaluated);
@@ -2049,6 +2707,72 @@
                 Binding = t;
                 BindingLevel = bindingLevel;
                 return true;
+            }
+
+            public override bool TryEval(SymExecuter facts, int bindingLevel)
+            {
+                Contract.Assert(!IsEvaluated);
+                EvaluationLevel = bindingLevel;
+                Term result = null;
+                if (Term.Symbol.IsDataConstructor)
+                {
+                    var us = (UserSymbol)Term.Symbol;
+                    for (int i = 0; i < argNodes.Length; ++i)
+                    {
+                        // TODO: determine if type check is required here
+                    }
+
+                    var args = new Term[argNodes.Length];
+                    for (int i = 0; i < argNodes.Length; ++i)
+                    {
+                        args[i] = argNodes[i].Binding;
+                    }
+
+                    bool wasAdded;
+                    result = facts.Index.MkApply(Term.Symbol, args, out wasAdded);
+                }
+                else if (Term.Symbol.Kind == SymbolKind.BaseOpSymb)
+                {
+                    var bos = (BaseOpSymb)Term.Symbol;
+
+                    result = bos.SymEvaluator(facts, argNodes);
+                    if (result == facts.Index.FalseValue && bos.OpKind is RelKind)
+                    {
+                        //// Relational symbols can never be bound to false.
+                        result = null;
+                    }
+                }
+
+                if (result == null)
+                {
+                    return false;
+                }
+                else if (Binding == null)
+                {
+                    Binding = result;
+                    BindingLevel = bindingLevel;
+                    return true;
+                }
+                else if (result == Binding)
+                {
+                    return true;
+                }
+                else if (Term.IsSymbolicTerm(result))
+                {
+                    // Assert an equality constraint between the previous binding and new binding
+                    Term normalized;
+                    var expr1 = facts.Encoder.GetTerm(result, out normalized);
+                    var expr2 = facts.Encoder.GetTerm(Binding, out normalized);
+                    facts.PendEqualityConstraint(expr1, expr2);
+
+                    Binding = result;
+                    BindingLevel = bindingLevel;
+                    return true;
+                }
+                else
+                {
+                    return result == Binding;
+                }
             }
 
             public override bool TryEval(Executer facts, int bindingLevel)
@@ -2143,6 +2867,82 @@
                 }
 
                 return Binding == t;
+            }
+
+            public override bool TryEval(SymExecuter facts, int bindingLevel)
+            {
+                Contract.Assert(!IsEvaluated);
+                EvaluationLevel = bindingLevel;
+
+                int i;
+                Term computed;
+                UserSymbol us;
+                bool wasAdded;
+                var success = new SuccessToken();
+                var result = this.Term.Compute<Term>(
+                    (x, s) => x.Args,
+                    (x, ch, s) =>
+                    {
+                        if (x.Symbol.IsNonVarConstant)
+                        {
+                            return x;
+                        }
+
+                        if (x.Symbol.IsDataConstructor)
+                        {
+                            i = 0;
+                            us = (UserSymbol)x.Symbol;
+                            var args = new Term[x.Args.Length];
+                            foreach (var a in ch)
+                            {
+                                if (!x.Args[i].Symbol.IsDataConstructor &&
+                                    !x.Args[i].Symbol.IsNonVarConstant &&
+                                    !x.Owner.IsGroundMember(us, i, a))
+                                {
+                                    s.Failed();
+                                    return null;
+                                }
+
+                                args[i++] = a;
+                            }
+
+                            return x.Owner.MkApply(us, args, out wasAdded);
+                        }
+                        else if (x.Symbol.Kind == SymbolKind.BaseOpSymb)
+                        {
+                            computed = ((BaseOpSymb)x.Symbol).SymEvaluator(facts, ToBindables(x.Symbol.Arity, ch));
+                            if (computed == null)
+                            {
+                                s.Failed();
+                            }
+
+                            return computed;
+                        }
+                        throw new NotImplementedException();
+                    },
+                    success);
+
+                Contract.Assert(!success.Result || result != null);
+                if (!success.Result)
+                {
+                    return false;
+                }
+                else if (Term.Symbol.Kind == SymbolKind.BaseOpSymb &&
+                         ((BaseOpSymb)Term.Symbol).OpKind is RelKind &&
+                         result == Term.Owner.FalseValue)
+                {
+                    return false;
+                }
+                else if (Binding == null)
+                {
+                    Binding = result;
+                    BindingLevel = bindingLevel;
+                    return true;
+                }
+                else
+                {
+                    return result == Binding;
+                }
             }
 
             public override bool TryEval(Executer facts, int bindingLevel)

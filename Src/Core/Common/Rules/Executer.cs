@@ -106,6 +106,7 @@
         {
             Contract.Requires(factSet != null);
             KeepDerivations = keepDervs;
+            //KeepDerivations = false;
             TermIndex = factSet.Index;
             Rules = factSet.Rules;
             factSets = new Map<string, FactSet>(string.Compare);
@@ -586,6 +587,14 @@
 
             foreach (var r in optRules)
             {
+               /* System.Console.Write("Rule id {0}, kind {1}, head {2}, headType {3}, trigger1 {4}, trigger2 {5}, " +
+                    "Find1 {6}, Find2 {7}\n", 
+                    r.RuleId, r.Kind, r.Head.Debug_GetSmallTermString(), r.HeadType.Debug_GetSmallTermString(), 
+                    r.Trigger1 == null ? "" : r.Trigger1.Debug_GetSmallTermString(),
+                    r.Trigger2 == null ? "" : r.Trigger2.Debug_GetSmallTermString(),
+                    r.Find1.IsNull ? "" : r.Find1.Pattern.Debug_GetSmallTermString(),
+                    r.Find2.IsNull ? "" : r.Find2.Pattern.Debug_GetSmallTermString());*/
+
                 foreach (var s in r.ComprehensionSymbols)
                 {
                     Register(s);
@@ -651,6 +660,19 @@
             }
         }
 
+        private void PrintSymbToIndexMap()
+        {
+            foreach (var kvp in this.symbToIndexMap)
+            {
+                System.Console.WriteLine("Symbol: {0}", kvp.Key.PrintableName);
+                foreach (var index in kvp.Value)
+                {
+
+                    System.Console.WriteLine("  Index pattern term: {0}", index.Pattern.ToString());
+                }
+            }
+        }
+
         private void IndexFact(Term t, IEnumerable<Derivation> drs, Set<PendingActivation> pending, int stratum)
         {
             Set<Derivation> dervs;
@@ -691,6 +713,7 @@
                 index.TryAdd(t, pending, stratum);
             }
         }
+        
 
         private ProofTree MkProof(ProofState root, Term goal)
         {

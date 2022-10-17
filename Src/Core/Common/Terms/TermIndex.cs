@@ -412,6 +412,19 @@
         }
 
         /// <summary>
+        /// Makes a fresh symbolic constant. Used for creating cardinality constraints.
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="wasAdded"></param>
+        /// <returns>A term whose args are symbolic constants.</returns>
+        public Term MkSymbolicConstant(string name, out UserCnstSymb s, out AST<Id> id)
+        {
+            s = this.SymbolTable.ModuleSpace.AddFreshSymbolicConstant(name, out id);
+            bool wasAdded;
+            return MkApply(s, EmptyArgs, out wasAdded);
+        }
+
+        /// <summary>
         /// Makes a fresh constant for internal use only.
         /// </summary>
         public UserCnstSymb MkFreshConstant(bool isDerived)
@@ -431,6 +444,10 @@
             string name = string.Format("{0}{1}", SymbolTable.ManglePrefix, nextSymbolId);
             var symb = new ConSymb(SymbolTable.Root, name, arity);
             symb.Id = nextSymbolId++;
+            // TODO: check if this is needed
+            //UserSortSymb userSort = new UserSortSymb(symb); 
+            //userSort.Id = nextSymbolId++;
+            //symb.SortSymbol = userSort;
             return symb;
         }
 
@@ -1413,6 +1430,24 @@
             return t;
         }
 
+        internal Term ExpandConArgs(Term ttype)
+        {
+            if (ttype.Symbol is ConSymb)
+            {
+                Term[] args = new Term[ttype.Args.Length];
+                for (int i = 0; i < args.Length; i++)
+                {
+                    args[i] = GetCanonicalTerm(((ConSymb)ttype.Symbol).SortSymbol.DataSymbol, i);
+                }
+
+                bool wasAdded = false;
+                return MkApply(((ConSymb)ttype.Symbol).SortSymbol, EmptyArgs, out wasAdded);
+            }
+            else
+            {
+                return ttype;
+            }
+        }
         /// <summary>
         /// Converts all constructor applications f(...) to the sort f. 
         /// </summary>

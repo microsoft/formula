@@ -1,0 +1,16 @@
+name: 'Build'
+
+on: [push, pull_request]
+
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [macos-12, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: 'Checkout codebase'
+        uses: actions/checkout@v2.4.0
+      - uses: cachix/install-nix-action@v17
+      - run: nix --experimental-features 'nix-command flakes' build -L

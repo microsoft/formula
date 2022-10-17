@@ -11,6 +11,7 @@
     using API.Nodes;
     using Compiler;
     using Rules;
+    using Solver;
 
     public sealed class BaseOpSymb : Symbol
     {
@@ -50,6 +51,38 @@
             get
             {
                 return OpKind is ReservedOpKind && ((ReservedOpKind)OpKind) == ReservedOpKind.Relabel;
+            }
+        }
+
+        public override bool IsSymAnd
+        {
+            get
+            {
+                return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymAnd;
+            }
+        }
+
+        public override bool IsSymAndAll
+        {
+            get
+            {
+                return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymAndAll;
+            }
+        }
+
+        public override bool IsSymCount
+        {
+            get
+            {
+                return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymCount;
+            }
+        }
+
+        public override bool IsSymMax
+        {
+            get
+            {
+                return OpKind is OpKind && ((OpKind)OpKind) == API.OpKind.SymMax;
             }
         }
 
@@ -117,6 +150,12 @@
             private set;
         }
 
+        internal Func<SymExecuter, Bindable[], Term> SymEvaluator
+        {
+            get;
+            private set;
+        }
+
         /// <summary>
         /// Some base ops require additional implicit constraints. For instance, 
         /// x / y implies y != 0. The app constrainer can return an additional 
@@ -137,7 +176,8 @@
             Func<TermIndex, Term[], Term[]> upApprox,
             Func<TermIndex, Term[], Term[]> downApprox,
             Func<Executer, Bindable[], Term> evaluator,
-            Func<TermIndex, Term[], IEnumerable<Tuple<RelKind, Term, Term>>> appConstrainer = null)
+            Func<TermIndex, Term[], IEnumerable<Tuple<RelKind, Term, Term>>> appConstrainer = null,
+            Func<SymExecuter, Bindable[], Term> symEvaluator = null)
         {
             Contract.Requires(validator != null && upApprox != null && downApprox != null);
             Contract.Requires(evaluator != null);
@@ -148,6 +188,7 @@
             DownwardApprox = downApprox;
             Evaluator = evaluator;
             AppConstrainer = appConstrainer == null ? EmptyConstrainer : appConstrainer;
+            SymEvaluator = symEvaluator;
             this.arity = arity;
         }
 
@@ -157,7 +198,8 @@
             List<Flag>, bool> validator,
             Func<TermIndex, Term[], Term[]> upApprox,
             Func<TermIndex, Term[], Term[]> downApprox,
-            Func<Executer, Bindable[], Term> evaluator)
+            Func<Executer, Bindable[], Term> evaluator,
+            Func<SymExecuter, Bindable[], Term> symEvaluator = null)
         {
             Contract.Requires(validator != null);
             OpKind = opKind;
@@ -165,6 +207,7 @@
             UpwardApprox = upApprox;
             DownwardApprox = downApprox;
             Evaluator = evaluator;
+            SymEvaluator = symEvaluator;
             this.arity = arity;
         }
 
@@ -174,7 +217,8 @@
             Func<Node, List<Flag>, bool> validator,
             Func<TermIndex, Term[], Term[]> upApprox,
             Func<TermIndex, Term[], Term[]> downApprox,
-            Func<Executer, Bindable[], Term> evaluator)
+            Func<Executer, Bindable[], Term> evaluator,
+            Func<SymExecuter, Bindable[], Term> symEvaluator = null)
         {
             Contract.Requires(validator != null && upApprox != null && downApprox != null);
             OpKind = opKind;
@@ -182,6 +226,7 @@
             UpwardApprox = upApprox;
             DownwardApprox = downApprox;
             Evaluator = evaluator;
+            SymEvaluator = symEvaluator;
             this.arity = arity;
         }
 

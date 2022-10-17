@@ -12,7 +12,6 @@
     using Common;
     using Common.Extras;
     using Common.Terms;
-
     using Z3Sort = Microsoft.Z3.Sort;
     using Z3BVSort = Microsoft.Z3.BitVecSort;
     using Z3Expr = Microsoft.Z3.Expr;

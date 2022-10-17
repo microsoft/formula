@@ -58,6 +58,30 @@
             }
         }
 
+        public IEnumerable<Term> Query(Term[] projection)
+        {
+            // Temporarily ignore the projection
+            foreach (var sym in entryMap)
+            {
+                yield return sym.Key.Term;
+            }
+        }
+
+        public IEnumerable<Term> Query(Term[] projection, out int nResults)
+        {
+            // Temporarily ignore the projection
+            if (entryMap.IsEmpty())
+            {
+                nResults = 0;
+            }
+            else
+            {
+                nResults = entryMap.Count();
+            }
+
+            return Query(projection);
+        }
+
         public void Debug_Print()
         {
             Console.WriteLine("Trie {0} : {1}", Pattern.Debug_GetSmallTermString(), entryMap.Count);
@@ -69,7 +93,6 @@
         /// Attempts to insert a symbolic element t.
         /// Returns true if the element t satisfies the pattern and was inserted into the index. 
         /// </summary>
-        /*
         public bool TryAdd(SymElement t, Set<Activation> pending, int stratum)
         {
             Contract.Requires(t != null && t.Term.Groundness != Groundness.Type);
@@ -128,7 +151,23 @@
 
             return true;
         }
-        */
+
+        public void PendAll(Set<Activation> pending, int stratum)
+        {
+            LinkedList<Tuple<CoreRule, int>> triggered;
+            if (!triggers.TryFindValue(stratum, out triggered))
+            {
+                return;
+            }
+
+            foreach (var kv in entryMap)
+            {
+                foreach (var trig in triggered)
+                {
+                    pending.Add(new Activation(trig.Item1, trig.Item2, kv.Key));
+                }
+            }
+        }
 
         public void AddTrigger(CoreRule rule, int findNumber)
         {

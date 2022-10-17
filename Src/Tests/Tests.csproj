@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <AssemblyName>Formula.Tests</AssemblyName>
+        <IsPackable>false</IsPackable>
+        <Platforms>ARM64;x64</Platforms>
+        <TargetFramework>net6.0</TargetFramework>
+        <TargetFrameworkIdentifier>.NETCOREAPP</TargetFrameworkIdentifier>
+        <TargetFrameworkVersion>6.0</TargetFrameworkVersion>
+        <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+        <Platform Condition="'$(Platform)' == ''">x64</Platform>
+        <PlatformTarget Condition="'$(Platform)' == 'x64'">x64</PlatformTarget>
+        <PlatformTarget Condition="'$(Platform)' == 'ARM64'">arm64</PlatformTarget>
+        <BaseOutputPath Condition="'$(BaseOutputPath)' == ''">bin/</BaseOutputPath>
+        <OutputPath Condition="'$(OutputPath)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">$(BaseOutputPath)$(Configuration)/Windows/$(Platform)/</OutputPath>
+        <OutputPath Condition="'$(OutputPath)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">$(BaseOutputPath)$(Configuration)/Linux/$(Platform)/</OutputPath>
+        <OutputPath Condition="'$(OutputPath)' == '' and $([MSBuild]::IsOSPlatform('MacOS'))">$(BaseOutputPath)$(Configuration)/MacOS/$(Platform)/</OutputPath>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
+        <PackageReference Include="xunit" Version="2.4.1" />
+        <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="coverlet.collector" Version="3.0.2">
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\CommandLine\CommandLine.csproj" Configuration="$(Configuration)" Platform="$(Platform)" />
+    </ItemGroup>
+</Project>

@@ -182,7 +182,7 @@
         public void DumpRules(StringBuilder builder)
         {
             Contract.Requires(builder != null);
-            foreach (var r in Rules)
+            foreach (var r in Rules.OrderBy(x => x.RuleId))
             {
                 r.Debug_DumpRule(builder);
             }
@@ -259,6 +259,117 @@
             }
 
             return optimizedSet;
+        }
+
+        // TODO: extract and refactor common code in Stratify
+        internal Dictionary<int, int> GetCycles(IEnumerable<CoreRule> optimizedRules)
+        {
+            Dictionary<int, int> cyclicRules = new Dictionary<int, int>();
+
+            //// Maps a comprehension symbol to all the rules reading this compr.
+            var comprs = new Map<Symbol, Set<CoreRule>>(Symbol.Compare);
+
+            //// Maps a non-comprehension symbol to all the rules with a find reading the symbol.
+            //// The first find has index 0 and the second has index 1.
+            var finds = new Map<Symbol, Set<Tuple<CoreRule, int>>>(Symbol.Compare);
+
+            //// Comprehension dependecies have the rule of "true".
+            var deps = new DependencyCollection<CoreRule, bool>(CoreRule.Compare, LiftedBool.CompareBools);
+
+            //// First bin all the rules according to their read dependencies.
+            //// This cuts down on the number of dependency candidates that need to be checked.
+            Set<CoreRule> comprReaders;
+            foreach (var r in optimizedRules)
+            {
+                foreach (var c in r.ComprehensionSymbols)
+                {
+                    if (!comprs.TryFindValue(c, out comprReaders))
+                    {
+                        comprReaders = new Set<CoreRule>(CoreRule.Compare);
+                        comprs.Add(c, comprReaders);
+                    }
+
+                    comprReaders.Add(r);
+                }
+
+                AddReads(r, 0, finds);
+                AddReads(r, 1, finds);
+            }
+
+            //// Second, create dependency graph.
+            UserSymbol us;
+            foreach (var r in optimizedRules)
+            {
+                if (r.Head.Symbol.IsDataConstructor || r.Head.Symbol.IsDerivedConstant)
+                {
+                    us = (UserSymbol)r.Head.Symbol;
+                    if (invComprMap.ContainsKey(us))
+                    {
+                        if (comprs.TryFindValue(us, out comprReaders))
+                        {
+                            foreach (var rp in comprReaders)
+                            {
+                                deps.Add(r, rp, true);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        foreach (var kv in GetReaders(finds, us))
+                        {
+                            if (kv.Item2 == 0 && Unifier.IsUnifiable(r.Head, kv.Item1.Find1.Pattern))
+                            {
+                                deps.Add(r, kv.Item1, false);
+                            }
+                            else if (kv.Item2 == 1 && Unifier.IsUnifiable(r.Head, kv.Item1.Find2.Pattern))
+                            {
+                                deps.Add(r, kv.Item1, false);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    //// Otherwise the head of the rule is a term involving selectors and relabels.
+                    //// Need to use its type to look up possible dependencies.
+                    r.HeadType.Visit(
+                        x => x.Symbol == x.Owner.TypeUnionSymbol ? x.Args : null,
+                        x =>
+                        {
+                            if (x.Symbol == x.Owner.TypeUnionSymbol)
+                            {
+                                return;
+                            }
+
+                            foreach (var kv in GetReaders(finds, x.Symbol))
+                            {
+                                if (kv.Item2 == 0 && Unifier.IsUnifiable(r.Head, kv.Item1.Find1.Pattern))
+                                {
+                                    deps.Add(r, kv.Item1, false);
+                                }
+                                else if (kv.Item2 == 1 && Unifier.IsUnifiable(r.Head, kv.Item1.Find2.Pattern))
+                                {
+                                    deps.Add(r, kv.Item1, false);
+                                }
+                            }
+                        });
+                }
+            }
+
+            int ndeps;
+            var sort = deps.GetTopologicalSort(out ndeps);
+            foreach (var dep in sort)
+            {
+                if (dep.Kind == DependencyNodeKind.Cyclic)
+                {
+                    foreach (var node in dep.InternalNodes)
+                    {
+                        cyclicRules.Add(node.Resource.RuleId, 0);
+                    }
+                }
+            }
+
+            return cyclicRules;
         }
 
         internal bool Compile(List<Flag> flags, CancellationToken cancel)

@@ -58,6 +58,7 @@
 
         public static Set<T> Join(Set<T> set1, Set<T> set2)
         {
+            //var joinedSet = new Set<T>(set1.Comparer);
             var joinedSet = new Set<T>(set1.Comparer);
 
             foreach (var item in set1)

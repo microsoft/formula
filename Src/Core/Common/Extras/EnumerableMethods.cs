@@ -140,7 +140,7 @@
             yield return last;               
         }
 
-        public static IEnumerable<T> Prepend<T>(this IEnumerable<T> enm, T t)
+        /*public static IEnumerable<T> Prepend<T>(this IEnumerable<T> enm, T t)
         {
             yield return t;
             if (enm != null)
@@ -150,7 +150,7 @@
                     yield return tp;
                 }
             }
-        }
+        }*/
 
         public static bool Or(this IEnumerable<bool> values)
         {

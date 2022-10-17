@@ -1,0 +1,127 @@
+domain Arith
+{
+	Id	::= String.
+	Name   	::= new (name: String, id: Id).
+
+	Number 	::= new (op: Real,
+					id: Id).
+
+	UnApp  	::= new (op: { NOT, NEG },
+					arg1: any Expr,
+					id: Id).
+
+	BinApp 	::= new (op: { SUB, ADD, DIV, MUL, EQ },
+					arg1: any Expr, 
+					arg2: any Expr,
+					id: Id).
+
+	Sin		::= new (arg: any Expr, id: Id).
+	Cos		::= new (arg: any Expr, id: Id).
+
+	Expr	::= Name + Number + UnApp + BinApp + Sin + Cos.
+
+	Res	::= (id: Id, res: Real).
+
+	Res(id, res) :- n is Number, id = n.id, res = n.op.
+
+	Res(id, res) :- e is BinApp, arg1 is Res, arg2 is Res,
+						e.op = ADD, 
+						arg1.id = e.arg1.id,
+						arg2.id = e.arg2.id,
+						res = arg1.res + arg2.res,						
+						id = e.id.
+
+	Res(id, res) :- e is BinApp, arg1 is Res, arg2 is Res,
+						e.op = SUB, 
+						arg1.id = e.arg1.id,
+						arg2.id = e.arg2.id,
+						res = arg1.res - arg2.res,						
+						id = e.id.
+
+	Res(id, res) :- e is BinApp, arg1 is Res, arg2 is Res,
+						e.op = DIV, 
+						arg1.id = e.arg1.id,
+						arg2.id = e.arg2.id,
+						res = arg1.res / arg2.res,						
+						id = e.id.						
+
+	Res(id, res) :- e is BinApp, arg1 is Res, arg2 is Res,
+						e.op = MUL, 
+						arg1.id = e.arg1.id,
+						arg2.id = e.arg2.id,
+						res = arg1.res * arg2.res,						
+						id = e.id.
+
+	Res(id, res) :- s is Sin, arg1 is Res,
+						arg1.id  = s.arg.id,
+						val = arg1.res,
+						res = val - 
+							  ((val * val * val) / 6) + 
+							  ((val * val * val * val * val) / 120) -
+							  ((val * val * val * val * val * val * val) / 5040) +
+							  ((val * val * val * val * val * val * val * val * val) / 362880),
+						id = s.id.
+
+	Res(id, res) :- s is Cos, arg1 is Res,
+						arg1.id  = s.arg.id,
+						val = arg1.res,
+						res = 1.0 -
+							  ((val * val) / 2) +
+							  ((val * val * val * val) / 24) -
+							  ((val * val * val * val * val * val ) / 720) +
+							  ((val * val * val * val * val * val * val * val) / 40320),
+						id = s.id.
+
+	Wrong ::= (id: Id).
+	Wrong(id) :- e is BinApp, e.op = EQ, id = e.id,
+					res1 is Res, res2 is Res,
+					res1.id = e.arg1.id,
+					res2.id = e.arg2.id,
+					res1.res != res2.res.
+	
+	NumWrong ::= (Integer).
+	NumWrong(x) :- x = count({n | n is Wrong}).
+}
+
+model small of Arith
+{
+	n1 is Number(1, "n1").
+	n2 is Number(2, "n2").
+	n3 is Number(3, "n3").
+	n4 is Number(4, "n4").
+	n5 is Number(5, "n5").
+	n6 is Number(6, "n6").
+	n20 is Number(20, "n20").
+	
+	// 1 + 2 == 3
+	e1 is BinApp(ADD, n1, n2, "e1").
+	e2 is BinApp(EQ, e1, n3, "e2").
+
+	// 2 + 3 == 5
+	e3 is BinApp(ADD, n2, n3, "e3").
+	e4 is BinApp(EQ, e3, n5, "e4").
+
+	// 4 * 5 == 20
+	e5 is BinApp(MUL, n4, n5, "e5").
+	e6 is BinApp(EQ, e5, n20, "e6").
+
+	// 4 * 5 == 5 * 4
+	e7 is BinApp(MUL, n5, n4, "e7").
+	e8 is BinApp(EQ, e5, e7, "e8").
+
+	// 4 * 5 == (4 * 4) + 4
+	e9 is BinApp(MUL, n4, n4, "e9").
+	e10 is BinApp(ADD, e9, n4, "e10").
+	e11 is BinApp(EQ, e7, e10, "e11").
+
+	// 4 * 5 == 4 * 6 - 4
+	e12 is BinApp(MUL, n4, n6, "e12").
+	e13 is BinApp(SUB, e12, n4, "e13").
+	e14 is BinApp(EQ, e5, e13, "e14").
+
+	// Wrong: check if 1 == 2
+	w1 is BinApp(EQ, n1, n2, "w1").
+
+	// Wrong: check if 2 + 3 == 2
+	w2 is BinApp(EQ, e3, n2, "w2").
+}

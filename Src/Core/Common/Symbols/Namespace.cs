@@ -215,6 +215,17 @@
             symbols.Add(smbCnstName, usrSymb);
         }
 
+        public UserCnstSymb AddFreshSymbolicConstant(string name, out AST<Id> id)
+        {
+            var symbCnstName = "%" + name;
+            Contract.Assert(!symbols.ContainsKey(symbCnstName));
+            id = Factory.Instance.MkId(symbCnstName, Span.Unknown);
+            var usrSymb = new UserCnstSymb(this, id, UserCnstSymbKind.New, true);
+            usrSymb.Id = symbols.Count;
+            symbols.Add(symbCnstName, usrSymb);
+            return usrSymb;
+        }
+
         /// <summary>
         /// Creates a new anononymous model constant for _ appearing in a partial model.
         /// </summary>

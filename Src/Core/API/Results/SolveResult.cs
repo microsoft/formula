@@ -23,6 +23,13 @@
         private CancellationToken cancel;
         private List<List<string>> modelOutputs = null;
         private Model srcPartialModel;
+        private Solver solver;
+
+        public Env Env
+        {
+            get;
+            private set;
+        }
 
         public DateTime StopTime
         {
@@ -31,6 +38,12 @@
         }
 
         public LiftedInt NumSolutions
+        {
+            get;
+            private set;
+        }
+
+        public LiftedBool Solvable
         {
             get;
             private set;
@@ -52,6 +65,7 @@
             Model srcPartialModel,
             FactSet partialModel, 
             int maxSols,
+            Env env,
             CancellationToken cancel)
         {
             Contract.Requires(partialModel != null);
@@ -61,18 +75,24 @@
             this.cancel = cancel;
             this.maxSols = maxSols;
             this.srcPartialModel = srcPartialModel;
+            this.Env = env;
         }
 
         internal void Start()
         {
-            var slvr = new Solver(partialModel, srcPartialModel, cancel);
-            StopTime = DateTime.Now;
+            solver = new Solver(partialModel, srcPartialModel, Env, cancel);
             if (cancel.IsCancellationRequested)
             {
                 WasCancelled = true;
             }
 
-            return;
+            Solvable = solver.Solve();
+            StopTime = DateTime.Now;
+        }
+
+        public void GetOutputModel(int solNum)
+        {
+            solver.GetSolution(solNum);
         }
 
         /// <summary>

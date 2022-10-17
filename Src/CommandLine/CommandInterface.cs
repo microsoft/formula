@@ -6,12 +6,14 @@ namespace Microsoft.Formula.CommandLine
     using System.Diagnostics.Contracts;
     using System.Linq;
     using System.Threading;
+    using System.Threading.Tasks;
 
     using API;
     using API.Nodes;
     using Common;
     using Common.Extras;
     using Common.Terms;
+    //using Microsoft.Z3;
 
     /// <summary>
     /// The command interface.
@@ -47,6 +49,7 @@ namespace Microsoft.Formula.CommandLine
         private const string VerboseMsg = "Changes verbosity. Use: verbose (on | off)";
         private const string WaitMsg = "Changes waiting behavior. Use: wait (on | off) to block until task completes";
         private const string QueryMsg = "Start a query task. Use: query model goals";
+        //private const string SolveMsg = "Start a solve task. Use: solve partial_model max_sols goals";
         private const string SolveMsg = "Start a solve task. Use: solve partial_model max_sols goals";
         private const string ApplyMsg = "Start an apply task. Use: apply transformstep";
         private const string StatsMsg = "Prints task statistics. Use: stats task_id [top_k_rule]";
@@ -274,11 +277,9 @@ namespace Microsoft.Formula.CommandLine
             cmdMap.Add(queryCmd.Name, queryCmd);
             cmdMap.Add(queryCmd.ShortName, queryCmd);
 
-#if SOLVER
             var solveCmd = new Command("solve", "sl", DoSolve, SolveMsg);
             cmdMap.Add(solveCmd.Name, solveCmd);
             cmdMap.Add(solveCmd.ShortName, solveCmd);
-#endif
 
             var truthCmd = new Command("truth", "tr", DoTruth, TruthMsg);
             cmdMap.Add(truthCmd.Name, truthCmd);
@@ -692,7 +693,7 @@ namespace Microsoft.Formula.CommandLine
             }
             else if (kind == TaskKind.Apply)
             {
-                var result = ((System.Threading.Tasks.Task<ApplyResult>)task).Result;
+                var result = ((System.Threading.Tasks.Task<API.ApplyResult>)task).Result;
                 List<Flag> flags;
                 if (cmdParts.Length == 1)
                 {
@@ -790,6 +791,10 @@ namespace Microsoft.Formula.CommandLine
             }
             else
             {
+                SolveResult result = ((System.Threading.Tasks.Task<SolveResult>)task).Result;
+                result.GetOutputModel(solNum);
+                return;
+
 #if SOLVER
                 var result = ((System.Threading.Tasks.Task<SolveResult>)task).Result;
                 WriteFlags(new ProgramName("program.4ml"), result.Flags);
@@ -1197,7 +1202,6 @@ namespace Microsoft.Formula.CommandLine
             }
         }
 
-#if SOLVER
         private void DoSolve(string s)
         {
             var cmdParts = s.Split(cmdSplitChars, 3, StringSplitOptions.RemoveEmptyEntries);
@@ -1291,7 +1295,53 @@ namespace Microsoft.Formula.CommandLine
                 sink.WriteMessageLine("Failed to start solved task.", SeverityKind.Warning);
             }
         }
-#endif
+
+        private void DoSolveOld(string s)
+        {
+            var cmdParts = s.Split(cmdSplitChars, 3, StringSplitOptions.RemoveEmptyEntries);
+            if (cmdParts.Length != 3 || !(String.Equals(cmdParts[1], "=")))
+            {
+                sink.WriteMessageLine(SolveMsg, SeverityKind.Warning);
+                return;
+            }
+
+            string modelName = cmdParts[2];
+            AST<Node> module;
+            if (!TryResolveModuleByName(modelName, out module))
+            {
+                return;
+            }
+
+            var model = module.Node as API.Nodes.Model;
+            if (module.Node.NodeKind != NodeKind.Model ||
+                !model.IsPartial)
+            {
+                sink.WriteMessageLine(modelName + " is not a partial model");
+                return;
+            }
+
+            ProgramName progName = null;
+            foreach (var p in module.Path)
+            {
+                if (p.Node.NodeKind == NodeKind.Program)
+                {
+                    progName = ((Program)p.Node).Name;
+                    break;
+                }
+            }
+
+            List<Flag> flags;
+            Task<SolveResult> task;
+            int numSols = 10;
+
+            env.Solve(
+                progName,
+                modelName,
+                numSols,
+                out flags,
+                out task
+                );
+        }
 
         private void DoDetails(string s)
         {

@@ -9,12 +9,15 @@
     using System.Threading.Tasks;
     using Nodes;
     using Common;
+    using Range = Microsoft.Formula.API.Nodes.Range;
 
     public sealed class Factory
     {
         private static readonly Factory instance = new Factory();
 
         private static readonly char[] Whitespaces = new char[] { ' ', '\t', '\n' };
+
+        private static bool USE_ANTLR = true;
 
         public static Factory Instance
         {
@@ -1365,8 +1368,17 @@
             return Task.Factory.StartNew<ParseResult>(() =>
             {
                 ParseResult pr;
-                var parser = new Parser(envParams);
-                parser.ParseFile(name, null, default(Span), cancelToken, out pr);
+                if (USE_ANTLR)
+                {
+                    var parser = new FormulaVisitor();
+                    parser.ParseFile(name, null, default(Span), cancelToken, out pr);
+                }
+                else
+                {
+                    var parser = new Parser(envParams);
+                    parser.ParseFile(name, null, default(Span), cancelToken, out pr);
+                }
+                
                 return pr;
             });
         }
@@ -1381,8 +1393,17 @@
             return Task.Factory.StartNew<ParseResult>(() =>
             {
                 ParseResult pr;
-                var parser = new Parser(envParams);
-                parser.ParseText(name, programText, default(Span), cancelToken, out pr);
+                if (USE_ANTLR)
+                {
+                    var parser = new FormulaVisitor();
+                    parser.ParseText(name, programText, default(Span), cancelToken, out pr);
+                }
+                else
+                {
+                    var parser = new Parser(envParams);
+                    parser.ParseText(name, programText, default(Span), cancelToken, out pr);
+                }
+
                 return pr;
             });
         }
@@ -1397,8 +1418,16 @@
             return Task.Factory.StartNew<ParseResult>(() =>
             {
                 ParseResult pr;
-                var parser = new Parser(envParams);
-                parser.ParseFile(name, referrer, location, cancelToken, out pr);
+                if (USE_ANTLR)
+                {
+                    var parser = new FormulaVisitor();
+                    parser.ParseFile(name, referrer, location, cancelToken, out pr);
+                }
+                else
+                {
+                    var parser = new Parser(envParams);
+                    parser.ParseFile(name, referrer, location, cancelToken, out pr);
+                }
                 return pr;
             });
         }
@@ -1407,8 +1436,18 @@
         {
             Contract.Requires(text != null);
             ParseResult pr;
-            var parser = new Parser(envParams);
-            var result = parser.ParseFuncTerm(text, out pr);
+            AST<Node> result = null;
+            if (USE_ANTLR)
+            {
+                var parser = new FormulaVisitor();
+                result = parser.ParseFuncTerm(text, out pr);
+            }
+            else
+            {
+                var parser = new Parser(envParams);
+                result = parser.ParseFuncTerm(text, out pr);
+            }
+
             pr.Program.Root.GetNodeHash();
             flags = pr.Flags;
             return result;

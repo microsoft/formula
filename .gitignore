@@ -62,6 +62,8 @@ ipch/
 *.sdf
 *.cachefile
 
+# Rider idea folder
+.idea
 
 # Visual Studio profiler
 *.psess
@@ -206,3 +208,10 @@ $RECYCLE.BIN/
 
 /Src/CommandLine/CommandLine.VC.VC.opendb
 /Src/CommandLine/CommandLine.VC.db
+
+# Jetbrains IDE
+.idea/
+
+# Visual Studio Code
+.vscode/
+Src/Core/.vscode/

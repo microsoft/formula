@@ -1,4 +1,7 @@
-﻿namespace Microsoft.Formula.Common.Terms
+﻿using System.IO;
+using System.Reflection;
+
+namespace Microsoft.Formula.Common.Terms
 {
     using System;
     using System.Collections.Generic;
@@ -171,6 +174,7 @@
 
             MkSorts();
             MkBaseOps();
+            LoadPlugins();
 
             dependentTables.Add(name, this);
         }
@@ -217,6 +221,7 @@
 
             MkSorts();
             MkBaseOps();
+            LoadPlugins();
 
             dependentTables.Add(tempDom, this);
 
@@ -2504,6 +2509,14 @@
             return result;
         }
 
+        private void LoadPlugins()
+        {
+            OpPluginFunc[] pluginFuncs = PluginManager.GetPluginFunctions();
+            foreach (OpPluginFunc pluginFunc in pluginFuncs)
+            {
+                AddBaseOp(pluginFunc.GetBaseOpSymb());
+            }
+        }
 
         private void MkBaseOps()
         {

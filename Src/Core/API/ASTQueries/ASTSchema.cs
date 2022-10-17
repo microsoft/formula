@@ -1,4 +1,6 @@
-﻿namespace Microsoft.Formula.API.ASTQueries
+﻿using Microsoft.Formula.Common.Terms;
+
+namespace Microsoft.Formula.API.ASTQueries
 {
     using System;
     using System.Collections.Generic;
@@ -137,7 +139,16 @@
             compKindStrings = new string[typeof(ComposeKind).GetEnumValues().Length];
             mapKindStrings = new string[typeof(MapKind).GetEnumValues().Length];
             relKindStrings = new string[typeof(RelKind).GetEnumValues().Length];
-            opKindStrings = new Tuple<string, OpStyleKind>[typeof(OpKind).GetEnumValues().Length];
+            OpPluginFunc[] funcs = PluginManager.GetPluginFunctions();
+            int maxOpKind = typeof(OpKind).GetEnumValues().Length;
+            foreach (OpPluginFunc func in funcs)
+            {
+                if ((int) func.GetOpKind() >= maxOpKind)
+                {
+                    maxOpKind = (int) func.GetOpKind() + 1;
+                }
+            }
+            opKindStrings = new Tuple<string, OpStyleKind>[maxOpKind];
 
             adjList[(int)NodeKind.Folder] = new ChildData[]
             {
@@ -1241,6 +1252,7 @@
             Register(ContractKind.ConformsProp, "conforms");
 
             RegisterReservedWords();
+            RegisterPluginFunctions();
         }
 
         private void RegisterReservedWords()
@@ -1276,6 +1288,15 @@
             reservedWords.Add("boot");
         }
 
+        private void RegisterPluginFunctions()
+        {
+            OpPluginFunc[] pluginFuncs = PluginManager.GetPluginFunctions();
+            foreach (OpPluginFunc pluginFunc in pluginFuncs)
+            {
+                Register(pluginFunc.GetOpKind(), pluginFunc.GetName(), OpStyleKind.Apply);
+            }
+        }
+        
         private void Register(OpKind kind, string name, OpStyleKind style)
         {
             opKindStrings[(int)kind] = new Tuple<string, OpStyleKind>(name, style);

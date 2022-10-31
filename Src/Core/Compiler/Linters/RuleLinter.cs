@@ -122,7 +122,6 @@ namespace Microsoft.Formula.Compiler
                 }
             });
 
-            HashSet<string> listOfBindingVars = new HashSet<string>();
             b.FindAll(
             path,
             RelConstrFuncTermQueryRule, 

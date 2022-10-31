@@ -164,6 +164,9 @@
                 if(!RuleLinter.ValidateBodyQualifiedIds(b, out varNames))
                 {
                     var flag = new Flag(
+                    SeverityKind.Error,
+                    AST.Node,
+                    Constants.NoBindingTypeError.ToString(String.Join(",", varNames)),
                     Constants.NoBindingTypeError.Code);
                     flags.Add(flag);
                     return RecordValidationResult(false);

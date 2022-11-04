@@ -1,0 +1,356 @@
+domain ARM
+{
+    Registers ::= new ( r0: Integer, r1: Integer, r2: Integer, r3: Integer,
+                        r4: Integer, r5: Integer, r6: Integer, r7: Integer,
+                        r8: Integer, r9: Integer, r10: Integer, r11: Integer,
+                        r12: Integer, r13: Integer, r14: Integer).
+    CPSR ::= new ( n: Boolean, z: Boolean, c: Boolean, v: Boolean ).
+    NumList ::= new (val : Integer, nxt : any NumList + {NIL}).
+    Memory ::= new (addrList : NumList+{NIL}, valList : NumList+{NIL}).
+    MachineState ::= new (seq : Integer, pc: Integer, cpsr: CPSR, regs : Registers, mem : Memory).
+    Immediate ::= new (val : Integer).
+    Indexed ::= new (reg : Integer).
+    IndexedOffset ::= new (reg : Integer, offset : Integer).
+    DoubleIndexed ::= new (reg1 : Integer, reg2 : Integer).
+    PcRelative ::= new (offset : Integer).
+    
+    Boot ::= new (pc : Integer).
+    Boot(pc) :- MachineState(0, pc, CPSR(FALSE,FALSE,FALSE,FALSE), Registers(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),Memory(NIL,NIL)).
+
+    GetReg ::= new (seq : Integer, pc : Integer, cpsr: CPSR, mem : any Memory, reg : Integer, r : Integer).
+    GetReg(seq, pc, status, mem, 0, r) :- r = regs.r0.
+    GetReg(seq, pc, status, mem, 1, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r1.
+    GetReg(seq, pc, status, mem, 2, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r2.
+    GetReg(seq, pc, status, mem, 3, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r3.
+    GetReg(seq, pc, status, mem, 4, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r4.
+    GetReg(seq, pc, status, mem, 5, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r5.
+    GetReg(seq, pc, status, mem, 6, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r6.
+    GetReg(seq, pc, status, mem, 7, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r7.
+    GetReg(seq, pc, status, mem, 8, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r8.
+    GetReg(seq, pc, status, mem, 9, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r9.
+    GetReg(seq, pc, status, mem, 10, r) :- r = regs.r10.
+    GetReg(seq, pc, status, mem, 11, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r11.
+    GetReg(seq, pc, status, mem, 12, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r12.
+    GetReg(seq, pc, status, mem, 13, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r13.
+    GetReg(seq, pc, status, mem, 14, r) :- MachineState(seq, pc, status, regs, mem), r = regs.r14.
+
+    
+    SetReg ::= new (seq: Integer, pc: Integer, status: CPSR, mem: any Memory, reg : Integer, val : Integer).
+
+    MachineState(nseq, pc, status, Registers(val, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 0, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, val, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 1, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, val, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 2, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, val, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 3, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, val, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 4, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, val, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 5, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, val, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 6, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, val, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 7, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, val, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 8, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, val, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 9, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, val, regs.r11, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 10, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, val, regs.r12, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 11, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, val, regs.r13, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 12, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, val, regs.r14), mem) :-
+    		   SetReg(seq, pc, status, mem, 13, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    MachineState(nseq, pc, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, val), mem) :-
+    		   SetReg(seq, pc, status, mem, 14, val), MachineState(seq, _, _, regs, _), nseq = seq + 1.
+    
+
+    Add ::= new (pc : Integer, r0 : Integer, r1 : Integer+Immediate, r2 : Integer).
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Add(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), r1=Immediate(rb), val = ra+rb,
+        val=0, cpsr=CPSR(TRUE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Add(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), GetReg(seq, pc, status, mem, r1, rb), val = ra+rb,
+        val=0, cpsr=CPSR(FALSE, TRUE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Add(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), r1=Immediate(rb), val = ra+rb,
+        val<0, cpsr=CPSR(TRUE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Add(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), GetReg(seq, pc, status, mem, r1, rb), val = ra+rb,
+        val<0, cpsr=CPSR(TRUE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Add(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), GetReg(seq, pc, status, mem, r1, rb), val = ra+rb,
+        val>0, cpsr=CPSR(FALSE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Add(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), r1=Immediate(rb), val = ra+rb,
+        val>0, cpsr=CPSR(FALSE, FALSE, FALSE, FALSE), newpc=pc+1.
+
+    Sub ::= new (pc : Integer, r0 : Integer, r1 : Integer+Immediate, r2 : Integer).
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Sub(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), r1=Immediate(rb), val = ra-rb,
+        val=0, cpsr=CPSR(FALSE, TRUE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Sub(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), GetReg(seq, pc, status, mem, r1, rb), val = ra-rb,
+        val=0, cpsr=CPSR(FALSE, TRUE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Sub(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), r1=Immediate(rb), val = ra-rb,
+        val<0, cpsr=CPSR(TRUE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Sub(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), GetReg(seq, pc, status, mem, r1, rb), val = ra-rb,
+        val<0, cpsr=CPSR(TRUE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Sub(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), r1=Immediate(rb), val = ra-rb,
+        val>0, cpsr=CPSR(FALSE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Sub(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), GetReg(seq, pc, status, mem, r1, rb), val = ra-rb,
+        val>0, cpsr=CPSR(FALSE, FALSE, FALSE, FALSE), newpc=pc+1.
+
+    Mul ::= new (pc : Integer, r0 : Integer, r1 : Integer+Immediate, r2 : Integer).
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Mul(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), r1=Immediate(rb), val = ra*rb,
+        val=0, cpsr=CPSR(FALSE, TRUE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Mul(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), GetReg(seq, pc, status, mem, r1, rb), val = ra*rb,
+        val=0, cpsr=CPSR(FALSE, TRUE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Mul(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), r1=Immediate(rb), val = ra*rb,
+        val<0, cpsr=CPSR(TRUE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Mul(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), GetReg(seq, pc, status, mem, r1, rb), val = ra*rb,
+        val<0, cpsr=CPSR(TRUE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Mul(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), r1=Immediate(rb), val = ra*rb,
+        val>0, cpsr=CPSR(FALSE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, r2, val) :- Mul(pc, r0, r1, r2), GetReg(seq, pc, status, mem, r0, ra), GetReg(seq, pc, status, mem, r1, rb), val = ra*rb,
+        val>0, cpsr=CPSR(FALSE, FALSE, FALSE, FALSE), newpc=pc+1.
+
+    Mov ::= new (pc : Integer, rs : Integer+Immediate, rd : Integer).
+    SetReg(seq, newpc, cpsr, mem, rd, val) :- Mov(pc, rs, rd), rs=Immediate(val),
+        val=0, cpsr=CPSR(FALSE, TRUE, FALSE, FALSE), newpc=pc+1, MachineState(seq, pc, _, _, mem).
+    SetReg(seq, newpc, cpsr, mem, rd, val) :- Mov(pc, rs, rd), GetReg(seq, pc, status, mem, rs, val),
+        val=0, cpsr=CPSR(FALSE, TRUE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, rd, val) :- Mov(pc, rs, rd), rs=Immediate(val),
+        val<0, cpsr=CPSR(TRUE, FALSE, FALSE, FALSE), newpc=pc+1, MachineState(seq, pc, _, _, mem).
+    SetReg(seq, newpc, cpsr, mem, rd, val) :- Mov(pc, rs, rd), GetReg(seq, pc, status, mem, rs, val),
+        val<0, cpsr=CPSR(TRUE, FALSE, FALSE, FALSE), newpc=pc+1.
+    SetReg(seq, newpc, cpsr, mem, rd, val) :- Mov(pc, rs, rd), rs=Immediate(val),
+        val>0, cpsr=CPSR(FALSE, FALSE, FALSE, FALSE), newpc=pc+1, MachineState(seq, pc, _, _, mem).
+    SetReg(seq, newpc, cpsr, mem, rd, val) :- Mov(pc, rs, rd), GetReg(seq, pc, status, mem, rs, val),
+        val>0, cpsr=CPSR(FALSE, FALSE, FALSE, FALSE), newpc=pc+1.
+    
+    Cmp ::= new (pc : Integer, ra : Integer, rb : Integer).
+    MachineState(newseq,newpc,newcpsr,regs, mem) :-
+        Cmp(pc, ra, rb), GetReg(seq, pc, cpsr, mem, ra, aval), GetReg(seq, pc, cpsr, mem, rb, bval), aval=bval, newcpsr=CPSR(FALSE,TRUE,FALSE,FALSE),
+          newpc=pc+1,newseq=seq+1,MachineState(seq,pc,cpsr,regs,mem).
+    MachineState(newseq,newpc,newcpsr,regs, mem) :-
+        Cmp(pc, ra, rb), GetReg(seq, pc, cpsr, mem, ra, aval), GetReg(seq, pc, cpsr, mem, rb, bval), aval<bval, newcpsr=CPSR(TRUE,FALSE,FALSE,FALSE),
+          newpc=pc+1,newseq=seq+1,MachineState(seq,pc,cpsr,regs,mem).
+    MachineState(newseq,newpc,newcpsr,regs, mem) :-
+        Cmp(pc, ra, rb), GetReg(seq, pc, cpsr, mem, ra, aval), GetReg(seq, pc, cpsr, mem, rb, bval), aval>bval, newcpsr=CPSR(FALSE,FALSE,FALSE,FALSE),
+          newpc=pc+1,newseq=seq+1,MachineState(seq,pc,cpsr,regs,mem).
+
+    Load ::= new (seq : Integer, newpc : Integer, addr : Integer, rdest : Integer).
+    SetReg(seq, newpc, newcpsr, mem, rdest, val) :-
+        Load(seq,newpc,addr,rdest), MachineState(seq,_,_,_,mem),
+          val=0, newcpsr=CPSR(FALSE,TRUE,FALSE,FALSE),
+          idx=lstFindAll(#NumList, mem.addrList, addr), idx=NIL.
+    SetReg(seq, newpc, newcpsr, mem, rdest, val) :-
+        Load(seq,newpc,addr,rdest), MachineState(seq,_,_,_,mem),
+          val>0, newcpsr=CPSR(FALSE,FALSE,FALSE,FALSE),
+          idx=lstFindAll(#NumList, mem.addrList, addr), idx!=NIL, pos=idx.val, val=lstGetAt(#NumList,mem.valList,pos).
+    SetReg(seq, newpc, newcpsr, mem, rdest, val) :-
+        Load(seq,newpc,addr,rdest), MachineState(seq,_,_,_,mem),
+          val=0, newcpsr=CPSR(FALSE,TRUE,FALSE,FALSE),
+          idx=lstFindAll(#NumList, mem.addrList, addr), idx!=NIL, pos=idx.val, val=lstGetAt(#NumList,mem.valList,pos).
+    SetReg(seq, newpc, newcpsr, mem, rdest, val) :-
+        Load(seq,newpc,addr,rdest), MachineState(seq,_,_,_,mem),
+          val<0, newcpsr=CPSR(TRUE,FALSE,FALSE,FALSE),
+          idx=lstFindAll(#NumList, mem.addrList, addr), idx!=NIL, pos=idx.val, val=lstGetAt(#NumList,mem.valList,pos).
+          
+    Ld ::= new (pc : Integer, rdest : Integer, addr : Integer+Indexed+IndexedOffset+DoubleIndexed).
+    Load(seq,newpc,addr,rdest) :-
+        Ld(pc, rdest, addr), newpc=pc+1, MachineState(seq,pc,_,_,_), addr:Integer.
+    Load(seq,newpc,addr,rdest) :-
+        Ld(pc, rdest, indaddr), indaddr=Indexed(reg), newpc=pc+1,
+        GetReg(seq,pc,_,_,reg,addr).
+    Load(seq,newpc,addr,rdest) :-
+        Ld(pc, rdest, indoffaddr), indoffaddr=IndexedOffset(reg,offset), newpc=pc+1,
+        GetReg(seq,pc,_,_,reg,baseaddr), addr=baseaddr+offset.
+    Load(seq,newpc,addr,rdest) :-
+        Ld(pc, rdest, doubleidx), doubleidx=DoubleIndexed(reg1, reg2), newpc=pc+1,
+        GetReg(seq,pc,_,_,reg1,baseaddr), GetReg(seq,pc,_,_,reg2, offset), addr=baseaddr+offset.
+
+    Store ::= new (seq : Integer, newpc : Integer, addr : Integer, val : Integer).
+    MachineState(newseq,newpc,newcpsr,regs,newmem) :-
+        Store(seq, newpc, addr, val), MachineState(seq, _, _, regs, mem), newseq=seq+1,
+        val > 0, newcpsr=CPSR(FALSE,FALSE,FALSE,FALSE),
+        oldaddrs = mem.addrList, oldvals = mem.valList, newmem=Memory(NumList(addr,oldaddrs),NumList(val,oldvals)).
+    MachineState(newseq,newpc,newcpsr,regs,newmem) :-
+        Store(seq, newpc, addr, val), MachineState(seq, _, _, regs, mem), newseq=seq+1,
+        val = 0, newcpsr=CPSR(FALSE,TRUE,FALSE,FALSE),
+        oldaddrs = mem.addrList, oldvals = mem.valList, newmem=Memory(NumList(addr,oldaddrs),NumList(val,oldvals)).
+    MachineState(newseq,newpc,newcpsr,regs,newmem) :-
+        Store(seq, newpc, addr, val), MachineState(seq, _, _, regs, mem), newseq=seq+1,
+        val < 0, newcpsr=CPSR(TRUE,FALSE,FALSE,FALSE),
+        oldaddrs = mem.addrList, oldvals = mem.valList, newmem=Memory(NumList(addr,oldaddrs),NumList(val,oldvals)).
+        
+    St ::= new (pc : Integer, rsrc : Integer, addr : Integer+Indexed+IndexedOffset+DoubleIndexed).
+    Store(seq,newpc,addr,val) :-
+        St(pc, rsrc, addr), newpc=pc+1, addr:Integer,
+        MachineState(seq,pc,cpsr,regs,mem), GetReg(seq,pc,cpsr,mem,rsrc,val).
+    Store(seq,newpc,addr,val) :-
+        St(pc, rsrc, indaddr), indaddr=Indexed(reg), newpc=pc+1,
+        MachineState(seq,pc,cpsr,regs,mem),
+        GetReg(seq,pc,cpsr,mem,rsrc,val),
+        GetReg(seq,pc,cpsr,mem,reg,addr).
+    Store(seq,newpc,addr,val) :-
+        St(pc, rsrc, indoffaddr), indoffaddr=IndexedOffset(reg,offset), newpc=pc+1,
+        MachineState(seq,pc,cpsr,regs,mem),
+        GetReg(seq,pc,cpsr,mem,rsrc,val),
+        GetReg(seq,pc,cpsr,mem,reg,baseaddr), addr=baseaddr+offset.
+    Store(seq,newpc,addr,val) :-
+        St(pc, rsrc, doubleidx), doubleidx=DoubleIndexed(reg1, reg2), newpc=pc+1,
+        MachineState(seq,pc,cpsr,regs,mem),
+        GetReg(seq,pc,cpsr,mem,rsrc,val),
+        GetReg(seq,pc,cpsr,mem,reg1,baseaddr), GetReg(seq,pc,cpsr,mem,reg2,offset), addr=baseaddr+offset.
+        
+    Nop ::= new (pc : Integer).
+    MachineState(newseq,newpc,cpsr,registers,mem) :- Nop(pc), MachineState(seq,pc,cpsr,registers,mem), newpc=pc+1, newseq=seq+1.
+
+    BL ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, link),mem) :- BL(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), newseq=seq+1, link=pc+1.
+
+    B ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- B(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), newseq=seq+1.
+
+    BAL ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BAL(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), newseq=seq+1.
+
+    BEQ ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BEQ(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), cpsr.z=TRUE, newseq=seq+1.
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BEQ(pc, _), newpc=pc+1, MachineState(seq,pc,cpsr,regs,mem), cpsr.z=FALSE, newseq=seq+1.
+
+    BNE ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BNE(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), cpsr.z=FALSE, newseq=seq+1.
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BNE(pc, _), newpc=pc+1, MachineState(seq,pc,cpsr,regs,mem), cpsr.z=TRUE, newseq=seq+1.
+
+    BMI ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BMI(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), cpsr.n=TRUE, newseq=seq+1.
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BMI(pc, _), newpc=pc+1, MachineState(seq,pc,cpsr,regs,mem), cpsr.n=FALSE, newseq=seq+1.
+
+    BPL ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BPL(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), cpsr.n=FALSE, newseq=seq+1.
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BPL(pc, _), newpc=pc+1, MachineState(seq,pc,cpsr,regs,mem), cpsr.n=TRUE, newseq=seq+1.
+
+    BGE ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BGE(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), or(not(cpsr.n), cpsr.z)=TRUE, newseq=seq+1.
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BGE(pc, _), newpc=pc+1, MachineState(seq,pc,cpsr,regs,mem), or(not(cpsr.n), cpsr.z)=FALSE, newseq=seq+1.
+
+    BLT ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BLT(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), cpsr.n=TRUE, newseq=seq+1.
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BLT(pc, _), newpc=pc+1, MachineState(seq,pc,cpsr,regs,mem), cpsr.n=FALSE, newseq=seq+1.
+
+    BGT ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BGT(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), and(not(cpsr.n), not(cpsr.z))=TRUE, newseq=seq+1.
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BGT(pc, _), newpc=pc+1, MachineState(seq,pc,cpsr,regs,mem), and(not(cpsr.n), not(cpsr.z))=FALSE, newseq=seq+1.
+
+    BLE ::= new (pc : Integer, newpc : Integer).
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BLE(pc, newpc), MachineState(seq,pc,cpsr,regs,mem), or(cpsr.n,cpsr.z)=TRUE, newseq=seq+1.
+    MachineState(newseq,newpc,cpsr,Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :- BLE(pc, _), newpc=pc+1, MachineState(seq,pc,cpsr,regs,mem), or(cpsr.n,cpsr.z)=FALSE, newseq=seq+1.
+
+    Halt ::= new (pc : Integer).
+
+    HaltedAt ::= new (seq : Integer, pc : Integer).
+    HaltedAt(seq,pc) :- Halt(pc), MachineState(seq,pc,_,_,_).
+
+    HaltedWithReg ::= new (seq : Integer, pc : Integer, reg : Integer, value : Integer).
+    HaltedWithReg(seq,pc,reg,val) :- Halt(pc), MachineState(seq,pc,_,regs,_), GetReg(seq,pc,cpsr,mem,reg,regval), val=regval.
+
+    HaltedWithState ::= new (state : MachineState).
+    HaltedWithState(state) :- Halt(pc), MachineState(seq,pc,cpsr,regs,memory), state=MachineState(seq,pc,cpsr,regs,memory).
+
+    Ret ::= new (pc : Integer).
+    Ret ::= new (pc : Integer).
+    MachineState(newseq, regs.r14, status, Registers(regs.r0, regs.r1, regs.r2, regs.r3, regs.r4, regs.r5, regs.r6, regs.r7, regs.r8, regs.r9, regs.r10, regs.r11, regs.r12, regs.r13, regs.r14),mem) :-
+        Ret(pc), MachineState(seq,pc,status,regs,mem), newseq=seq+1.
+
+}
+
+model ArmTest of ARM
+{
+    MachineState(0, 0, CPSR(FALSE,FALSE,FALSE,FALSE), Registers(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15),Memory(NIL,NIL)).
+    
+    Mov(0, 8, 0).
+    Mov(1, 9, 1).
+    BL(2, 9).
+    Mov(3, 0,7).
+    Cmp(4, 9,7).
+    BGT(5,7).
+    Halt(6).
+    Mov(7,7,1).
+    Halt(8).
+
+    Add(9, 0, 1, 0).
+    Ret(10).
+}
+
+model FactTest of ARM
+{
+    MachineState(0, 0, CPSR(FALSE,FALSE,FALSE,FALSE), Registers(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),Memory(NIL,NIL)).
+    
+    Mov(0, Immediate(3), 0).
+    BL(1, 3).
+    Halt(2).
+
+    Mov(3, Immediate(1), 1).
+    Mul(4, 0, 1, 1).
+    Sub(5, 0, Immediate(1), 0).
+    BNE(6, 4).
+    Mov(7, 1, 0).
+    Ret(8).
+}
+
+model FactRec of ARM
+{
+    MachineState(0, 0, CPSR(FALSE,FALSE,FALSE,FALSE), Registers(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),Memory(NIL,NIL)).
+    Mov(0, Immediate(8000), 13).
+    // Param=3
+    Mov(1, Immediate(20), 0).
+    // Call fact
+    BL(2, 4).
+    Halt(3).
+
+    // Save ret addr on stack
+    St(4, 14, Indexed(13)).
+    // Decrement stack pointer
+    Sub(5, 13, Immediate(1), 13).
+    // Is arg <= 1 ?
+    Mov(6, Immediate(1), 1).
+    Cmp(7, 0, 1).
+    BLE(8, 19).
+    // If not, save the old arg on the stack
+    St(9, 0, Indexed(13)).
+    // Decrement stack pointer
+    Sub(10, 13, Immediate(1), 13).
+    // Subtract 1 from arg
+    Sub(11, 0, Immediate(1), 0).
+    // Compute fact of arg-1
+    BL(12, 4).
+    // Increment stack pointer
+    Add(13, 13, Immediate(1), 13).
+    // Get old arg into r1
+    Ld(14, 1, Indexed(13)).
+    // multiple r1 by fact of arg-1
+    Mul(15, 0, 1, 0).
+    // Increment stack pointer
+    Add(16, 13, Immediate(1), 13).
+    // Get return address
+    Ld(17, 14, Indexed(13)).
+    Ret(18).
+
+    // Otherwise, if arg <= 1, put 1 in r0
+    Mov(19, Immediate(1), 0).
+    // Increment stack pointer
+    Add(20, 13, Immediate(1), 13).
+    // Load return address
+    Ld(21, 14, Indexed(13)).
+    Ret(22).
+}
+
+model MemTest of ARM
+{
+    MachineState(0, 0, CPSR(FALSE,FALSE,FALSE,FALSE), Registers(0,0,0,0,0,0,0,0,0,0,0,0,0,0,0),Memory(NIL,NIL)).
+    Mov(0, Immediate(56), 0).
+    St(1, 0, 1000).
+    Ld(2, 1, 1000).
+    Mov(3, Immediate(77), 2).
+    Ld(4, 2, 2000).
+    Halt(5).
+}

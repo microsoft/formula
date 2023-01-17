@@ -570,7 +570,8 @@ funcOrCompr			:	funcTerm
 					|	compr
 					;
 
-funcTerm			:	MINUS
+funcTerm			:	atom
+					|	MINUS
 						funcTerm
 					|	funcTerm
 						(MUL | DIV | MOD)
@@ -588,7 +589,6 @@ funcTerm			:	MINUS
 					|	LPAREN
 						funcTerm
 						RPAREN
-					|	atom
 					;
 
 quoteList			:	quoteItem

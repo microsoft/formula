@@ -5016,6 +5016,9 @@ public partial class FormulaParser : Parser {
 	}
 
 	public partial class FuncTermContext : ParserRuleContext {
+		[System.Diagnostics.DebuggerNonUserCode] public AtomContext atom() {
+			return GetRuleContext<AtomContext>(0);
+		}
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode MINUS() { return GetToken(FormulaParser.MINUS, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public FuncTermContext[] funcTerm() {
 			return GetRuleContexts<FuncTermContext>();
@@ -5036,9 +5039,6 @@ public partial class FormulaParser : Parser {
 			return GetRuleContext<QuoteListContext>(0);
 		}
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode QEND() { return GetToken(FormulaParser.QEND, 0); }
-		[System.Diagnostics.DebuggerNonUserCode] public AtomContext atom() {
-			return GetRuleContext<AtomContext>(0);
-		}
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode MUL() { return GetToken(FormulaParser.MUL, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode DIV() { return GetToken(FormulaParser.DIV, 0); }
 		[System.Diagnostics.DebuggerNonUserCode] public ITerminalNode MOD() { return GetToken(FormulaParser.MOD, 0); }
@@ -5079,47 +5079,47 @@ public partial class FormulaParser : Parser {
 			case 1:
 				{
 				State = 753;
-				Match(MINUS);
-				State = 754;
-				funcTerm(7);
+				atom();
 				}
 				break;
 			case 2:
 				{
+				State = 754;
+				Match(MINUS);
 				State = 755;
-				id();
-				State = 756;
-				Match(LPAREN);
-				State = 757;
-				funcTermList();
-				State = 758;
-				Match(RPAREN);
+				funcTerm(6);
 				}
 				break;
 			case 3:
 				{
-				State = 760;
-				Match(QSTART);
-				State = 761;
-				quoteList();
-				State = 762;
-				Match(QEND);
+				State = 756;
+				id();
+				State = 757;
+				Match(LPAREN);
+				State = 758;
+				funcTermList();
+				State = 759;
+				Match(RPAREN);
 				}
 				break;
 			case 4:
 				{
-				State = 764;
-				Match(LPAREN);
-				State = 765;
-				funcTerm(0);
-				State = 766;
-				Match(RPAREN);
+				State = 761;
+				Match(QSTART);
+				State = 762;
+				quoteList();
+				State = 763;
+				Match(QEND);
 				}
 				break;
 			case 5:
 				{
-				State = 768;
-				atom();
+				State = 765;
+				Match(LPAREN);
+				State = 766;
+				funcTerm(0);
+				State = 767;
+				Match(RPAREN);
 				}
 				break;
 			}
@@ -5141,7 +5141,7 @@ public partial class FormulaParser : Parser {
 						_localctx = new FuncTermContext(_parentctx, _parentState);
 						PushNewRecursionContext(_localctx, _startState, RULE_funcTerm);
 						State = 771;
-						if (!(Precpred(Context, 6))) throw new FailedPredicateException(this, "Precpred(Context, 6)");
+						if (!(Precpred(Context, 5))) throw new FailedPredicateException(this, "Precpred(Context, 5)");
 						State = 772;
 						_la = TokenStream.LA(1);
 						if ( !(((((_la - 63)) & ~0x3f) == 0 && ((1L << (_la - 63)) & ((1L << (MOD - 63)) | (1L << (DIV - 63)) | (1L << (MUL - 63)))) != 0)) ) {
@@ -5152,7 +5152,7 @@ public partial class FormulaParser : Parser {
 						    Consume();
 						}
 						State = 773;
-						funcTerm(7);
+						funcTerm(6);
 						}
 						break;
 					case 2:
@@ -5160,7 +5160,7 @@ public partial class FormulaParser : Parser {
 						_localctx = new FuncTermContext(_parentctx, _parentState);
 						PushNewRecursionContext(_localctx, _startState, RULE_funcTerm);
 						State = 774;
-						if (!(Precpred(Context, 5))) throw new FailedPredicateException(this, "Precpred(Context, 5)");
+						if (!(Precpred(Context, 4))) throw new FailedPredicateException(this, "Precpred(Context, 4)");
 						State = 775;
 						_la = TokenStream.LA(1);
 						if ( !(_la==PLUS || _la==MINUS) ) {
@@ -5171,7 +5171,7 @@ public partial class FormulaParser : Parser {
 						    Consume();
 						}
 						State = 776;
-						funcTerm(6);
+						funcTerm(5);
 						}
 						break;
 					}
@@ -5746,8 +5746,8 @@ public partial class FormulaParser : Parser {
 	}
 	private bool funcTerm_sempred(FuncTermContext _localctx, int predIndex) {
 		switch (predIndex) {
-		case 0: return Precpred(Context, 6);
-		case 1: return Precpred(Context, 5);
+		case 0: return Precpred(Context, 5);
+		case 1: return Precpred(Context, 4);
 		}
 		return true;
 	}
@@ -6385,24 +6385,24 @@ public partial class FormulaParser : Parser {
 		'\x9C', 'O', '\x2', '\x2EF', '\x2F1', '\x5', '\x8E', 'H', '\x2', '\x2F0', 
 		'\x2EE', '\x3', '\x2', '\x2', '\x2', '\x2F0', '\x2EF', '\x3', '\x2', '\x2', 
 		'\x2', '\x2F1', '\x9B', '\x3', '\x2', '\x2', '\x2', '\x2F2', '\x2F3', 
-		'\b', 'O', '\x1', '\x2', '\x2F3', '\x2F4', '\a', '@', '\x2', '\x2', '\x2F4', 
-		'\x304', '\x5', '\x9C', 'O', '\t', '\x2F5', '\x2F6', '\x5', '\xA4', 'S', 
-		'\x2', '\x2F6', '\x2F7', '\a', '\xE', '\x2', '\x2', '\x2F7', '\x2F8', 
-		'\x5', '\x98', 'M', '\x2', '\x2F8', '\x2F9', '\a', '\xF', '\x2', '\x2', 
-		'\x2F9', '\x304', '\x3', '\x2', '\x2', '\x2', '\x2FA', '\x2FB', '\a', 
-		'H', '\x2', '\x2', '\x2FB', '\x2FC', '\x5', '\x9E', 'P', '\x2', '\x2FC', 
-		'\x2FD', '\a', 'K', '\x2', '\x2', '\x2FD', '\x304', '\x3', '\x2', '\x2', 
-		'\x2', '\x2FE', '\x2FF', '\a', '\xE', '\x2', '\x2', '\x2FF', '\x300', 
-		'\x5', '\x9C', 'O', '\x2', '\x300', '\x301', '\a', '\xF', '\x2', '\x2', 
-		'\x301', '\x304', '\x3', '\x2', '\x2', '\x2', '\x302', '\x304', '\x5', 
-		'\xA2', 'R', '\x2', '\x303', '\x2F2', '\x3', '\x2', '\x2', '\x2', '\x303', 
-		'\x2F5', '\x3', '\x2', '\x2', '\x2', '\x303', '\x2FA', '\x3', '\x2', '\x2', 
-		'\x2', '\x303', '\x2FE', '\x3', '\x2', '\x2', '\x2', '\x303', '\x302', 
+		'\b', 'O', '\x1', '\x2', '\x2F3', '\x304', '\x5', '\xA2', 'R', '\x2', 
+		'\x2F4', '\x2F5', '\a', '@', '\x2', '\x2', '\x2F5', '\x304', '\x5', '\x9C', 
+		'O', '\b', '\x2F6', '\x2F7', '\x5', '\xA4', 'S', '\x2', '\x2F7', '\x2F8', 
+		'\a', '\xE', '\x2', '\x2', '\x2F8', '\x2F9', '\x5', '\x98', 'M', '\x2', 
+		'\x2F9', '\x2FA', '\a', '\xF', '\x2', '\x2', '\x2FA', '\x304', '\x3', 
+		'\x2', '\x2', '\x2', '\x2FB', '\x2FC', '\a', 'H', '\x2', '\x2', '\x2FC', 
+		'\x2FD', '\x5', '\x9E', 'P', '\x2', '\x2FD', '\x2FE', '\a', 'K', '\x2', 
+		'\x2', '\x2FE', '\x304', '\x3', '\x2', '\x2', '\x2', '\x2FF', '\x300', 
+		'\a', '\xE', '\x2', '\x2', '\x300', '\x301', '\x5', '\x9C', 'O', '\x2', 
+		'\x301', '\x302', '\a', '\xF', '\x2', '\x2', '\x302', '\x304', '\x3', 
+		'\x2', '\x2', '\x2', '\x303', '\x2F2', '\x3', '\x2', '\x2', '\x2', '\x303', 
+		'\x2F4', '\x3', '\x2', '\x2', '\x2', '\x303', '\x2F6', '\x3', '\x2', '\x2', 
+		'\x2', '\x303', '\x2FB', '\x3', '\x2', '\x2', '\x2', '\x303', '\x2FF', 
 		'\x3', '\x2', '\x2', '\x2', '\x304', '\x30D', '\x3', '\x2', '\x2', '\x2', 
-		'\x305', '\x306', '\f', '\b', '\x2', '\x2', '\x306', '\x307', '\t', '\x6', 
-		'\x2', '\x2', '\x307', '\x30C', '\x5', '\x9C', 'O', '\t', '\x308', '\x309', 
-		'\f', '\a', '\x2', '\x2', '\x309', '\x30A', '\t', '\a', '\x2', '\x2', 
-		'\x30A', '\x30C', '\x5', '\x9C', 'O', '\b', '\x30B', '\x305', '\x3', '\x2', 
+		'\x305', '\x306', '\f', '\a', '\x2', '\x2', '\x306', '\x307', '\t', '\x6', 
+		'\x2', '\x2', '\x307', '\x30C', '\x5', '\x9C', 'O', '\b', '\x308', '\x309', 
+		'\f', '\x6', '\x2', '\x2', '\x309', '\x30A', '\t', '\a', '\x2', '\x2', 
+		'\x30A', '\x30C', '\x5', '\x9C', 'O', '\a', '\x30B', '\x305', '\x3', '\x2', 
 		'\x2', '\x2', '\x30B', '\x308', '\x3', '\x2', '\x2', '\x2', '\x30C', '\x30F', 
 		'\x3', '\x2', '\x2', '\x2', '\x30D', '\x30B', '\x3', '\x2', '\x2', '\x2', 
 		'\x30D', '\x30E', '\x3', '\x2', '\x2', '\x2', '\x30E', '\x9D', '\x3', 

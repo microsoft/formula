@@ -21,10 +21,10 @@ To run unit tests with Formula, run the following command from
 Src/Tests.
 
 ```bash
-$  dotnet test Tests.csproj /p:Configuration=Debug|Release /p:Platform=x64|ARM64
+$  dotnet test Tests.csproj /p:Configuration=Debug|Release /p:Platform=x64
 
 For specific tests
-$ dotnet test Tests.csproj /p:Configuration=Debug|Release /p:Platform=x64|ARM64 --filter "FullyQualifiedName=<NAMESPACE>.<CLASS>.<METHOD>"
+$ dotnet test Tests.csproj /p:Configuration=Debug|Release /p:Platform=x64 --filter "FullyQualifiedName=<NAMESPACE>.<CLASS>.<METHOD>"
 ```
 
 You can exit the command line interpreter with the "exit" command.

@@ -43,7 +43,7 @@ namespace Tests
         [Fact]
         public void TestRuleLinterArmLoading()
         {
-            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../models/arm.4ml"), "LintingTests: Load command for arm.4ml failed.");
+            _ciFixture.RunCommand("load " + Path.GetFullPath("../../../../../../../Doc/Samples/arm.4ml"), "LintingTests: Load command for arm.4ml failed.");
             Assert.True(_ciFixture.GetLoadResult(), "LintingTests: Finding errors in arm.4ml failed.");
         }
 
